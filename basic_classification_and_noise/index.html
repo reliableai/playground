@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic classification + noise — the L3 lab</title>
+  <link rel="stylesheet" href="../course.css">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    :root {
+      --tfidf: #2563eb;   /* traditional classifier */
+      --llm:   #b45309;   /* gen-AI classifier */
+      --good:  #15803d;
+      --bad:   #b91c1c;
+      --grid:  #e5e7eb;
+      --muted: #6b7280;
+    }
+    .dsbar { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin:1.4rem 0 .2rem; }
+    .dsbar .lbl { font-size:.8rem; color:var(--muted); font-weight:600; margin-right:.2rem; }
+    .dsbar button { border:1px solid var(--grid); background:#fff; padding:.5rem .9rem; border-radius:999px;
+      cursor:pointer; font:inherit; font-weight:600; color:var(--muted); }
+    .dsbar button.active { background:#111; color:#fff; border-color:#111; }
+
+    .tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin: .6rem 0 0; }
+    .tabs button {
+      border: 1px solid var(--grid); background: #fff; padding: .55rem 1rem;
+      border-radius: 8px 8px 0 0; cursor: pointer; font: inherit; font-weight: 600;
+      color: var(--muted); border-bottom: none;
+    }
+    .tabs button.active { color: #111; background: #f8fafc; box-shadow: inset 0 -3px 0 #111; }
+    .tabpanel { border: 1px solid var(--grid); border-radius: 0 8px 8px 8px;
+      padding: 1.2rem 1.4rem; background: #f8fafc; }
+    .stage-intro { margin:.1rem 0 0; color:var(--muted); }
+
+    .controls { display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: flex-end;
+      background: #fff; border: 1px solid var(--grid); border-radius: 10px; padding: .9rem 1.1rem; margin: 1rem 0; }
+    .controls label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .25rem; font-weight: 600; }
+    .controls select, .controls input[type=number] { font: inherit; padding: .4rem .5rem; border: 1px solid var(--grid); border-radius: 6px; }
+    .controls .spin { background: #111; color: #fff; border: none; border-radius: 6px; padding: .55rem 1rem; cursor: pointer; font-weight: 600; }
+    .controls .spin.secondary { background: #fff; color: #111; border: 1px solid #111; }
+    .sample-note { font-size: .85rem; color: var(--muted); margin: .2rem 0 0; }
+
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+    @media (max-width: 720px) { .cols { grid-template-columns: 1fr; } }
+    .clf-card { background: #fff; border: 1px solid var(--grid); border-radius: 10px; padding: 1.1rem 1.2rem; min-width: 0; }
+    .clf-card .card-label { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+    .swatch { width: .8rem; height: .8rem; border-radius: 2px; display: inline-block; }
+    .acc { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+    .acc small { font-size: 1.05rem; font-weight: 500; color: var(--muted); }
+    .pr { display: flex; gap: 2rem; margin: 1rem 0 0; padding-top: .9rem; border-top: 1px solid var(--grid); font-size: .85rem; }
+    .pr .stat { display: flex; flex-direction: column; gap: .15rem; }
+    .pr .stat .k { color: var(--muted); font-weight: 600; }
+    .pr .stat .v { font-size: 1.25rem; font-weight: 700; color: var(--color-text, #0f172a); line-height: 1; }
+    .pr .stat .sub { font-size: .72rem; color: var(--muted); }
+    .pr .stat .sub b { color: #111; font-weight: 700; }
+    .deflink { color: inherit; text-decoration: underline; text-decoration-color: var(--grid); text-underline-offset: 2px; cursor: help; }
+    .deflink:hover { text-decoration-color: var(--tfidf); }
+
+    table.cm { border-collapse: collapse; margin: .5rem 0; font-size: .8rem; }
+    table.cm th, table.cm td { border: 1px solid var(--grid); padding: .3rem .5rem; text-align: center; }
+    table.cm th { background: #f1f5f9; color: var(--muted); font-weight: 600; }
+    table.cm td.diag { font-weight: 700; }
+    .cm-box { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .cm-box h5 { margin:.1rem 0 .4rem; display:flex; align-items:center; gap:.4rem; font-size:.9rem; }
+    .cm-wrap { overflow: auto; max-width: 100%; max-height: 340px; }
+    table.cm.big th, table.cm.big td { padding: .15rem .3rem; font-size: .68rem; min-width: 2.2rem; }
+    table.cm.big th.rot { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; max-height: 7rem; }
+
+    .strip { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .strip svg { width: 100%; height: 60px; display:block; }
+
+    .beta { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:1rem 1.1rem; margin-top:1rem; }
+    .beta-grid { display:grid; grid-template-columns: 1fr 320px; gap:1.2rem; align-items:center; }
+    @media (max-width: 720px){ .beta-grid{ grid-template-columns:1fr; } }
+    .beta svg { width:100%; height:170px; }
+    .beta .readout { font-size:.9rem; }
+    .beta .ci { font-weight:700; }
+    .xrow { display:flex; align-items:center; gap:.6rem; margin:.6rem 0; }
+    .xrow input { width: 90px; }
+    .legend { font-size:.8rem; color:var(--muted); display:flex; gap:1rem; flex-wrap:wrap; }
+
+    .scatter { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .scatter .head { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; margin-bottom:.5rem; }
+    .scatter h4 { margin:.1rem 0; }
+    .scatter svg { width:100%; height:380px; display:block; background:#fcfcfd; border:1px solid var(--grid); border-radius:8px; }
+    .scatter .cap { font-size:.82rem; color:var(--muted); margin:.5rem 0 0; }
+    .scatter .cap b { color:#111; }
+    .seg { display:inline-flex; border:1px solid var(--grid); border-radius:6px; overflow:hidden; }
+    .seg button { border:none; background:#fff; padding:.35rem .7rem; font:inherit; font-size:.78rem; cursor:pointer; color:var(--muted); border-left:1px solid var(--grid); }
+    .seg button:first-child { border-left:none; }
+    .seg button.on { background:#111; color:#fff; }
+    .seg-label { font-size:.72rem; color:var(--muted); font-weight:600; display:block; margin-bottom:.2rem; }
+    .scatter .legend .dot { width:.7rem; height:.7rem; border-radius:50%; display:inline-block; vertical-align:middle; margin-right:.25rem; }
+    #scatter-tip { position:fixed; pointer-events:none; z-index:50; display:none; max-width:320px;
+      background:#111; color:#fff; padding:.4rem .55rem; border-radius:6px; font-size:.78rem; line-height:1.35; }
+
+    .surface { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .surface .head { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; margin-bottom:.5rem; }
+    .surface h4 { margin:.1rem 0; }
+    .surface canvas { width:100%; max-width:460px; aspect-ratio:1/1; display:block; margin:.2rem auto 0; border:1px solid var(--grid); border-radius:8px; background:#0a0c16; }
+    .surface .cap { font-size:1rem; line-height:1.5; color:var(--muted); margin:.6rem 0 0; }
+    .surf-know { margin-top:1.4rem; padding-top:1.1rem; border-top:1px solid var(--grid); }
+    .surf-know-title { font-size:1.6rem; margin:.2rem 0 .5rem; }
+    .surfknow-row { display:flex; gap:2.5rem; align-items:center; flex-wrap:wrap; margin-top:.2rem; }
+    .surfknow-row canvas { width:440px; max-width:100%; margin:0; }
+    .surfknow-acc { flex:1; min-width:170px; text-align:center; }
+    .surfknow-acc .big { font-size:2.4rem; font-weight:700; line-height:1; }
+    .surfknow-acc .big small { font-size:.9rem; font-weight:500; color:var(--muted); }
+    .surfknow-acc .rw { margin-top:.5rem; font-size:.9rem; color:var(--muted); }
+    .surfknow-acc .rw b { color:#111; }
+    .surfclaims { margin-top:2rem; background:#f8fafc; border:1px solid var(--border-strong,#cbd5e1); border-radius:12px; padding:1.4rem 1.5rem; }
+    .surfclaims-title { font-size:1.8rem; margin:0 0 .4rem; }
+    .surfclaims-assume { font-style:italic; color:var(--muted); margin:0 0 .7rem; }
+    .surfclaims p { margin:.1rem 0 .6rem; color:var(--muted); }
+    .surfclaims ul { margin:.3rem 0 0; padding-left:1.3rem; }
+    .surfclaims li { margin:.5rem 0; font-size:1.05rem; }
+    .surf-redraw { margin-top:1.3rem; }
+    .surf-redraw p { margin:.1rem 0 .5rem; }
+    .surf-caveat { margin:.9rem 0 0; color:var(--muted); font-style:italic; }
+    .ci-wrap { margin-top:.8rem; }
+    .ci-bar { width:100%; max-width:520px; height:auto; display:block; }
+    .ci-cap { font-size:.82rem; color:var(--muted); margin:.3rem 0 0; }
+    .how-link { margin-top:1.4rem; }
+    .how-link a { color:var(--tfidf); font-weight:600; text-decoration:none; }
+    .how-link a:hover { text-decoration:underline; }
+    .surf-know h4 { margin:0 0 .4rem; }
+    .surf-intro { margin:.2rem 0 .6rem; color:var(--muted); font-size:1rem; }
+    .surf-sample { display:flex; align-items:center; gap:.8rem; margin:.2rem 0 .1rem; flex-wrap:wrap; }
+    .surf-sample label { font-size:.78rem; color:var(--muted); font-weight:600; }
+    .surf-sample input[type=number] { font:inherit; padding:.4rem .5rem; border:1px solid var(--grid); border-radius:6px; width:5rem; }
+    .surf-sample button { background:#111; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; cursor:pointer; font:inherit; font-weight:600; }
+    .surf-sample .note { font-size:.85rem; color:var(--muted); }
+    .surf-try { margin-top:1rem; }
+    .surf-try label { display:block; font-size:.85rem; color:var(--muted); font-weight:600; margin-bottom:.35rem; }
+    .surf-try textarea { width:100%; box-sizing:border-box; font:inherit; padding:.5rem; border:1px solid var(--grid); border-radius:6px; resize:vertical; }
+    .surf-try .row { display:flex; align-items:center; gap:.8rem; margin-top:.5rem; flex-wrap:wrap; }
+    .surf-try button { background:#111; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; cursor:pointer; font:inherit; font-weight:600; }
+    .surf-try .note { font-size:.85rem; color:var(--muted); }
+    .surf-egs { margin-top:.6rem; display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+    .surf-egs .eg { background:#fff; color:#111; border:1px solid var(--grid); border-radius:999px; padding:.3rem .75rem; font:inherit; font-size:.8rem; cursor:pointer; }
+    .surf-egs .eg:hover { border-color:#111; }
+    .surface .cap b { color:#111; }
+    .surface .legend .dot { width:.7rem; height:.7rem; border-radius:50%; display:inline-block; vertical-align:middle; margin-right:.25rem; }
+
+    .dist { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .dist h4 { margin:.1rem 0 .6rem; }
+    .dist .bar { display:flex; align-items:center; gap:.6rem; margin:.32rem 0; font-size:.85rem; }
+    .dist .bar .name { width:6.5rem; text-align:right; color:#111; font-weight:600; }
+    .dist .bar .track { flex:1; background:#f1f5f9; border-radius:5px; height:1.1rem; overflow:hidden; }
+    .dist .bar .fill { display:block; background:#334155; height:100%; min-width:2px; border-radius:5px; }
+    .dist .bar .val { width:6rem; color:var(--muted); }
+
+    .browse { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .browse h4 { margin:.1rem 0 .5rem; }
+    .browse .bctrls { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:.6rem; }
+    .browse .bctrls label { display:block; font-size:.72rem; color:var(--muted); font-weight:600; margin-bottom:.2rem; }
+    .browse .bctrls select { font:inherit; padding:.35rem .5rem; border:1px solid var(--grid); border-radius:6px; }
+    .browse .bctrls .spin { background:#fff; color:#111; border:1px solid #111; border-radius:6px; padding:.45rem .8rem; cursor:pointer; font-weight:600; }
+    .browse .list { max-height:360px; overflow:auto; border:1px solid var(--grid); border-radius:8px; }
+    .browse table { border-collapse:collapse; width:100%; font-size:.85rem; }
+    .browse th, .browse td { border-bottom:1px solid var(--grid); padding:.4rem .55rem; text-align:left; vertical-align:top; }
+    .browse th { background:#f8fafc; color:var(--muted); font-weight:600; position:sticky; top:0; }
+    .browse td.truth { font-weight:600; white-space:nowrap; }
+    .browse .ok { color:var(--good); white-space:nowrap; }
+    .browse .bad { color:var(--bad); white-space:nowrap; }
+    .browse .cnt { font-size:.8rem; color:var(--muted); margin-top:.45rem; }
+
+    .clsmetrics-box { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:1rem 1.1rem; margin-top:1rem; }
+    .clsmetrics-box h4 { margin:.1rem 0 .2rem; }
+    table.pcm { border-collapse:collapse; margin:.6rem 0 0; font-size:.92rem; }
+    table.pcm th, table.pcm td { border-bottom:1px solid var(--grid); padding:.4rem 1.4rem .4rem 0; text-align:left; }
+    table.pcm th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; }
+    table.pcm td.cls { font-weight:700; }
+    table.pcm td.num, table.pcm th.num { text-align:right; font-variant-numeric:tabular-nums; }
+    table.pcm tr.sel td { background:#fffbeb; }
+
+    .promptbox { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.4rem 1rem; margin-top:1rem; }
+    .promptbox.open { padding:.9rem 1.1rem; }
+    .promptbox.open h4 { margin:.1rem 0 .3rem; }
+    .promptbox summary { cursor:pointer; font-weight:600; padding:.5rem 0; }
+    .promptbox summary:hover { color:var(--tfidf); }
+    .promptbox .prompt-label { font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:.8rem 0 .3rem; }
+    .promptbox .prompt-pre { background:#0f172a; color:#e2e8f0; border-radius:8px; padding:.8rem 1rem; margin:0; font-family:var(--font-mono,monospace); font-size:.82rem; line-height:1.5; white-space:pre-wrap; word-break:break-word; max-height:340px; overflow:auto; }
+    .promptbox .prompt-pre.json { color:#86efac; }
+    .trybox { background:#fff; border:1px solid var(--grid); border-radius:10px; padding:.8rem 1rem; margin-top:1rem; }
+    .trybox h4 { margin:.1rem 0 .5rem; }
+    .trybox textarea { width:100%; box-sizing:border-box; font:inherit; padding:.5rem; border:1px solid var(--grid); border-radius:6px; resize:vertical; }
+    .trybox .row { display:flex; align-items:center; gap:.8rem; margin-top:.5rem; }
+    .trybox button { background:#111; color:#fff; border:none; border-radius:6px; padding:.5rem 1rem; cursor:pointer; font:inherit; font-weight:600; }
+    .trybox .tryres { font-size:1.15rem; margin-top:.7rem; }
+    .trybox .scores { font-size:.82rem; color:var(--muted); margin-top:.25rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="nav-back" href="../index.html">← All playgrounds</a>
+
+    <div class="hero">
+      <h1>Basic classification + noise</h1>
+    </div>
+
+    <section class="lab-section">
+      <h2>What this is</h2>
+      <p>
+        Two <strong>single-label</strong> datasets — customer-support tickets routed to one of five categories
+        (<strong>multi-class</strong>), and movie-review sentiment as POSITIVE/NEGATIVE (<strong>binary</strong>).
+        For each, the page guides you through the tabs: <strong>Explore the data</strong> (no classifier yet),
+        then the <strong>ML classifier</strong> (TF-IDF + Logistic Regression). Predictions and ground truth are
+        <em>precomputed</em>, so you can spin freely — no API calls.
+        (The <strong>gen-AI classifier</strong> that used to live here has moved to the L4 lab,
+        <a href="../llm_as_a_judge/index.html#classifier">LLM as a Judge</a>.)
+      </p>
+    </section>
+
+    <div class="dsbar" id="dsbar"><span class="lbl">Dataset:</span></div>
+    <div class="tabs" id="stagetabs"></div>
+    <div class="tabpanel" id="stagepanel"></div>
+
+  </main>
+
+  <!-- timestamped so regenerated predictions always load (no stale browser cache) -->
+  <script>document.write('<scr' + 'ipt src="predictions/data.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+  <!-- exported TF-IDF model weights + the in-browser classifier ("Try it" runs with no backend) -->
+  <script>document.write('<scr' + 'ipt src="predictions/models.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+  <script>document.write('<scr' + 'ipt src="tryit.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+  <script>
+  // ---------- special-function math: lgamma, regularized incomplete beta, quantile ----------
+  function lgamma(z){
+    const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,
+      771.32342877765313,-176.61502916214059,12.507343278686905,
+      -0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+    if(z<0.5) return Math.log(Math.PI/Math.sin(Math.PI*z))-lgamma(1-z);
+    z-=1; let x=c[0]; const t=z+g+0.5;
+    for(let i=1;i<g+2;i++) x+=c[i]/(z+i);
+    return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);
+  }
+  function betacf(a,b,x){
+    const FPMIN=1e-300, EPS=3e-12, MAXIT=300;
+    let qab=a+b, qap=a+1, qam=a-1, c=1, d=1-qab*x/qap;
+    if(Math.abs(d)<FPMIN) d=FPMIN; d=1/d; let h=d;
+    for(let m=1;m<=MAXIT;m++){
+      const m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d;
+      const del=d*c; h*=del; if(Math.abs(del-1)<EPS) break;
+    }
+    return h;
+  }
+  function betai(a,b,x){
+    if(x<=0) return 0; if(x>=1) return 1;
+    const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+    return x < (a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+  }
+  function betaQuantile(p,a,b){ let lo=0, hi=1; for(let i=0;i<80;i++){ const m=(lo+hi)/2; (betai(a,b,m)<p)?lo=m:hi=m; } return (lo+hi)/2; }
+  function betaPdf(x,a,b){ if(x<=0||x>=1) return 0; return Math.exp((a-1)*Math.log(x)+(b-1)*Math.log(1-x)-(lgamma(a)+lgamma(b)-lgamma(a+b))); }
+
+  // ---------- data + helpers ----------
+  const DATA = window.L1_PREDICTIONS || {};
+  // In-browser classification for the "Try it" boxes (tryit.js + predictions/models.js):
+  // same TF-IDF decision_function and nearest-example placement serve.py used, no backend.
+  function classifyLocal(text){
+    const M=(window.L1_MODELS||{})[curDS];
+    if(!M || !window.L1_TRYIT)
+      return {error:'Model weights missing — regenerate predictions/models.js with build_model_js.py.'};
+    const r=L1_TRYIT.classify(M.clf, text);
+    const pos=L1_TRYIT.place(M.place, state[curDS].d.items, text);
+    return {label:r.label, scores:r.scores, pos};
+  }
+  const DESC = {
+    bitext: {title:'Bitext — customer-support categories',
+      body:'Customer-support utterances, each routed to one of 5 <strong>categories</strong> (account, order, refund, payment, delivery). <strong>Multi-class</strong>: exactly one class per ticket. (Realistic, synthetically generated data from the Bitext dataset on HuggingFace.)'},
+    rotten_tomatoes: {title:'Rotten Tomatoes — review sentiment',
+      body:'Movie-review sentences labelled <strong>POSITIVE</strong> or <strong>NEGATIVE</strong>. <strong>Binary</strong> — the textbook two-class case (Cornell / Pang &amp; Lee, via HuggingFace). Binary is just multi-class with two classes, so the same machinery applies.'},
+  };
+  const ORDER = ['bitext', 'rotten_tomatoes'];
+  // in-domain starter sentences (share vocabulary with the pool, so they always place)
+  const EXAMPLES = {
+    bitext: [
+      'I need to reset the password on my account',
+      "where is my package, it hasn't arrived yet",
+      'I want to cancel the order I just placed',
+      'my card was declined when I tried to pay',
+      'how do I get a refund for this item',
+    ],
+    rotten_tomatoes: [
+      'a dazzling, heartfelt and beautifully acted film',
+      'a boring, predictable mess that wastes its talented cast',
+      'surprisingly moving, funny and visually stunning',
+      'dull, lifeless and far too long to sit through',
+    ],
+  };
+  const CLF = {
+    tfidf: {name:'Trained ML Classifier (TF-IDF + Logistic Regression)', short:'TF-IDF', btn:'the trained ML model', kind:'ML Model', color:'var(--tfidf)',
+      desc:'A model trained on labelled examples (bag-of-words features → linear model). Trained on a small set on purpose, so it is honestly imperfect.'},
+    llm:   {name:'Few-shot LLM', short:'LLM', btn:'the gen-AI model', kind:'Gen-AI Model', color:'var(--llm)',
+      desc:'A general gen-AI model, prompted with a handful of labelled examples — no training, just instructions, returning one class.'},
+  };
+
+  const pct = x => isNaN(x)? '—' : (100*x).toFixed(1)+'%';
+  const lab1 = it => it.truth[0]||'∅';
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function freqOf(items){ const c={}; items.forEach(it=>{ const l=lab1(it); c[l]=(c[l]||0)+1; }); return c; }
+  function sampleIndices(n, size){
+    const idx=[...Array(n).keys()];
+    for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+    return idx.slice(0, Math.min(size,n));
+  }
+  function shuffleSeeded(arr, seed){
+    const a=arr.slice(); let s=(seed*9301+49297)%233280+1;
+    const rnd=()=>{ s=(s*9301+49297)%233280; return s/233280; };
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  const predOf = (it,clf) => it[clf][0]||'∅';
+  const correctOf = (it,clf) => predOf(it,clf)===lab1(it);
+
+  function classMetrics(sample, clf, focus, labels){
+    let correct=0; const cm={}; labels.forEach(a=>cm[a]={});
+    sample.forEach(it=>{ const t=lab1(it), p=predOf(it,clf); if(t===p)correct++; cm[t]=cm[t]||{}; cm[t][p]=(cm[t][p]||0)+1; });
+    let TP=0,FP=0,FN=0,support=0;
+    sample.forEach(it=>{ const t=lab1(it), p=predOf(it,clf);
+      if(t===focus) support++;
+      if(p===focus&&t===focus)TP++; else if(p===focus&&t!==focus)FP++; else if(p!==focus&&t===focus)FN++; });
+    const n=sample.length;
+    return {n,correct,acc:correct/n,cm,
+      precision:(TP+FP)?TP/(TP+FP):NaN, recall:(TP+FN)?TP/(TP+FN):NaN, support};
+  }
+
+  // ---------- state ----------
+  const state = {};
+  let curDS = ORDER.find(k=>DATA[k]) || ORDER[0];
+  let curStage = 'explore';
+  const clfOfStage = s => s==='ml'?'tfidf' : s==='genai'?'llm' : null;
+
+  function initState(key){
+    if(state[key]) return state[key];
+    const d=DATA[key]; const freq=freqOf(d.items);
+    const labelsByFreq=[...d.labels].sort((a,b)=>(freq[b]||0)-(freq[a]||0));
+    state[key]={ d, freq, labelsByFreq,
+      size:50, focus:labelsByFreq[0], history:[], view:'sem', surfmode:'surface', _surfCache:null,
+      clf:'tfidf', sample:sampleIndices(d.n, 50), typed:null,
+      bsrc:'pool', bshow:'errors', bcls:'__all__', bseed:0, bn:30,
+      skew:0, skewN:300 };
+    return state[key];
+  }
+
+  // ---------- Explore stage ----------
+  function renderExplore(){
+    const st=state[curDS], d=st.d;
+    document.getElementById('stagepanel').innerHTML = `
+      <h3>${DESC[curDS].title}</h3>
+      <p>${DESC[curDS].body}</p>
+      <p class="note">${d.n} held-out test cases. The classifiers in the next tabs were trained on a separate ${d.train_size} examples.</p>
+      <div class="browse">
+        <h4>Browse the data</h4>
+        <div class="bctrls">
+          <div><label>True class</label><select id="bcls"><option value="__all__">all</option>${st.labelsByFreq.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('')}</select></div>
+          <button class="spin" id="bmore">🔀 resample</button>
+        </div>
+        <div class="list" id="blist"></div>
+        <div class="cnt" id="bcnt"></div>
+      </div>
+      <div class="dist"><h4>Classes and their balance</h4><div id="distbars"></div><p class="note" id="balsum" style="margin-top:.6rem"></p></div>`;
+
+    renderDist();
+    document.getElementById('bcls').onchange = e=>{ st.bcls=e.target.value; renderExploreBrowse(); };
+    document.getElementById('bmore').onclick = ()=>{ st.bseed++; renderExploreBrowse(); };
+    renderExploreBrowse();
+  }
+
+  // ---------- Sampling stage (population vs sample, + class imbalance preview of L4) ----------
+  function renderSampling(){
+    const st=state[curDS], d=st.d, clf=st.clf, meta=CLF[clf];
+    document.getElementById('stagepanel').innerHTML = `
+      <h3>Population vs sample</h3>
+      <p>The whole pool of <b>${d.n}</b> cases is the <b>population</b>. If we could label <em>every possible input</em>, we'd know the model's true competence everywhere — the surface below. We never can: in practice we only ever see a <b>sample</b> we draw and label, and every number we report is read off that one draw.</p>
+
+      <div class="surface" id="surfbox">
+        <div class="surf-know">
+          <h3 class="surf-know-title">But we can't see the surface, we only see a sample</h3>
+          <p class="surf-intro">We can't see the entire accuracy surface, we do not know the true label for every input — so, we <b>sample</b> and label a sample. In the playground we assume we have picked N random inputs and we have obtained somehow the correct class labels for them. If you click the button we will pretend we have picked such N random input records or documents, and labeled them:</p>
+          <div class="surf-sample">
+            <label for="surfsize">Sample size</label>
+            <input type="number" id="surfsize" min="2" max="${d.n}" value="${st.size}">
+            <button id="surfspin">🎲 Draw a sample</button>
+            <span class="note" id="surfsamplenote"></span>
+          </div>
+          <h4>What we actually know (the sample)</h4>
+          <div class="legend"><span><span class="dot" style="background:var(--good)"></span>ML predicts correctly</span>
+            <span><span class="dot" style="background:var(--bad)"></span>ML predicts wrong</span></div>
+          <div class="surfknow-row">
+            <canvas id="surfknow" width="480" height="480"></canvas>
+            <div class="surfknow-acc" id="surfknowacc"></div>
+          </div>
+          <p class="cap" id="surfknowcap"></p>
+          <div class="surf-try">
+            <label>Or drop your own sentence — where does it land? You can't know until you try.</label>
+            <textarea id="surftry" rows="2" placeholder="${curDS==='bitext'?'e.g. I want to change the card I pay with':'e.g. a stirring, funny and transporting film'}"></textarea>
+            <div class="row"><button id="surftrybtn">Place my sentence</button><span class="note" id="surftrynote"></span></div>
+            <div class="surf-egs"><span class="note">Not sure what to type? Pick one:</span>${(EXAMPLES[curDS]||[]).map(s=>`<button type="button" class="eg" data-eg="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+          </div>
+          <div class="surf-redraw">
+            <p>What if you had picked and labeled a different sample, of a different size? Try your luck here:</p>
+            <div class="surf-sample">
+              <label for="surfsize2">Sample size</label>
+              <input type="number" id="surfsize2" min="2" max="${d.n}" value="${st.size}">
+              <button id="surfspin2">🎲 Draw a sample</button>
+            </div>
+            <p class="surf-caveat">Remember that in many use cases you can't just keep drawing samples — finding samples and labeling them correctly takes time and is not always feasible.</p>
+          </div>
+        </div>
+
+        <div class="head">
+          <div><h4>The competence surface — what we never see (the whole population)</h4></div>
+          <div><span class="seg-label">Feature space</span>
+            <div class="seg" id="surfview"><button data-v="sem" class="${st.view==='sem'?'on':''}">Semantic</button><button data-v="lex" class="${st.view==='lex'?'on':''}">Lexical (TF-IDF)</button></div></div>
+        </div>
+        <canvas id="surf" width="480" height="480"></canvas>
+        <p class="cap" id="surfcap"></p>
+        <div class="surfclaims" id="surfclaims"></div>
+      </div>`;
+
+    // population-vs-sample surface handlers
+    const spin = ()=>{ st.sample=sampleIndices(d.n, st.size); renderSurface(); };
+    const syncSize = v=>{ st.size=Math.max(2,Math.min(d.n,+v||50)); ['surfsize','surfsize2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=st.size; }); };
+    document.getElementById('surfspin').onclick = spin;
+    document.getElementById('surfspin2').onclick = spin;
+    document.getElementById('surfsize').onchange = e=>{ syncSize(e.target.value); spin(); };
+    document.getElementById('surfsize2').onchange = e=>{ syncSize(e.target.value); spin(); };
+    document.getElementById('surfview').querySelectorAll('button').forEach(b=> b.onclick=()=>{
+      st.view=b.dataset.v; document.getElementById('surfview').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      renderSurface(); });
+    const placeSentence = (text)=>{
+      const note=document.getElementById('surftrynote');
+      if(!text){ note.textContent='type something first'; return; }
+      const j=classifyLocal(text);
+      if(j.error){ note.textContent=j.error; return; }
+      if(j.pos){ st.typed={lex:j.pos.lex, sem:j.pos.sem, label:j.label, text};
+        note.innerHTML=`predicted <b style="color:${meta.color}">${esc(j.label)}</b> — see where it dropped ▲`;
+        renderSurface();
+        document.getElementById('surfknow').scrollIntoView({behavior:'smooth', block:'nearest'}); }
+      else { st.typed=null; note.innerHTML='This sentence is unlike anything we’ve seen — we genuinely can’t say where it lands. Try one of the suggestions below.'; renderSurface(); }
+    };
+    document.getElementById('surftrybtn').onclick = ()=> placeSentence(document.getElementById('surftry').value.trim());
+    document.querySelectorAll('.surf-egs .eg').forEach(b=> b.onclick=()=>{
+      const s=b.dataset.eg; document.getElementById('surftry').value=s; placeSentence(s); });
+
+    renderSurface();
+  }
+
+  // ---------- Class imbalance stage (preview of L4) ----------
+  function renderImbalance(){
+    const st=state[curDS], d=st.d;
+    document.getElementById('stagepanel').innerHTML = `
+      <h3>Sampling &amp; class imbalance</h3>
+      <p>How you <strong>draw</strong> the test set changes the story. Dial up the imbalance: the drawn set fills with the majority class. A do-nothing baseline that always predicts the majority class climbs on <b>accuracy</b> (it rides the dominant class) while its <b>macro-recall</b> (every class weighted equally) stays near 1/${d.labels.length}. A preview of Lesson 5.</p>
+      <div class="beta" style="margin-top:.6rem">
+        <div class="controls" style="margin:.2rem 0 1rem">
+          <div style="min-width:240px"><label>Class imbalance (skew) — <span id="skew-val"></span></label>
+            <input type="range" id="skew" min="0" max="0.9" step="0.05" value="${st.skew}" style="width:230px"></div>
+          <div><label>Test-set size</label><input type="number" id="skew-n" min="20" max="${d.n}" value="${st.skewN}"></div>
+          <button class="spin" id="skew-spin">🎲 Draw</button>
+          <div class="sample-note" id="skew-note"></div>
+        </div>
+        <div class="cols" id="skew-cards"></div>
+        <p class="cap note" id="skew-cap" style="margin-top:.8rem"></p>
+      </div>`;
+    document.getElementById('skew').oninput = e=>{ st.skew=+e.target.value; renderSkew(); };
+    document.getElementById('skew-n').oninput = e=>{ st.skewN=Math.max(20,Math.min(d.n,+e.target.value||300)); renderSkew(); };
+    document.getElementById('skew-spin').onclick = renderSkew;
+    renderSkew();
+  }
+
+  function renderDist(){
+    const st=state[curDS], d=st.d, counts=st.labelsByFreq.map(l=>st.freq[l]||0), max=Math.max(...counts);
+    document.getElementById('distbars').innerHTML = st.labelsByFreq.map(l=>{
+      const c=st.freq[l]||0, w=(100*c/max).toFixed(1);
+      return `<div class="bar"><span class="name">${esc(l)}</span><span class="track"><span class="fill" style="width:${w}%"></span></span><span class="val">${c} · ${pct(c/d.n)}</span></div>`;
+    }).join('');
+    const top=st.labelsByFreq[0], bot=st.labelsByFreq[st.labelsByFreq.length-1];
+    const ratio=(st.freq[top]/Math.max(1,st.freq[bot])).toFixed(1);
+    document.getElementById('balsum').innerHTML =
+      `${st.labelsByFreq.length} classes. Most common <b>${esc(top)}</b> (${pct(st.freq[top]/d.n)}), rarest <b>${esc(bot)}</b> (${pct(st.freq[bot]/d.n)}) — an imbalance ratio of <b>${ratio}×</b>. The more skewed this is, the more a plain accuracy can hide weak classes (see the Sampling tab).`;
+  }
+
+  function renderExploreBrowse(){
+    const st=state[curDS], d=st.d;
+    let rows=d.items.slice();
+    if(st.bcls!=='__all__') rows=rows.filter(it=>lab1(it)===st.bcls);
+    const total=rows.length;
+    rows=shuffleSeeded(rows, st.bseed).slice(0, st.bn);
+    document.getElementById('blist').innerHTML =
+      `<table><tr><th>text</th><th>true label</th></tr>`+
+      rows.map(it=>`<tr><td>${esc(it.text)}</td><td class="truth">${esc(lab1(it))}</td></tr>`).join('')+`</table>`;
+    document.getElementById('bcnt').textContent = `showing ${rows.length} of ${total} rows (pool of ${d.n})`;
+  }
+
+  function multiclassEval(sample, predFn, classes){
+    const yt=sample.map(lab1), yp=sample.map(predFn);
+    let correct=0; yt.forEach((t,i)=>{ if(t===yp[i])correct++; });
+    const recalls=[];
+    classes.forEach(c=>{ let tp=0,fn=0; yt.forEach((t,i)=>{ if(t===c){ (yp[i]===c)?tp++:fn++; } }); if(tp+fn>0) recalls.push(tp/(tp+fn)); });
+    return { acc:correct/yt.length, macroRecall: recalls.length? recalls.reduce((a,b)=>a+b,0)/recalls.length : NaN };
+  }
+  function skewSample(items, size, skew, majority){
+    const minW=Math.max(1e-3,1-skew); const cum=[]; let s=0;
+    items.forEach(it=>{ s += (lab1(it)===majority?1:minW); cum.push(s); });
+    const out=[];
+    for(let i=0;i<size;i++){ const r=Math.random()*s; let lo=0,hi=cum.length-1;
+      while(lo<hi){ const m=(lo+hi)>>1; if(cum[m]<r)lo=m+1; else hi=m; } out.push(items[lo]); }
+    return out;
+  }
+  function renderSkew(){
+    const st=state[curDS], d=st.d, classes=d.labels;
+    const majority=st.labelsByFreq[0];
+    document.getElementById('skew-val').textContent = st.skew.toFixed(2);
+    const sample=skewSample(d.items, st.skewN, st.skew, majority);
+    const majShare=sample.filter(it=>lab1(it)===majority).length/sample.length;
+    const m=multiclassEval(sample, ()=>majority, classes);
+    document.getElementById('skew-cards').innerHTML =
+      `<div class="clf-card"><h4><span class="swatch" style="background:var(--bad)"></span>Majority-only baseline (always “${esc(majority)}”)</h4>
+        <div class="acc" style="color:var(--bad)">${pct(m.acc)} <small>accuracy</small></div>
+        <div class="pr"><span>macro-recall <b>${pct(m.macroRecall)}</b></span></div>
+        <p class="note" style="margin:.1rem 0 0">accuracy across all · recall averaged over the ${classes.length} classes</p></div>`;
+    document.getElementById('skew-note').innerHTML = `drew <b>${st.skewN}</b> cases · “${esc(majority)}” now <b>${pct(majShare)}</b> of the set`;
+    document.getElementById('skew-cap').innerHTML =
+      `At skew <b>${st.skew.toFixed(2)}</b> the majority class is <b>${pct(majShare)}</b> of the draw. Its <b>accuracy</b> tracks that share, but <b>macro-recall</b> sits near <b>${pct(1/classes.length)}</b> — it never gets a non-majority case right.`;
+  }
+
+  // ---------- Classifier stage ----------
+  // Gen-AI as a classifier: no training, no embedding — we just prompt one general model with the
+  // task, the allowed classes, and a few labelled "few-shot" examples; it replies with a class.
+  // Rendered statically from this dataset (no backend call).
+  function llmPromptPanel(d){
+    const labels=d.labels;
+    const shots=d.items.slice(0,4).map(it=>[it.text, lab1(it)]);   // few-shot examples to inject
+    const tests=d.items.slice(8,12);                               // inputs + the answers returned
+    const shotLines=shots.map(([t,l])=>`INPUT: ${t}\nCLASS: ${l}`).join('\n\n');
+    const prompt=
+`You are a text classifier. Read the input and reply with EXACTLY ONE class.
+
+Allowed classes: ${labels.join(', ')}.
+Rule: pick one class from the list — never invent a new one.
+
+Here are some labelled examples:
+{{ few-shot examples injected here — see below }}
+
+Now classify this input. Reply with only the class name:
+INPUT: {{ the text to classify }}
+CLASS:`;
+    // real precomputed gen-AI predictions (not ground truth) — flag any that are wrong
+    const answers=tests.map(it=>{ const p=predOf(it,'llm'), ok=p===lab1(it);
+      return `INPUT: ${it.text}\nANSWER: ${p}${ok?'':`   (✗ wrong — true class: ${lab1(it)})`}`; }).join('\n\n');
+    return `
+      <div class="promptbox open">
+        <h4>Using gen-AI as a classifier — the prompt</h4>
+        <p class="note">No model is trained and nothing is embedded into a feature space. We simply <b>ask</b> a general gen-AI model: here is the task, the allowed classes, and a few labelled (<b>few-shot</b>) examples. It replies with one class name. Examples are drawn from this dataset.</p>
+        <div class="prompt-label">1 · The classification prompt</div>
+        <pre class="prompt-pre">${esc(prompt)}</pre>
+        <div class="prompt-label">2 · Few-shot examples we inject</div>
+        <pre class="prompt-pre">${esc(shotLines)}</pre>
+        <div class="prompt-label">3 · Example answers the model returns</div>
+        <pre class="prompt-pre json">${esc(answers)}</pre>
+      </div>`;
+  }
+
+  function renderClassifier(clf){
+    const st=state[curDS], d=st.d; if(st.clf!==clf){ st.history=[]; st.typed=null; } st.clf=clf; const meta=CLF[clf];
+    const head = clf==='llm' ? llmPromptPanel(d) : `
+      <div class="trybox">
+        <h4>Try it — classify your own text</h4>
+        <textarea id="tryinput" rows="2" placeholder="${curDS==='bitext'?'e.g. I want to change the card I pay with':'e.g. a stirring, funny and transporting film'}">${curDS==='bitext'?'i want to change the card i pay with':'a stirring, funny and transporting film'}</textarea>
+        <div class="row"><button id="trybtn">Classify with ${meta.btn}</button><span class="note" id="trynote"></span></div>
+        <div id="tryout"></div>
+      </div>`;
+    // The jaggedness scatter is a feature-space view — it belongs to the trained ML model only.
+    // Gen-AI is prompted (no embeddings computed here), so we omit the space representation.
+    const scatterBlock = clf==='llm' ? '' : `
+      <div class="scatter" id="scatterbox">
+        <div class="head">
+          <div><h4>The jaggedness — where ${meta.btn} is right and wrong</h4>
+            <div class="legend"><span><span class="dot" style="background:var(--good)"></span>right</span>
+              <span><span class="dot" style="background:var(--bad)"></span>wrong</span>
+              <span>○ ringed = your current draw</span>
+              <span><span class="dot" style="background:#111"></span>your typed text</span>
+              <span class="note">hover a dot for its text + prediction</span></div></div>
+          <div><span class="seg-label">Feature space</span>
+            <div class="seg" id="viewseg"><button data-v="sem" class="${st.view==='sem'?'on':''}">Semantic</button><button data-v="lex" class="${st.view==='lex'?'on':''}">Lexical (TF-IDF)</button></div></div>
+        </div>
+        <svg id="scatter" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+        <p class="cap" id="scatcap"></p>
+        <div id="scatter-tip"></div>
+      </div>`;
+    document.getElementById('stagepanel').innerHTML = `
+      <h3><span class="swatch" style="background:${meta.color}"></span>${meta.name}</h3>
+      <p class="stage-intro">${meta.desc}</p>
+      ${head}
+      <div class="controls">
+        <div><label>Class of interest</label>
+          <select id="focus">${st.labelsByFreq.map(l=>`<option value="${esc(l)}"${l===st.focus?' selected':''}>${esc(l)} (${st.freq[l]||0})</option>`).join('')}</select></div>
+        <div><label>Test-set size</label><input type="number" id="size" min="2" max="${d.n}" value="${st.size}"></div>
+        <button class="spin" id="spin">🎲 Spin the wheel</button>
+        <button class="spin secondary" id="spin20">Spin 20×</button>
+        <div class="sample-note" id="note"></div>
+      </div>
+      <div class="cols"><div id="card"></div>
+        <div class="cm-box"><h5><span class="swatch" style="background:${meta.color}"></span>${meta.kind} confusion matrix</h5><div id="cm"></div></div></div>
+      ${scatterBlock}
+      <div class="clsmetrics-box">
+        <h4>Sample metrics — accuracy and per-class precision / recall</h4>
+        <p class="note" style="margin:.1rem 0 .2rem">From this one draw. Spin again (above) and watch every number move — that wobble is sampling noise.</p>
+        <div id="clsmetrics"></div>
+      </div>`;
+
+    const spin = ()=>{ st.sample=sampleIndices(d.n, st.size); renderClf(); };
+    const syncSize = v=>{ st.size=Math.max(2,Math.min(d.n,+v||50)); const a=document.getElementById('size'), b=document.getElementById('surfsize'); if(a)a.value=st.size; if(b)b.value=st.size; };
+    document.getElementById('focus').onchange = e=>{ st.focus=e.target.value; renderClf(); };
+    document.getElementById('size').onchange = e=>{ syncSize(e.target.value); renderClf(); };
+    document.getElementById('spin').onclick = spin;
+    document.getElementById('spin20').onclick = ()=>{ for(let i=0;i<20;i++){ recordHistory(sampleIndices(d.n,st.size)); } spin(); };
+    const viewseg=document.getElementById('viewseg');   // absent on the gen-AI tab (no scatter)
+    if(viewseg) viewseg.querySelectorAll('button').forEach(b=> b.onclick=()=>{
+      st.view=b.dataset.v; viewseg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      renderScatter(); });
+    const sc=document.getElementById('scatter'), tip=document.getElementById('scatter-tip');
+    if(sc && tip){
+      sc.addEventListener('mousemove', ev=>{
+        const t=ev.target;
+        if(t.tagName==='circle' && t.dataset.i!==undefined){
+          const it=d.items[+t.dataset.i], p=predOf(it,st.clf), ok=p===lab1(it);
+          tip.innerHTML=`${esc(it.text)}<br><b style="color:${ok?'#86efac':'#fca5a5'}">${meta.short}: ${esc(p)} ${ok?'✓':'✗'}</b> · true: ${esc(lab1(it))}`;
+          tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px';
+        } else if(t.dataset && t.dataset.typed!==undefined && st.typed){
+          tip.innerHTML=`<b>your text</b> → ${esc(st.typed.label)}<br>${esc(st.typed.text)}`;
+          tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px';
+        } else { tip.style.display='none'; }
+      });
+      sc.addEventListener('mouseleave', ()=>{ tip.style.display='none'; });
+    }
+    const trybtn=document.getElementById('trybtn');   // absent on the gen-AI tab (static prompt panel instead)
+    if(trybtn) trybtn.onclick = ()=>{
+      const text=document.getElementById('tryinput').value.trim();
+      const out=document.getElementById('tryout'), note=document.getElementById('trynote');
+      if(!text){ note.textContent='type something first'; return; }
+      note.textContent=''; out.innerHTML='';
+      const j=classifyLocal(text);
+      if(j.error){ out.innerHTML=`<p class="note">${esc(j.error)}</p>`; return; }
+      // decision-function scores → probabilities (softmax == predict_proba for this multinomial LR)
+      const _se=Object.entries(j.scores||{}), _mx=Math.max(..._se.map(([,v])=>v));
+      const _ex=_se.map(([k,v])=>[k, Math.exp(v-_mx)]), _Z=_ex.reduce((s,[,e])=>s+e,0)||1;
+      const probs=_ex.map(([k,e])=>[k, e/_Z]).sort((a,b)=>b[1]-a[1]);
+      out.innerHTML = `<div class="tryres">Predicted: <b style="color:${meta.color}">${esc(j.label)}</b></div>`+
+        (probs.length? `<div class="scores">probability: ${probs.map(([k,p])=>`${esc(k)} ${(p*100).toFixed(0)}%`).join(' · ')}</div>`:'')+
+        (j.pos? `<div class="scores">▼ placed on the map below, on its most similar example</div>`
+              : `<div class="scores">(couldn't place on the map — text shares no words with the examples)</div>`);
+      if(j.pos){ st.typed={lex:j.pos.lex, sem:j.pos.sem, label:j.label, text};
+        renderScatter(); }
+      else { st.typed=null; renderScatter(); }
+    };
+    renderClf();
+  }
+
+  function recordHistory(sampleIdx){
+    const st=state[curDS]; const s=sampleIdx.map(i=>st.d.items[i]);
+    st.history.push(classMetrics(s, st.clf, st.focus, st.d.labels).acc);
+    if(st.history.length>60) st.history.shift();
+  }
+
+  function renderClf(){
+    const st=state[curDS], d=st.d, clf=st.clf, meta=CLF[clf];
+    const sample=st.sample.map(i=>d.items[i]);
+    recordHistory(st.sample);
+    const m=classMetrics(sample, clf, st.focus, d.labels);
+    document.getElementById('note').innerHTML = `sampled <b>${sample.length}</b> of ${d.n} cases · “${esc(st.focus)}” true in <b>${m.support}</b>`;
+    document.getElementById('card').innerHTML = `<div class="clf-card">
+      <p class="card-label">Results — this draw</p>
+      <div class="acc" style="color:${meta.color}">${pct(m.acc)} <small><a class="deflink" href="https://en.wikipedia.org/wiki/Accuracy_and_precision" target="_blank" rel="noopener" title="What is accuracy? (Wikipedia)">accuracy</a> (${m.correct}/${m.n})</small></div>
+      <div class="pr">
+        <span class="stat"><span class="k"><a class="deflink" href="https://en.wikipedia.org/wiki/Precision_and_recall" target="_blank" rel="noopener" title="What is precision? (Wikipedia)">Precision</a></span><span class="v">${pct(m.precision)}</span><span class="sub">for “<b>${esc(st.focus)}</b>”</span></span>
+        <span class="stat"><span class="k"><a class="deflink" href="https://en.wikipedia.org/wiki/Precision_and_recall" target="_blank" rel="noopener" title="What is recall? (Wikipedia)">Recall</a></span><span class="v">${pct(m.recall)}</span><span class="sub">for “<b>${esc(st.focus)}</b>”</span></span>
+      </div></div>`;
+    document.getElementById('cm').innerHTML = cmBig(m.cm, d.labels, st.focus);
+    renderScatter(); renderClassMetrics();
+  }
+
+  function renderClassMetrics(){
+    const st=state[curDS], d=st.d, clf=st.clf, meta=CLF[clf];
+    const el=document.getElementById('clsmetrics'); if(!el) return;
+    const sample=st.sample.map(i=>d.items[i]);
+    const overall=classMetrics(sample, clf, st.labelsByFreq[0], d.labels);
+    const rows=st.labelsByFreq.map(l=>{
+      const m=classMetrics(sample, clf, l, d.labels);
+      const sel = l===st.focus ? ' class="sel"' : '';
+      return `<tr${sel}><td class="cls">${esc(l)}</td><td class="num">${m.support}</td><td class="num">${pct(m.precision)}</td><td class="num">${pct(m.recall)}</td></tr>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="acc" style="color:${meta.color};font-size:1.9rem;margin:.2rem 0 .1rem">${pct(overall.acc)} <small>accuracy (${overall.correct}/${overall.n})</small></div>
+      <table class="pcm">
+        <tr><th>Class</th><th class="num">n</th><th class="num">Precision</th><th class="num">Recall</th></tr>
+        ${rows}
+      </table>`;
+  }
+
+  function cmBig(cm, labels, focus){
+    const present = labels.filter(l => Object.values(cm).some(row=>row[l]) || Object.keys(cm[l]||{}).length);
+    const abbr = s => s.length>10 ? s.slice(0,9)+'…' : s;
+    const head = '<tr><th>actual ＼ pred</th>'+present.map(l=>`<th class="rot" title="${esc(l)}">${esc(abbr(l))}</th>`).join('')+'</tr>';
+    const rows = present.map(a=>{
+      const tds = present.map(p=>{ const v=(cm[a]&&cm[a][p])||0; const diag=a===p?' class="diag"':''; return `<td${diag}>${v||''}</td>`; }).join('');
+      const hl = a===focus ? ' style="background:#fffbeb"' : '';
+      return `<tr><th title="${esc(a)}"${hl}>${esc(abbr(a))}</th>${tds}</tr>`;
+    }).join('');
+    return `<div class="cm-wrap"><table class="cm big">${head}${rows}</table></div>`;
+  }
+
+  function ramp(v){
+    const s=[[0,[176,31,31]],[0.5,[214,120,46]],[0.78,[33,140,76]],[1,[40,200,100]]];
+    for(let i=1;i<s.length;i++){ if(v<=s[i][0]){ const a=s[i-1],b=s[i],t=(v-a[0])/(b[0]-a[0]); return [0,1,2].map(j=>Math.round(a[1][j]+(b[1][j]-a[1][j])*t)); } }
+    return s[s.length-1][1];
+  }
+  function computeSurface(st){
+    const d=st.d, clf=st.clf, view=st.view, ck=view+'|'+clf;
+    if(st._surfCache && st._surfCache.ck===ck) return st._surfCache;
+    const px=[],py=[],oks=[];
+    d.items.forEach(it=>{ const c=it[view]; if(c){ px.push(c[0]); py.push(1-c[1]); oks.push(correctOf(it,clf)?1:0); } });
+    const n=px.length, G=96, k=14, grid=new Float32Array(G*G);
+    const kval=new Float64Array(k), kidx=new Int32Array(k);
+    for(let gy=0; gy<G; gy++){ const cy=gy/(G-1);
+      for(let gx=0; gx<G; gx++){ const cx=gx/(G-1);
+        for(let j=0;j<k;j++){ kval[j]=Infinity; kidx[j]=0; }
+        for(let i=0;i<n;i++){ const dx=cx-px[i], dy=cy-py[i], dv=dx*dx+dy*dy;
+          if(dv<kval[k-1]){ let j=k-1; while(j>0 && kval[j-1]>dv){ kval[j]=kval[j-1]; kidx[j]=kidx[j-1]; j--; } kval[j]=dv; kidx[j]=i; } }
+        let ws=0,vs=0; for(let j=0;j<k;j++){ const w=1/(kval[j]+1e-4); ws+=w; vs+=w*oks[kidx[j]]; }
+        grid[gy*G+gx]=vs/ws;
+      } }
+    st._surfCache={ck, grid, G};
+    return st._surfCache;
+  }
+  function renderSurface(){
+    const st=state[curDS], d=st.d, clf=st.clf, meta=CLF[clf];
+    const canvas=document.getElementById('surf'), box=document.getElementById('surfbox');
+    if(!canvas || !d.items[0] || !d.items[0].lex){ if(box) box.style.display='none'; return; }
+
+    // Top: the full competence surface — the idealized truth we never actually see. No dots.
+    const ctx=canvas.getContext('2d'), Wc=canvas.width, Hc=canvas.height; ctx.clearRect(0,0,Wc,Hc);
+    const {grid,G}=computeSurface(st);
+    const off=document.createElement('canvas'); off.width=G; off.height=G;
+    const octx=off.getContext('2d'), img=octx.createImageData(G,G);
+    for(let i=0;i<G*G;i++){ const c=ramp(grid[i]); img.data[i*4]=c[0]; img.data[i*4+1]=c[1]; img.data[i*4+2]=c[2]; img.data[i*4+3]=255; }
+    octx.putImageData(img,0,0); ctx.imageSmoothingEnabled=true; ctx.drawImage(off,0,0,G,G,0,0,Wc,Hc);
+    document.getElementById('surfcap').innerHTML = `The painted square is the <b>Model</b> right/wrong across the whole 2D map — green competence, red islands of failure. <b>But we never see this</b>; it assumes we labelled everywhere.`;
+
+    // Bottom: an empty space — our lack of knowledge. No competence painted; only the points we sampled.
+    const know=document.getElementById('surfknow');
+    if(know){
+      const kc=know.getContext('2d'), Wk=know.width, Hk=know.height; kc.clearRect(0,0,Wk,Hk);
+      kc.fillStyle='#0a0c16'; kc.fillRect(0,0,Wk,Hk);
+      let sR=0,sW=0;
+      st.sample.forEach(i=>{ const it=d.items[i], c=it[st.view]; if(!c)return; const ok=correctOf(it,clf); if(ok)sR++; else sW++;
+        kc.beginPath(); kc.arc(c[0]*Wk,(1-c[1])*Hk,5,0,7); kc.fillStyle=ok?'#15803d':'#b91c1c'; kc.fill(); kc.lineWidth=1.2; kc.strokeStyle='rgba(255,255,255,0.85)'; kc.stroke(); });
+      const sn=sR+sW;
+      // the user's own typed sentence, dropped where the model places it — unknown until you try
+      let typedNote='';
+      if(st.typed && st.typed[st.view]){
+        const c=st.typed[st.view], x=c[0]*Wk, y=(1-c[1])*Hk;
+        // It was placed on its most-similar labelled example; a typed sentence has no ground truth of
+        // its own, so we judge "correct" against THAT example's true class (peeking at the proxy).
+        const nb=d.items.find(it=> it.lex && it.sem
+          && Math.abs(it.lex[0]-st.typed.lex[0])<1e-6 && Math.abs(it.lex[1]-st.typed.lex[1])<1e-6
+          && Math.abs(it.sem[0]-st.typed.sem[0])<1e-6 && Math.abs(it.sem[1]-st.typed.sem[1])<1e-6);
+        const tok = nb ? (lab1(nb)===st.typed.label) : null;
+        const fill = tok===null ? '#fff' : (tok ? '#15803d' : '#b91c1c');
+        kc.beginPath(); kc.arc(x,y,9,0,7); kc.lineWidth=2.5; kc.strokeStyle='#fff'; kc.stroke();
+        kc.beginPath(); kc.arc(x,y,4,0,7); kc.fillStyle=fill; kc.fill();
+        kc.font='600 14px Jost, sans-serif'; kc.fillStyle='#fff'; kc.textBaseline='middle';
+        kc.fillText('your text', x+14, y);
+        typedNote = ` Your sentence landed where the marked ◯ is — predicted <b>${esc(st.typed.label)}</b>`+
+          (tok===null ? `.`
+            : tok ? ` — <b style="color:#86efac">correct</b> vs its nearest labelled example (<b>${esc(lab1(nb))}</b>).`
+                  : ` — <b style="color:#fca5a5">wrong</b>: its nearest labelled example is actually <b>${esc(lab1(nb))}</b>.`);
+      }
+      document.getElementById('surfknowcap').innerHTML = `An <b>empty space</b> — no competence painted anywhere, because we don't know it. All we truly have are the <b>${sn} points we sampled</b> (<b style="color:#86efac">${sR} right</b> / <b style="color:#fca5a5">${sW} wrong</b>${sn?` → ${pct(sR/sn)}`:''}). Everywhere else is dark. Draw again to sample a different set.${typedNote}`;
+      const note=document.getElementById('surfsamplenote'); if(note) note.innerHTML = `<b>${sn}</b> sampled · <b>${sR} right / ${sW} wrong</b>${sn?` → ${pct(sR/sn)}`:''}`;
+      const accEl=document.getElementById('surfknowacc');
+      if(accEl) accEl.innerHTML = sn ? `<div class="big" style="color:${meta.color}">${pct(sR/sn)} <small>accuracy</small></div><div class="rw"><b>${sR}</b> ML correct / <b>${sW}</b> ML wrong<br>of <b>${sn}</b> sampled</div>` : '';
+      const claimsEl=document.getElementById('surfclaims');
+      if(claimsEl){
+        if(sn){
+          const a=sR+1, b=sW+1;                                  // Beta posterior from this draw (uniform prior)
+          const lo=betaQuantile(0.025,a,b), hi=betaQuantile(0.975,a,b), acc=sR/sn;
+          const pgt=t=>pct(1-betai(a,b,t));
+          const bx=v=>(40+Math.max(0,Math.min(1,v))*340).toFixed(1);   // 0..1 → x across a 0–100% axis
+          const loX=+bx(lo), hiX=+bx(hi), lblNear=(hiX-loX)<44;   // narrow band → splay the two % labels
+          const ci=`<svg viewBox="0 0 400 70" class="ci-bar" preserveAspectRatio="xMidYMid meet">
+            <line x1="${bx(0)}" y1="34" x2="${bx(1)}" y2="34" stroke="#cbd5e1" stroke-width="2"/>
+            <rect x="${bx(lo)}" y="24" width="${(bx(hi)-bx(lo)).toFixed(1)}" height="20" rx="3" fill="${meta.color}" opacity="0.25"/>
+            <line x1="${bx(lo)}" y1="20" x2="${bx(lo)}" y2="48" stroke="${meta.color}" stroke-width="2"/>
+            <line x1="${bx(hi)}" y1="20" x2="${bx(hi)}" y2="48" stroke="${meta.color}" stroke-width="2"/>
+            <text x="${lblNear?(loX-3).toFixed(1):bx(lo)}" y="15" font-size="12" fill="${meta.color}" text-anchor="${lblNear?'end':'middle'}" font-weight="700">${pct(lo)}</text>
+            <text x="${lblNear?(hiX+3).toFixed(1):bx(hi)}" y="15" font-size="12" fill="${meta.color}" text-anchor="${lblNear?'start':'middle'}" font-weight="700">${pct(hi)}</text>
+            <line x1="${bx(acc)}" y1="18" x2="${bx(acc)}" y2="50" stroke="#111" stroke-width="2.5"/>
+            ${[0,0.25,0.5,0.75,1].map(t=>`<line x1="${bx(t)}" y1="34" x2="${bx(t)}" y2="39" stroke="#9ca3af" stroke-width="1"/><text x="${bx(t)}" y="64" font-size="11" fill="#6b7280" text-anchor="middle">${t*100}%</text>`).join('')}
+          </svg>`;
+          claimsEl.innerHTML = `
+            <h3 class="surfclaims-title">What this one sample lets us claim</h3>
+            <p class="surfclaims-assume">Under a few important assumptions: samples are distributed as production data, we use our test sample only once, and sample labels are correct.</p>
+            <p>Reading the uncertainty off this single draw of <b>${sn}</b> labelled points (the <b>Reporting</b> tab turns any correct/wrong count into this):</p>
+            <ul>
+              <li>With <b>95%</b> probability, the accuracy we'd see in production is between <b>${pct(lo)}</b> and <b>${pct(hi)}</b>.</li>
+              <li>I'm <b>${pgt(0.70)}</b> confident it is above <b>70%</b>, <b>${pgt(0.80)}</b> that it is above <b>80%</b>, <b>${pgt(0.90)}</b> above <b>90%</b>, and <b>${pgt(0.95)}</b> above <b>95%</b>.</li>
+            </ul>
+            <div class="ci-wrap">${ci}<p class="ci-cap"><b>Black line</b> = this sample's accuracy · <b style="color:${meta.color}">shaded band</b> = the 95% range, on a 0–100% scale.</p></div>`;
+        } else claimsEl.innerHTML='';
+      }
+    }
+  }
+
+  function renderScatter(){
+    const st=state[curDS], d=st.d, clf=st.clf, meta=CLF[clf], view=st.view;
+    const box=document.getElementById('scatterbox'), svg=document.getElementById('scatter');
+    if(!svg) return;   // scatter isn't on this tab (e.g. Sampling tab)
+    if(!d.items.length || !d.items[0] || !d.items[0].lex){ if(box) box.style.display='none'; return; }
+    const inSample=new Set(st.sample); let base='',ring='',sR=0,sW=0;
+    d.items.forEach((it,i)=>{ const c=it[view]; if(!c) return;
+      const x=(c[0]*100).toFixed(2), y=((1-c[1])*100).toFixed(2);
+      const p=predOf(it,clf), ok=p===lab1(it), col=ok?'var(--good)':'var(--bad)';
+      if(inSample.has(i)){ if(ok)sR++; else sW++; ring+=`<circle data-i="${i}" cx="${x}" cy="${y}" r="1.45" fill="${col}" stroke="#111" stroke-width="0.4"/>`; }
+      else base+=`<circle data-i="${i}" cx="${x}" cy="${y}" r="0.85" fill="${col}" opacity="0.35"/>`;
+    });
+    let mark='';
+    if(st.typed && st.typed[view]){ const c=st.typed[view];
+      const x=(c[0]*100).toFixed(2), y=((1-c[1])*100).toFixed(2);
+      mark=`<circle cx="${x}" cy="${y}" r="6" fill="#111" opacity="0.12"/>`+
+           `<circle data-typed="1" cx="${x}" cy="${y}" r="3" fill="#111" stroke="#fff" stroke-width="1"/>`+
+           `<text x="${x}" y="${(+y-4.4).toFixed(2)}" font-size="3.6" fill="#111" font-weight="bold" text-anchor="middle">YOU</text>`;
+    }
+    const grid =
+      `<rect x="1.5" y="1.5" width="97" height="97" fill="none" stroke="#e5e7eb" stroke-width="0.4"/>`+
+      [25,50,75].map(v=>`<line x1="${v}" y1="1.5" x2="${v}" y2="98.5" stroke="#eef0f3" stroke-width="0.3"/><line x1="1.5" y1="${v}" x2="98.5" y2="${v}" stroke="#eef0f3" stroke-width="0.3"/>`).join('')+
+      `<text x="50" y="99.6" font-size="2.4" fill="#9ca3af" text-anchor="middle">dim 1 (t-SNE — no units)</text>`+
+      `<text x="0.8" y="50" font-size="2.4" fill="#9ca3af" text-anchor="middle" transform="rotate(-90 0.8 50)">dim 2</text>`;
+    svg.innerHTML=grid+base+ring+mark;
+    const sn=sR+sW, space=view==='sem'?'semantic space':'lexical TF-IDF space';
+    document.getElementById('scatcap').innerHTML =
+      `Every dot is one of the ${d.n} test cases, placed by similarity in <b>${space}</b>, coloured by whether <b>${meta.short}</b> got it right (hover a dot for its text + prediction). `+
+      (st.typed ? `The black ● is <b>your text</b>, dropped on its most similar example → predicted <b>${esc(st.typed.label)}</b>. ` : ``)+
+      `Your draw (ringed) landed on <b>${sR} right / ${sW} wrong</b>${sn?` → ${pct(sR/sn)}`:''}. `+
+      `<span class="note">The axes are t-SNE coordinates — no units, no origin, no feature meaning; only how close two points are matters. Points fill a normalized box centred near the middle (~0.5), not 0.</span>`;
+  }
+
+  // ---------- panel dispatch + nav ----------
+  function renderPanel(){
+    const panel=document.getElementById('stagepanel');
+    if(curStage==='beta'){ renderBetaTab(); return; }
+    if(!DATA[curDS]){ panel.innerHTML=`<h3>${DESC[curDS]?DESC[curDS].title:curDS}</h3><p class="note">No predictions found for <code>${curDS}</code> yet. Generate them with <code>python build_predictions.py</code> (and <code>build_embeddings.py</code>), then reload.</p>`; return; }
+    initState(curDS);
+    if(curStage==='explore') renderExplore();
+    else if(curStage==='sampling') renderSampling();
+    else if(curStage==='imbalance') renderImbalance();
+    else renderClassifier(clfOfStage(curStage));
+  }
+
+  function renderBetaTab(){
+    document.getElementById('stagepanel').innerHTML = `
+      <h3>From a score to what you can report</h3>
+      <p>The simple version: tell me how many your eval got <strong>correct</strong> and <strong>wrong</strong> — I'll tell you what to report and what it means. No statistics needed.</p>
+      <div class="beta" style="margin-top:.6rem">
+        <div class="controls" style="margin:.2rem 0 1rem">
+          <div><label>Correct</label><input type="number" id="calc-k" min="0" value="78"></div>
+          <div><label>Wrong</label><input type="number" id="calc-w" min="0" value="22"></div>
+          <div><label>Bar to clear (0–1)</label><input type="number" id="calc-x" min="0" max="1" step="0.01" value="0.85"></div>
+        </div>
+        <div class="calc-result" id="calc-readout"></div>
+        <div class="ci-wrap" style="margin-top:.8rem">
+          <svg id="calc-svg" class="ci-bar" viewBox="0 0 400 70" preserveAspectRatio="xMidYMid meet"></svg>
+          <p class="ci-cap"><b>Black line</b> = your measured accuracy · <b style="color:#2563eb">shaded band</b> = the range the true accuracy is 95% likely to fall in.</p>
+        </div>
+        <div class="takeaway" id="calc-report" style="margin-top:1rem"></div>
+      </div>
+      <h4 style="margin-top:1.4rem">What to report</h4>
+      <ol>
+        <li><strong>Always say how many you tested.</strong> “78%” means something different on 30 cases than on 3,000.</li>
+        <li><strong>Give a range, not a single number</strong> — e.g. <em>78% (likely 69–85%, n=100)</em>. The range shrinks as you test more; that shrinkage is the value of a bigger test set.</li>
+        <li><strong>If a decision rides on a bar (“is it above 90%?”), report the chance of clearing it</strong> — the honest answer is a probability, not a yes/no.</li>
+      </ol>
+      <p class="how-link"><a href="../accuracy_estimator/index.html" target="_blank" rel="noopener">Curious how these numbers are computed? Open the statistical version →</a></p>`;
+    ['calc-k','calc-w','calc-x'].forEach(id=>{ const el=document.getElementById(id); if(el) el.oninput=renderCalc; });
+    renderCalc();
+  }
+
+  const STAGES=[['explore','Explore the data'],['ml','ML classifier'],['sampling','Sampling'],['imbalance','Class imbalance'],['beta','Reporting']];
+  const dsbar=document.getElementById('dsbar'), stageTabs=document.getElementById('stagetabs');
+  const dsBtns={}, stageBtns={};
+  ORDER.forEach(key=>{ const b=document.createElement('button');
+    b.textContent = (DESC[key]?DESC[key].title.split(' — ')[0]:key) + (DATA[key]?'':' (no data)');
+    b.onclick=()=>{ location.hash = key+'/'+curStage; };
+    dsbar.appendChild(b); dsBtns[key]=b; });
+  STAGES.forEach(([s,label])=>{ const b=document.createElement('button'); b.textContent=label;
+    b.onclick=()=>{ location.hash = curDS+'/'+s; };
+    stageTabs.appendChild(b); stageBtns[s]=b; });
+  function syncDS(){ Object.entries(dsBtns).forEach(([k,b])=>b.classList.toggle('active',k===curDS)); }
+  function syncStage(){ Object.entries(stageBtns).forEach(([k,b])=>b.classList.toggle('active',k===curStage)); }
+
+  // Each view is a shareable URL, e.g.  #bitext/ml  ·  #bitext/sampling  ·  #rotten_tomatoes/imbalance
+  function applyHash(){
+    const parts = decodeURIComponent(location.hash.replace(/^#/,'')).split('/');
+    // the gen-AI classifier stage moved to the L4 lab — forward old links there
+    if(parts.includes('genai')){ location.replace('../llm_as_a_judge/#classifier'); return; }
+    if(ORDER.includes(parts[0])) curDS=parts[0];
+    // stage may be given as "<dataset>/<stage>" or, for standalone tabs, just "<stage>"
+    const stage = STAGES.some(s=>s[0]===parts[1]) ? parts[1]
+                : STAGES.some(s=>s[0]===parts[0]) ? parts[0] : null;
+    if(stage) curStage=stage;
+    syncDS(); syncStage(); renderPanel();
+  }
+  window.addEventListener('hashchange', applyHash);
+  if(location.hash) applyHash(); else location.hash = curDS+'/'+curStage;
+
+  // ---------- standalone reporting calculator (simple version; the statistics live in the
+  // accuracy_estimator playground). Maths uses a Beta posterior under the hood, but the UI
+  // never says so — it just turns correct/wrong into a range and chances. ----------
+  function renderCalc(){
+    const kEl=document.getElementById('calc-k'), wEl=document.getElementById('calc-w'), xEl=document.getElementById('calc-x');
+    if(!kEl) return;
+    let k=Math.max(0, Math.floor(+kEl.value||0));
+    let w=Math.max(0, Math.floor(+wEl.value||0));
+    let n=k+w; if(n<1) n=1;
+    const X=Math.max(0, Math.min(1, +xEl.value||0));
+    const a=k+1, b=w+1;
+    const mean=k/n, lo=betaQuantile(0.025,a,b), hi=betaQuantile(0.975,a,b);
+    const pAbove=t=>1-betai(a,b,t);
+    // simple 0–100% interval bar: shaded 95% range + a line at the measured accuracy
+    const C='#2563eb', bx=v=>(30+Math.max(0,Math.min(1,v))*340).toFixed(1);
+    const loX=+bx(lo), hiX=+bx(hi), lblNear=(hiX-loX)<44;   // narrow band → splay the two % labels so they don't overlap
+    let s=`<line x1="${bx(0)}" y1="34" x2="${bx(1)}" y2="34" stroke="#cbd5e1" stroke-width="2"/>`+
+      `<rect x="${bx(lo)}" y="24" width="${(bx(hi)-bx(lo)).toFixed(1)}" height="20" rx="3" fill="${C}" opacity="0.22"/>`+
+      `<line x1="${bx(lo)}" y1="20" x2="${bx(lo)}" y2="48" stroke="${C}" stroke-width="2"/>`+
+      `<line x1="${bx(hi)}" y1="20" x2="${bx(hi)}" y2="48" stroke="${C}" stroke-width="2"/>`+
+      `<text x="${lblNear?(loX-3).toFixed(1):bx(lo)}" y="15" font-size="12" fill="${C}" text-anchor="${lblNear?'end':'middle'}" font-weight="700">${pct(lo)}</text>`+
+      `<text x="${lblNear?(hiX+3).toFixed(1):bx(hi)}" y="15" font-size="12" fill="${C}" text-anchor="${lblNear?'start':'middle'}" font-weight="700">${pct(hi)}</text>`+
+      `<line x1="${bx(mean)}" y1="18" x2="${bx(mean)}" y2="50" stroke="#111" stroke-width="2.5"/>`+
+      [0,0.25,0.5,0.75,1].map(t=>`<line x1="${bx(t)}" y1="34" x2="${bx(t)}" y2="39" stroke="#9ca3af" stroke-width="1"/><text x="${bx(t)}" y="64" font-size="11" fill="#6b7280" text-anchor="middle">${t*100}%</text>`).join('');
+    document.getElementById('calc-svg').innerHTML=s;
+    const fixed=[0.80,0.90,0.95,0.99];
+    const pRows=fixed.map(t=>`<tr><td>Belief that the true accuracy is above ${(t*100).toFixed(0)}%</td><td class="num"><b>${(pAbove(t)*100).toFixed(1)}%</b></td></tr>`).join('')
+      + `<tr class="sel"><td>Chance it clears your bar (${(X*100).toFixed(0)}%)</td><td class="num"><b>${(pAbove(X)*100).toFixed(1)}%</b></td></tr>`;
+    document.getElementById('calc-readout').innerHTML = `
+      <div style="margin-bottom:.5rem"><b>${k} correct / ${w} wrong</b> (tested ${n}) → measured accuracy <b>${pct(mean)}</b></div>
+      <div style="margin-bottom:.6rem">We can be 95% sure the true accuracy is between <b style="color:#2563eb">${pct(lo)}</b> and <b style="color:#2563eb">${pct(hi)}</b>.</div>
+      <table class="pcm">${pRows}</table>`;
+    document.getElementById('calc-report').innerHTML =
+      `Report it as: <strong>${pct(mean)} (95% range ${pct(lo)}–${pct(hi)}, n=${n})</strong>.`;
+  }
+  </script>
+</body>
+</html>

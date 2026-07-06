@@ -1,0 +1,2402 @@
+[
+  {
+    "id": 0,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 1,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 2,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 3,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 4,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 5,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 6,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 7,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 8,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 9,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 10,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 11,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 12,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 13,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 14,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 15,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 16,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 17,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 18,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 19,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 20,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 21,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 22,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 23,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 24,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 25,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 26,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 27,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 28,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 29,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 30,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 31,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 32,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 33,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 34,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 35,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 36,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 37,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 38,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 39,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 40,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 41,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 42,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 43,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 44,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 45,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 46,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 47,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 48,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 49,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 50,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 51,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 52,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 53,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 54,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 55,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 56,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 57,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 58,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 59,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 60,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 61,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 62,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 63,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 64,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 65,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 66,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 67,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 68,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 69,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 70,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 71,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 72,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 73,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 74,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 75,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 76,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 77,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 78,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 79,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 80,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 81,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 82,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 83,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 84,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 85,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 86,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 87,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 88,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 89,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 90,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 91,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 92,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 93,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 94,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 95,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 96,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 97,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 98,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 99,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 100,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 101,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 102,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 103,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 104,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 105,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 106,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 107,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 108,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 109,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 110,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 111,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 112,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 113,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 114,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 115,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 116,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 117,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 118,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 119,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 120,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 121,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 122,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 123,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 124,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 125,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 126,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 127,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 128,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 129,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 130,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 131,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 132,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 133,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 134,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 135,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 136,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 137,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 138,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 139,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 140,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 141,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 142,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 143,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 144,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 145,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 146,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 147,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 148,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 149,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 150,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 151,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 152,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 153,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 154,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 155,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 156,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 157,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 158,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 159,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 160,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 161,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 162,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 163,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 164,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 165,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 166,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 167,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 168,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 169,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 170,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 171,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 172,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 173,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 174,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 175,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 176,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 177,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 178,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 179,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 180,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 181,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 182,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 183,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 184,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 185,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 186,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 187,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 188,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 189,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 190,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 191,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 192,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 193,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 194,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 195,
+    "text": "FAQ: How do I reset my password? Use the self-service portal. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "password_reset",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "password_reset",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 196,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 197,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 198,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 199,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 200,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 201,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 202,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 203,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 204,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 205,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 206,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 207,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 208,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 209,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 210,
+    "text": "everything takes forever since the update, even opening a doc",
+    "gold": "performance_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "performance_issue",
+    "answer_perturbed": "performance_issue"
+  },
+  {
+    "id": 211,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 212,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 213,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 214,
+    "text": "my mailbox just stopped pulling new messages this morning",
+    "gold": "email_problem",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 215,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 216,
+    "text": "KB article: Resolving VPN disconnects on the corporate client. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "vpn_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "vpn_issue",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 217,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 218,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 219,
+    "text": "FAQ: How to request access to a shared drive. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "access_request",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "access_request",
+    "answer_perturbed": "access_request"
+  },
+  {
+    "id": 220,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 221,
+    "text": "there's a line on our invoice nobody recognizes, what is it",
+    "gold": "billing_question",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "access_request",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 222,
+    "text": "KB: Diagnosing a laptop that will not power on. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "hardware_failure",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "hardware_failure",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 223,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 224,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 225,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 226,
+    "text": "Docs: Steps to triage a slow workstation. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "performance_issue",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "performance_issue",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 227,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 228,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 229,
+    "text": "moving teams next week, need the finance folder by friday",
+    "gold": "access_request",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 230,
+    "text": "Docs: Troubleshooting Outlook send/receive errors. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "email_problem",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "email_problem",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 231,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 232,
+    "text": "screen flickers then goes black, smells a bit warm too",
+    "gold": "hardware_failure",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 233,
+    "text": "need that design tool installed before the demo tomorrow",
+    "gold": "software_install",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 234,
+    "text": "hey i got locked out again after the long weekend, can someone help",
+    "gold": "password_reset",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "password_reset",
+    "answer_perturbed": "password_reset"
+  },
+  {
+    "id": 235,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 236,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  },
+  {
+    "id": 237,
+    "text": "tunnel drops the second i join a teams call, super annoying",
+    "gold": "vpn_issue",
+    "kind": "novel",
+    "source": "fresh",
+    "has_canary": false,
+    "answer": "vpn_issue",
+    "answer_perturbed": "vpn_issue"
+  },
+  {
+    "id": 238,
+    "text": "Guide: Installing approved software via the company catalog. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "software_install",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "software_install",
+    "answer_perturbed": "software_install"
+  },
+  {
+    "id": 239,
+    "text": "FAQ: Understanding charges on your department invoice. [ITSM-CANARY-7f3a9d2e]",
+    "gold": "billing_question",
+    "kind": "memorized",
+    "source": "doc",
+    "has_canary": true,
+    "answer": "billing_question",
+    "answer_perturbed": "billing_question"
+  }
+]

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choice of Metric Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+    :root {
+      --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+      --text: #e2e8f0; --text-dim: #8892a4;
+      --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+      --yellow: #eab308; --purple: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+    .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .insight-banner strong { color: var(--text); }
+    .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+    .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .explainer summary:hover { color: var(--text); }
+    .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+
+    /* Metric toggle tabs */
+    .tab-row { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border); }
+    .tab { padding: 0.6rem 1rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--text-dim); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent-a); border-bottom-color: var(--accent-a); }
+
+    /* Winner cards */
+    .winner-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .winner-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s; }
+    .winner-card.leads { border-color: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.15); }
+    .winner-card.loses { border-color: var(--border); opacity: 0.6; }
+    .winner-card .sys-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .winner-card .sys-score { font-size: 1.6rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .winner-card .sys-label { font-size: 0.7rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 0.2rem; }
+    .verdict { text-align: center; font-size: 1rem; font-weight: 700; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; }
+    .verdict.a-wins { background: rgba(59,130,246,0.1); color: var(--accent-a); border: 1px solid var(--accent-a); }
+    .verdict.b-wins { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid var(--green); }
+    .verdict.tie { background: rgba(234,179,8,0.1); color: var(--yellow); border: 1px solid var(--yellow); }
+
+    .chart-wrap { height: 250px; position: relative; margin-bottom: 1rem; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .compare-table th, .compare-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; }
+
+    .scorecard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem; text-align: center; }
+    .stat-card .label { font-size: 0.68rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .stat-card .value { font-size: 1.1rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .stat-card .sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem; }
+
+    .main-layout { max-width: 900px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="main-layout">
+    <h1>Choice of Metric Lab</h1>
+    <div class="subtitle">Source #6 — "The winner depends on which question you ask."</div>
+
+    <details class="explainer">
+      <summary>What is this playground about? (click to expand)</summary>
+      <div class="explainer-content">
+        <p><strong>The scenario:</strong> System A vs System B, same 200 queries, same LLM judge. You compute Correctness scores 1-5 for each query. Which system is better?</p>
+        <p><strong>The twist:</strong> The answer depends entirely on which <em>metric</em> you use. Mean? Median? % above threshold? Worst-case? Each tells a different story, and they can disagree. The data doesn't change — the question changes.</p>
+        <p><strong>The lesson:</strong> The metric encodes your values. There's no "correct" metric to discover. You must decide what matters <em>before</em> you measure. Otherwise, you'll unconsciously shop for the metric that confirms your preference.</p>
+      </div>
+    </details>
+
+    <div class="insight-banner">
+      <strong>Setup:</strong> Both systems were evaluated on the same 200 queries by the same judge.
+      System A has a higher average but more variance — some great answers, some disasters.
+      System B is more consistent but has a lower average.
+      Click each metric tab to see who "wins."
+    </div>
+
+    <div style="margin-bottom:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:0.8rem 1rem;">
+      <p><strong style="color:var(--text);">Metric Tabs (below):</strong> Each tab shows a different way to compare the same two systems on the same data.</p>
+      <p style="margin-top:0.3rem;"><strong style="color:var(--accent-a);">Mean</strong> — Average score. Rewards high highs; a few 5s compensate for 1s. System A likely wins here.</p>
+      <p style="margin-top:0.3rem;"><strong style="color:var(--accent-a);">Median</strong> — Middle value. Ignores extremes. Shows the "typical" experience.</p>
+      <p style="margin-top:0.3rem;"><strong style="color:var(--accent-a);">% ≥ 4 (Good Rate)</strong> — How often is the answer "good enough"? Rewards consistency over brilliance.</p>
+      <p style="margin-top:0.3rem;"><strong style="color:var(--accent-a);">5th Percentile (Worst Case)</strong> — The worst 5% of experiences. Protects against disasters. System B likely wins here.</p>
+      <p style="margin-top:0.3rem;"><strong style="color:var(--accent-a);">Std. Deviation</strong> — How much scores vary. Lower = more predictable experience.</p>
+      <p style="margin-top:0.3rem;">After clicking 3+ tabs, the <strong style="color:var(--text);">4-Metric Trap</strong> panel appears, showing all 4 evaluation metrics at once — revealing that A and B each win on different metrics. Who's better is a product decision, not a data question.</p>
+    </div>
+
+    <div class="tab-row" id="metric-tabs"></div>
+    <div id="comparison-area"></div>
+
+    <!-- Full 4-metric view -->
+    <div class="panel" id="four-metric-panel" style="display:none;">
+      <h2>The 4-Metric Trap</h2>
+      <p style="font-size:0.78rem; color:var(--text-dim); margin-bottom:0.75rem;">
+        Now look at all 4 metrics. System A wins on Correctness and Tone. System B wins on Helpfulness and Completeness. Who's the better system? <strong>That's not a data question — it's a product decision.</strong>
+      </p>
+      <div id="four-metric-area"></div>
+    </div>
+
+    <!-- Takeaways -->
+    <div class="panel" id="takeaways-panel" style="display:none;">
+      <h2>Key Takeaways</h2>
+      <table class="compare-table">
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Does more data help?</strong></td><td>No. More data makes each metric more precise, but doesn't resolve the disagreement <em>between</em> metrics. That's a design question, not a data question.</td></tr>
+          <tr><td><strong>How do we fix it?</strong></td><td>Pre-commit to a primary metric and aggregation <em>before</em> running the evaluation. Use a hierarchy: primary metric decides the winner, secondary metrics are guardrails.</td></tr>
+          <tr><td><strong>Which metric is best?</strong></td><td>Depends on your context. Mean rewards high highs. Threshold rate rewards consistency. Worst-case (5th percentile) protects against disasters. Choose based on your users' needs.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // ===== GENERATE RAW SCORE DATA =====
+    // System A: higher mean, more variance (some 5s, some 1s)
+    // System B: lower mean, more consistent (mostly 3s and 4s)
+    function sampleGamma(shape) {
+      if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1 / 3; const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x, v;
+        do { const u1=Math.random(), u2=Math.random(); x=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); v=1+c*x; } while(v<=0);
+        v=v*v*v; const u=Math.random();
+        if (u<1-0.0331*(x*x)*(x*x)) return d*v;
+        if (Math.log(u)<0.5*x*x+d*(1-v+Math.log(v))) return d*v;
+      }
+    }
+    function betaSample(a, b) { const x=sampleGamma(a), y=sampleGamma(b); return x/(x+y); }
+
+    function generateScores(targetMean, concentration, n) {
+      const mu = Math.max(0.02, Math.min(0.98, (targetMean - 1) / 4));
+      const a = mu * concentration, b = (1 - mu) * concentration;
+      const scores = [];
+      for (let i = 0; i < n; i++) {
+        const u = betaSample(a, b);
+        scores.push(Math.max(1, Math.min(5, Math.round((1 + u * 4) * 2) / 2)));
+      }
+      return scores;
+    }
+
+    // Seed consistent data
+    const N = 200;
+    // System A: mean ~4.1, low concentration (wide spread)
+    // System B: mean ~3.9, high concentration (tight)
+    const systemA = {
+      Correctness: generateScores(4.1, 5, N),   // wide spread
+      Helpfulness: generateScores(3.7, 6, N),
+      Tone:        generateScores(4.3, 5, N),
+      Completeness:generateScores(3.5, 6, N)
+    };
+    const systemB = {
+      Correctness: generateScores(3.9, 18, N),   // tight
+      Helpfulness: generateScores(4.0, 16, N),
+      Tone:        generateScores(4.0, 17, N),
+      Completeness:generateScores(3.8, 15, N)
+    };
+
+    // ===== METRIC FUNCTIONS =====
+    function mean(arr) { return arr.reduce((a,b) => a+b, 0) / arr.length; }
+    function median(arr) { const s = [...arr].sort((a,b) => a-b); const m = Math.floor(s.length/2); return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+    function thresholdRate(arr, t) { return arr.filter(x => x >= t).length / arr.length; }
+    function percentile(arr, p) { const s = [...arr].sort((a,b) => a-b); const i = Math.floor(p/100 * s.length); return s[Math.max(0, i)]; }
+    function stddev(arr) { const m = mean(arr); return Math.sqrt(arr.reduce((a,x) => a + (x-m)*(x-m), 0) / arr.length); }
+
+    const metricDefs = [
+      {
+        id: 'mean', label: 'Mean',
+        desc: 'Average score across all queries. Rewards high highs — a few 5s can compensate for 1s.',
+        compute: (arr) => mean(arr),
+        format: (v) => v.toFixed(2),
+        higherBetter: true
+      },
+      {
+        id: 'median', label: 'Median',
+        desc: 'Middle value. Ignores extremes. A more "typical" experience.',
+        compute: (arr) => median(arr),
+        format: (v) => v.toFixed(1),
+        higherBetter: true
+      },
+      {
+        id: 'threshold', label: '% ≥ 4 (Good Rate)',
+        desc: 'Fraction of queries scoring 4 or above. Measures "how often is it good enough?"',
+        compute: (arr) => thresholdRate(arr, 4),
+        format: (v) => (v * 100).toFixed(1) + '%',
+        higherBetter: true
+      },
+      {
+        id: 'p5', label: '5th Percentile (Worst Case)',
+        desc: 'The worst 5% of experiences. Protects against disasters. "How bad can it get?"',
+        compute: (arr) => percentile(arr, 5),
+        format: (v) => v.toFixed(1),
+        higherBetter: true
+      },
+      {
+        id: 'stddev', label: 'Std. Deviation',
+        desc: 'How much scores vary. Lower = more consistent experience.',
+        compute: (arr) => stddev(arr),
+        format: (v) => v.toFixed(2),
+        higherBetter: false
+      }
+    ];
+
+    let currentMetric = 'mean';
+    let tabClickCount = 0;
+    const charts = {};
+
+    // ===== INIT TABS =====
+    function initTabs() {
+      const container = document.getElementById('metric-tabs');
+      metricDefs.forEach(md => {
+        const tab = document.createElement('div');
+        tab.className = `tab ${md.id === currentMetric ? 'active' : ''}`;
+        tab.textContent = md.label;
+        tab.onclick = () => selectMetric(md.id);
+        tab.id = `tab-${md.id}`;
+        container.appendChild(tab);
+      });
+    }
+
+    function selectMetric(id) {
+      currentMetric = id;
+      tabClickCount++;
+
+      // Update tab styling
+      document.querySelectorAll('.tab').forEach(t => t.className = 'tab');
+      document.getElementById(`tab-${id}`).className = 'tab active';
+
+      renderComparison();
+
+      // Show 4-metric panel after 3 clicks
+      if (tabClickCount >= 3) {
+        document.getElementById('four-metric-panel').style.display = 'block';
+        renderFourMetric();
+      }
+      // Show takeaways after 4
+      if (tabClickCount >= 4) {
+        document.getElementById('takeaways-panel').style.display = 'block';
+      }
+    }
+
+    function renderComparison() {
+      const md = metricDefs.find(m => m.id === currentMetric);
+      // Use Correctness as primary for single-metric view
+      const valA = md.compute(systemA.Correctness);
+      const valB = md.compute(systemB.Correctness);
+
+      const aWins = md.higherBetter ? valA > valB : valA < valB;
+      const bWins = md.higherBetter ? valB > valA : valB < valA;
+      const tie = Math.abs(valA - valB) < 0.001;
+
+      let html = '';
+
+      html += `<div class="insight-banner" style="border-left-color: ${aWins ? 'var(--accent-a)' : bWins ? 'var(--green)' : 'var(--yellow)'};">
+        <strong>${md.label}:</strong> ${md.desc}
+      </div>`;
+
+      // Winner cards
+      html += `<div class="winner-row">
+        <div class="winner-card ${aWins ? 'leads' : tie ? '' : 'loses'}">
+          <div class="sys-name" style="color:var(--accent-a);">System A</div>
+          <div class="sys-score">${md.format(valA)}</div>
+          <div class="sys-label">Higher mean, more variance</div>
+        </div>
+        <div class="winner-card ${bWins ? 'leads' : tie ? '' : 'loses'}">
+          <div class="sys-name" style="color:var(--green);">System B</div>
+          <div class="sys-score">${md.format(valB)}</div>
+          <div class="sys-label">Lower mean, more consistent</div>
+        </div>
+      </div>`;
+
+      // Verdict
+      if (tie) {
+        html += `<div class="verdict tie">TIE — Neither system wins on ${md.label}</div>`;
+      } else if (aWins) {
+        html += `<div class="verdict a-wins">System A wins on ${md.label}</div>`;
+      } else {
+        html += `<div class="verdict b-wins">System B wins on ${md.label}</div>`;
+      }
+
+      // Score distribution histogram
+      html += `<div class="panel">
+        <h2>Score Distribution — Correctness</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          Same 200 queries, same judge. System A (blue) has more spread. System B (green) clusters tightly.
+          The distribution explains why different metrics disagree.
+        </p>
+        <div class="chart-wrap"><canvas id="dist-chart"></canvas></div>
+      </div>`;
+
+      // Full stats table
+      html += `<div class="panel">
+        <h2>All Metrics at a Glance — Correctness</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          Same data, different questions, different winners. The highlighted row is your current selection.
+        </p>
+        <table class="compare-table">
+          <thead><tr><th>Metric</th><th>System A</th><th>System B</th><th>Winner</th></tr></thead>
+          <tbody>`;
+
+      metricDefs.forEach(m => {
+        const a = m.compute(systemA.Correctness);
+        const b = m.compute(systemB.Correctness);
+        const w = m.higherBetter ? (a > b ? 'A' : b > a ? 'B' : 'Tie') : (a < b ? 'A' : b < a ? 'B' : 'Tie');
+        const wColor = w === 'A' ? 'var(--accent-a)' : w === 'B' ? 'var(--green)' : 'var(--yellow)';
+        const isCurrent = m.id === currentMetric;
+        html += `<tr style="${isCurrent ? 'background:rgba(59,130,246,0.08);' : ''}">
+          <td${isCurrent ? ' style="font-weight:700;"' : ''}>${m.label}</td>
+          <td>${m.format(a)}</td>
+          <td>${m.format(b)}</td>
+          <td style="color:${wColor}; font-weight:600;">${w}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+
+      document.getElementById('comparison-area').innerHTML = html;
+
+      setTimeout(() => renderDistChart(), 0);
+    }
+
+    function renderDistChart() {
+      const ctx = document.getElementById('dist-chart');
+      if (!ctx) return;
+      if (charts['dist']) charts['dist'].destroy();
+
+      // Build histogram bins
+      const bins = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+      function countBins(arr) {
+        const counts = new Array(bins.length).fill(0);
+        arr.forEach(v => {
+          const idx = bins.indexOf(v);
+          if (idx >= 0) counts[idx]++;
+        });
+        return counts;
+      }
+
+      charts['dist'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bins.map(b => b.toFixed(1)),
+          datasets: [
+            {
+              label: 'System A',
+              data: countBins(systemA.Correctness),
+              backgroundColor: 'rgba(59,130,246,0.4)',
+              borderColor: '#3b82f6',
+              borderWidth: 1, borderRadius: 4
+            },
+            {
+              label: 'System B',
+              data: countBins(systemB.Correctness),
+              backgroundColor: 'rgba(34,197,94,0.4)',
+              borderColor: '#22c55e',
+              borderWidth: 1, borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } } }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { family: "'DM Mono'", size: 11 }, color: '#8892a4' } },
+            x: { grid: { display: false }, ticks: { font: { family: "'DM Mono'", size: 11 }, color: '#8892a4' } }
+          }
+        }
+      });
+    }
+
+    function renderFourMetric() {
+      const evalMetrics = ['Correctness', 'Helpfulness', 'Tone', 'Completeness'];
+      const colors = { Correctness: '#3b82f6', Helpfulness: '#f97316', Tone: '#22c55e', Completeness: '#a78bfa' };
+
+      let html = `<table class="compare-table">
+        <thead><tr><th>Scorecard Metric</th><th>System A (Mean)</th><th>System B (Mean)</th><th>Winner</th></tr></thead>
+        <tbody>`;
+
+      let aWins = 0, bWins = 0;
+      evalMetrics.forEach(m => {
+        const a = mean(systemA[m]);
+        const b = mean(systemB[m]);
+        const w = a > b + 0.01 ? 'A' : b > a + 0.01 ? 'B' : 'Tie';
+        if (w === 'A') aWins++;
+        if (w === 'B') bWins++;
+        const wColor = w === 'A' ? 'var(--accent-a)' : w === 'B' ? 'var(--green)' : 'var(--yellow)';
+        html += `<tr>
+          <td style="color:${colors[m]}; font-weight:600;">${m}</td>
+          <td>${a.toFixed(2)}</td>
+          <td>${b.toFixed(2)}</td>
+          <td style="color:${wColor}; font-weight:600;">${w}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      html += `<p style="font-size:0.78rem; color:var(--text-dim); margin-top:0.5rem;">
+        System A wins ${aWins} metrics, System B wins ${bWins}. Which system is "better"?
+        That depends on which metrics you care about — <strong>a product decision, not a data question</strong>.
+        Pre-commit to a primary metric before running the evaluation.
+      </p>`;
+
+      document.getElementById('four-metric-area').innerHTML = html;
+    }
+
+    // ===== INIT =====
+    initTabs();
+    renderComparison();
+  </script>
+</body>
+</html>

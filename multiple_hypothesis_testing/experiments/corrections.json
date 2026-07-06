@@ -1,0 +1,48 @@
+{
+  "experiment": "corrections",
+  "alpha": 0.05,
+  "rows": [
+    {
+      "k": 1,
+      "fwer_alpha05": 0.050000000000000044,
+      "bonferroni_alpha05": 0.05,
+      "holm_strictest": 0.05
+    },
+    {
+      "k": 2,
+      "fwer_alpha05": 0.09750000000000003,
+      "bonferroni_alpha05": 0.025,
+      "holm_strictest": 0.025
+    },
+    {
+      "k": 5,
+      "fwer_alpha05": 0.22621906250000023,
+      "bonferroni_alpha05": 0.01,
+      "holm_strictest": 0.01
+    },
+    {
+      "k": 10,
+      "fwer_alpha05": 0.4012630607616213,
+      "bonferroni_alpha05": 0.005,
+      "holm_strictest": 0.005
+    },
+    {
+      "k": 20,
+      "fwer_alpha05": 0.6415140775914581,
+      "bonferroni_alpha05": 0.0025,
+      "holm_strictest": 0.0025
+    },
+    {
+      "k": 50,
+      "fwer_alpha05": 0.9230550247232868,
+      "bonferroni_alpha05": 0.001,
+      "holm_strictest": 0.001
+    },
+    {
+      "k": 100,
+      "fwer_alpha05": 0.994079470779666,
+      "bonferroni_alpha05": 0.0005,
+      "holm_strictest": 0.0005
+    }
+  ]
+}

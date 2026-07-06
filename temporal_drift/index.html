@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temporal Drift Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+    :root {
+      --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+      --text: #e2e8f0; --text-dim: #8892a4;
+      --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+      --yellow: #eab308; --purple: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+    .layout { display: grid; grid-template-columns: minmax(350px,1fr) minmax(0,2fr); gap: 1.5rem; padding: 0 1rem; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+    label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+    input[type="range"] { width: 100%; background: transparent; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; margin: 0.3rem 0 0.5rem 0; }
+    input[type="range"]::-webkit-slider-track { background: var(--border); height: 6px; border-radius: 3px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-a); cursor: pointer; margin-top: -5px; }
+    .slider-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .slider-row label { flex-shrink: 0; margin-bottom: 0; min-width: 130px; }
+    .slider-row input { flex: 1; }
+    .slider-row .val { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent-a); min-width: 45px; text-align: right; }
+    .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent-a); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-warn { background: var(--accent-b); color: #fff; }
+    .btn-warn:hover { background: #ea580c; }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .insight-banner strong { color: var(--text); }
+    .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+    .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+    .chart-wrap { height: 300px; position: relative; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; }
+    .stat-card .label { font-size: 0.65rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .stat-card .value { font-size: 1.1rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .stat-card .sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .compare-table th, .compare-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; }
+    .event-tag { display: inline-block; font-size: 0.68rem; padding: 0.1rem 0.4rem; border-radius: 4px; background: rgba(239,68,68,0.15); color: var(--red); margin-left: 0.3rem; }
+  </style>
+</head>
+<body>
+  <h1>Temporal Drift Lab</h1>
+  <div class="subtitle">Source #7 — "Your January eval says nothing about April."</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>The scenario:</strong> You evaluate your customer support bot in January. Score: 4.2. Ship it! But the world changes — new products launch, user behavior shifts, regulations update — and your system degrades without any code change.</p>
+      <p><strong>Why it matters:</strong> An evaluation is a snapshot, not a guarantee. The number has an expiration date, and you don't know what it is. If you only evaluated once in January, when would you notice the degradation?</p>
+      <p><strong>The fix:</strong> Continuous monitoring, not one-off evaluations. Drift detection alerts. Periodic re-evaluation on fresh production data.</p>
+    </div>
+  </details>
+
+  <div class="layout">
+    <div class="left-col">
+      <div class="panel">
+        <h2>Drift Configuration</h2>
+        <div class="slider-row">
+          <label>Initial Score</label>
+          <input type="range" id="init-score" min="3.5" max="4.8" value="4.2" step="0.1" oninput="document.getElementById('init-score-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="init-score-val">4.2</span>
+        </div>
+        <div class="slider-row">
+          <label>Drift Rate</label>
+          <input type="range" id="drift-rate" min="0.0" max="0.15" value="0.05" step="0.01" oninput="document.getElementById('drift-rate-val').textContent=parseFloat(this.value).toFixed(2)+'/mo'">
+          <span class="val" id="drift-rate-val">0.05/mo</span>
+        </div>
+        <div class="slider-row">
+          <label>Noise Level</label>
+          <input type="range" id="noise" min="0.0" max="0.2" value="0.08" step="0.01" oninput="document.getElementById('noise-val').textContent=parseFloat(this.value).toFixed(2)">
+          <span class="val" id="noise-val">0.08</span>
+        </div>
+        <div class="slider-row">
+          <label>Shock Month</label>
+          <input type="range" id="shock-month" min="0" max="11" value="5" step="1" oninput="document.getElementById('shock-month-val').textContent=this.value==0?'None':MONTHS[this.value]">
+          <span class="val" id="shock-month-val">Jun</span>
+        </div>
+        <div class="slider-row">
+          <label>Shock Size</label>
+          <input type="range" id="shock-size" min="0" max="1.0" value="0.4" step="0.05" oninput="document.getElementById('shock-size-val').textContent='−'+parseFloat(this.value).toFixed(2)">
+          <span class="val" id="shock-size-val">−0.40</span>
+        </div>
+        <p style="font-size:0.7rem; color:var(--text-dim); margin-top:0.5rem;">
+          <strong style="color:var(--text);">Shock</strong> = a sudden event (new product launch, regulation change) that drops scores abruptly.
+          Set month to 0 to disable.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>Monitoring Threshold</h2>
+        <div class="slider-row">
+          <label>Alert Below</label>
+          <input type="range" id="threshold" min="2.5" max="4.5" value="3.5" step="0.1" oninput="document.getElementById('threshold-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="threshold-val">3.5</span>
+        </div>
+        <p style="font-size:0.7rem; color:var(--text-dim);">If you had continuous monitoring, you'd catch the drop here.</p>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="simulate()">Simulate 12 Months</button>
+        <button class="btn btn-warn" onclick="compareMonitoring()">Compare: With vs Without Monitoring</button>
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+        <p><strong style="color:var(--accent-a);">Simulate 12 Months</strong> — Generates a fresh random trajectory for all 4 metrics over 12 months using your slider settings. You'll see stat cards (Jan vs Dec score, total drop, when the alert fires), a line chart of all metrics with your threshold line, a table of real-world drift causes, and key takeaways. Each click re-randomizes — the variation itself is the lesson.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--accent-b);">Compare: With vs Without Monitoring</strong> — Runs the same simulation, then appends a side-by-side verdict: with monitoring you catch the drop in weeks (when it crosses your threshold); without it, you don't notice until a client complains months later.</p>
+      </div>
+    </div>
+
+    <div class="right-col" id="results">
+      <div class="insight-banner">
+        <strong>Start here:</strong> Click "Simulate 12 Months" to see how your system's score evolves over time. The initial evaluation is just the beginning of the story.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTHS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MONTH_LABELS = MONTHS.slice(1);
+    const charts = {};
+
+    function simulate() {
+      const initScore = parseFloat(document.getElementById('init-score').value);
+      const driftRate = parseFloat(document.getElementById('drift-rate').value);
+      const noise = parseFloat(document.getElementById('noise').value);
+      const shockMonth = parseInt(document.getElementById('shock-month').value);
+      const shockSize = parseFloat(document.getElementById('shock-size').value);
+      const threshold = parseFloat(document.getElementById('threshold').value);
+
+      // Generate 12 monthly scores for each metric
+      const metrics = ['Correctness', 'Helpfulness', 'Tone', 'Completeness'];
+      const metricOffsets = { Correctness: 0, Helpfulness: -0.1, Tone: 0.1, Completeness: -0.2 };
+      const metricColors = { Correctness: '#3b82f6', Helpfulness: '#f97316', Tone: '#22c55e', Completeness: '#a78bfa' };
+
+      const data = {};
+      metrics.forEach(m => {
+        const series = [];
+        let score = initScore + (metricOffsets[m] || 0);
+        for (let month = 1; month <= 12; month++) {
+          score -= driftRate * (0.7 + Math.random() * 0.6); // drift with noise
+          score += (Math.random() - 0.5) * noise * 2; // measurement noise
+          if (shockMonth > 0 && month === shockMonth) {
+            score -= shockSize * (0.8 + Math.random() * 0.4);
+          }
+          series.push(Math.max(1, Math.min(5, score)));
+        }
+        data[m] = series;
+      });
+
+      // Find when threshold is first crossed
+      const crossMonth = data.Correctness.findIndex(s => s < threshold);
+      const crossLabel = crossMonth >= 0 ? MONTH_LABELS[crossMonth] : 'Never';
+
+      let html = '';
+
+      // Key stats
+      const janScore = data.Correctness[0];
+      const decScore = data.Correctness[11];
+      const totalDrop = janScore - decScore;
+
+      html += `<div class="insight-banner" style="border-left-color: ${totalDrop > 0.5 ? 'var(--red)' : 'var(--yellow)'};">
+        <strong>12 months later:</strong> Correctness went from ${janScore.toFixed(2)} to ${decScore.toFixed(2)} — a drop of ${totalDrop.toFixed(2)} points.
+        ${shockMonth > 0 ? `The shock in ${MONTH_LABELS[shockMonth - 1]} caused a sudden ${shockSize.toFixed(1)}-point drop.` : ''}
+        ${crossMonth >= 0 ? `The system crossed your ${threshold.toFixed(1)} alert threshold in <strong>${crossLabel}</strong>.` : `The system stayed above your ${threshold.toFixed(1)} threshold.`}
+        <br><strong>If you only evaluated in January, you would have seen ${janScore.toFixed(2)} and shipped with confidence.</strong>
+      </div>`;
+
+      html += `<div class="stat-cards">
+        <div class="stat-card">
+          <div class="label">January</div>
+          <div class="value" style="color:var(--green);">${janScore.toFixed(2)}</div>
+          <div class="sub">Initial eval</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">December</div>
+          <div class="value" style="color:${decScore < threshold ? 'var(--red)' : 'var(--yellow)'}">${decScore.toFixed(2)}</div>
+          <div class="sub">Final score</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Drop</div>
+          <div class="value" style="color:var(--red);">−${totalDrop.toFixed(2)}</div>
+          <div class="sub">12-month degradation</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Alert Triggered</div>
+          <div class="value" style="color:${crossMonth >= 0 ? 'var(--red)' : 'var(--green)'}">${crossLabel}</div>
+          <div class="sub">Threshold: ${threshold.toFixed(1)}</div>
+        </div>
+      </div>`;
+
+      // Main chart
+      html += `<div class="panel">
+        <h2>Monthly Scorecard Over Time</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          Each line is one metric, measured monthly on fresh production data. The red dashed line is your alert threshold.
+          ${shockMonth > 0 ? `The vertical bar marks the shock event in ${MONTH_LABELS[shockMonth - 1]}.` : ''}
+        </p>
+        <div class="chart-wrap"><canvas id="drift-chart"></canvas></div>
+      </div>`;
+
+      // What caused the drift
+      html += `<div class="panel">
+        <h2>What Could Cause This?</h2>
+        <table class="compare-table">
+          <thead><tr><th>Cause</th><th>Example</th><th>Type</th></tr></thead>
+          <tbody>
+            <tr><td><strong>User behavior shift</strong></td><td>Users adopt more casual tone; system's formal style reads as "unhelpful"</td><td>Gradual</td></tr>
+            <tr><td><strong>New product launch</strong></td><td>Flood of queries about features the system was never designed for</td><td>Shock</td></tr>
+            <tr><td><strong>Seasonal topics</strong></td><td>Holiday returns, tax season queries — different domains than training</td><td>Cyclical</td></tr>
+            <tr><td><strong>Regulation change</strong></td><td>New policy makes some previously-correct answers wrong overnight</td><td>Shock</td></tr>
+            <tr><td><strong>Competitor action</strong></td><td>Competitor launches feature; users ask about it; system can't help</td><td>Gradual</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+
+      // Takeaways
+      html += `<div class="panel">
+        <h2>Key Takeaways</h2>
+        <table class="compare-table">
+          <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Does more data help?</strong></td><td>No — more data from January tells you January's score more precisely. It says nothing about April. The fix is <em>fresh</em> data over time.</td></tr>
+            <tr><td><strong>How do we fix it?</strong></td><td>Continuous monitoring. Drift detection alerts. Periodic re-evaluation on fresh production data. Version everything.</td></tr>
+            <tr><td><strong>How often to re-evaluate?</strong></td><td>Depends on your drift rate. For this simulation, monthly catches problems within 1 month. Weekly catches them faster. The cost is API calls.</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+
+      // Render chart
+      setTimeout(() => {
+        const ctx = document.getElementById('drift-chart');
+        if (charts['drift']) charts['drift'].destroy();
+
+        const datasets = metrics.map(m => ({
+          label: m,
+          data: data[m],
+          borderColor: metricColors[m],
+          backgroundColor: metricColors[m] + '20',
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: metricColors[m],
+          borderWidth: 2
+        }));
+
+        // Threshold line
+        datasets.push({
+          label: 'Alert Threshold',
+          data: new Array(12).fill(threshold),
+          borderColor: '#ef444480',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+
+        charts['drift'] = new Chart(ctx, {
+          type: 'line',
+          data: { labels: MONTH_LABELS, datasets },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#8892a4', font: { family: "'DM Mono'", size: 11 }, padding: 12 } }
+            },
+            scales: {
+              y: { min: 1, max: 5, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { family: "'DM Mono'", size: 11 }, color: '#8892a4' } },
+              x: { grid: { display: false }, ticks: { font: { family: "'DM Mono'", size: 11 }, color: '#8892a4' } }
+            }
+          },
+          plugins: shockMonth > 0 ? [{
+            id: 'shockLine',
+            afterDatasetsDraw(chart) {
+              const x = chart.scales.x.getPixelForValue(shockMonth - 1);
+              chart.ctx.save();
+              chart.ctx.fillStyle = 'rgba(239,68,68,0.1)';
+              chart.ctx.fillRect(x - 15, chart.chartArea.top, 30, chart.chartArea.bottom - chart.chartArea.top);
+              chart.ctx.strokeStyle = '#ef4444';
+              chart.ctx.lineWidth = 1;
+              chart.ctx.setLineDash([3, 3]);
+              chart.ctx.beginPath();
+              chart.ctx.moveTo(x, chart.chartArea.top);
+              chart.ctx.lineTo(x, chart.chartArea.bottom);
+              chart.ctx.stroke();
+              chart.ctx.restore();
+            }
+          }] : []
+        });
+      }, 0);
+    }
+
+    function compareMonitoring() {
+      simulate(); // run base first, then add comparison text
+      const threshold = parseFloat(document.getElementById('threshold').value);
+      const results = document.getElementById('results');
+      results.innerHTML += `
+        <div class="insight-banner" style="border-left-color: var(--green);">
+          <strong>With monitoring:</strong> You'd catch the drop when it crosses ${threshold.toFixed(1)} and take action — re-evaluate, diagnose the cause, update the system.
+          <br><strong>Without monitoring:</strong> You shipped in January with score 4.2. By the time a client complains (maybe in July?), the system has been failing for months. You have no data trail to diagnose what happened.
+          <br><br>The difference: <strong>weeks vs. months</strong> of undetected degradation.
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

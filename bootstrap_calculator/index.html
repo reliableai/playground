@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bootstrap calculator — ask any question of a distribution</title>
+<style>
+  :root{ --true:#0f766e; --meas:#b45309; --noise:#2563eb; --bias:#7c3aed;
+         --grid:#e2e8f0; --muted:#64748b; --good:#15803d; --ink:#0f172a; }
+  *{ box-sizing:border-box; }
+  body{ font-family:system-ui,-apple-system,'Segoe UI',sans-serif; max-width:920px; margin:0 auto;
+        padding:1.6rem 1.2rem 4rem; color:var(--ink); background:#fff; line-height:1.5; }
+  h1{ font-size:1.55rem; margin:.2rem 0 .3rem; }
+  h3{ font-size:1.02rem; margin:1.1rem 0 .4rem; }
+  .sub{ color:var(--muted); margin:0 0 1.2rem; }
+  .panel{ background:#fff; border:1px solid var(--grid); border-radius:12px; padding:1.1rem 1.2rem; margin:1rem 0; }
+  label{ font-weight:600; display:block; margin:.2rem 0 .35rem; }
+  textarea{ width:100%; min-height:96px; font:14px/1.45 ui-monospace,Menlo,monospace;
+            border:1px solid var(--grid); border-radius:8px; padding:.6rem; resize:vertical; }
+  select, input[type=number]{ font:inherit; border:1px solid var(--grid); border-radius:8px;
+            padding:.4rem .55rem; background:#fff; color:var(--ink); }
+  input[type=number]{ width:7rem; font-variant-numeric:tabular-nums; }
+  .controls{ display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin:.7rem 0 0; }
+  .btn{ font:inherit; font-weight:600; border:1px solid #111; background:#111; color:#fff;
+        padding:.5rem 1rem; border-radius:8px; cursor:pointer; }
+  .btn.ghost{ background:#fff; color:#111; }
+  .tabs{ display:flex; gap:.4rem; margin:0 0 .9rem; }
+  .tab{ font:inherit; font-weight:600; border:1px solid var(--grid); background:#f8fafc; color:var(--muted);
+        padding:.45rem .9rem; border-radius:999px; cursor:pointer; }
+  .tab[aria-selected=true]{ background:#111; color:#fff; border-color:#111; }
+  .row{ display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+  .field{ display:flex; flex-direction:column; gap:.15rem; }
+  .field label{ margin:0; font-size:.85rem; }
+  .slider-row{ display:flex; align-items:center; gap:.6rem; }
+  .slider-row input[type=range]{ flex:1; }
+  .slider-val{ font-variant-numeric:tabular-nums; font-weight:700; min-width:2.6rem; text-align:right; }
+  .weights{ display:grid; grid-template-columns:repeat(5,1fr); gap:.5rem; }
+  .weights .w{ text-align:center; }
+  .weights .w input[type=range]{ writing-mode:vertical-lr; direction:rtl; width:1.4rem; height:90px; }
+  .weights .w .lab{ font-size:.8rem; color:var(--muted); margin-top:.2rem; }
+  .readouts{ display:flex; gap:.8rem; flex-wrap:wrap; margin:.4rem 0 1rem; }
+  .ro{ flex:1 1 150px; border:1px solid var(--grid); border-radius:10px; padding:.7rem .9rem; }
+  .ro .k{ font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+  .ro .v{ font-size:1.7rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.2; }
+  .statement{ background:rgba(37,99,235,0.06); border-left:3px solid var(--noise);
+              padding:.8rem 1.05rem; border-radius:0 8px 8px 0; margin:.4rem 0 1rem; font-size:1.02rem; }
+  .statement b{ color:var(--ink); }
+  canvas{ width:100%; max-width:100%; display:block; margin-top:.3rem; }
+  .note{ color:var(--muted); font-size:.85rem; }
+  code{ background:#f1f5f9; padding:.05rem .3rem; border-radius:4px; }
+  a{ color:var(--noise); }
+  .hide{ display:none !important; }
+  .nav-back{ display:inline-block; margin-bottom:1rem; font-size:.9rem; color:var(--muted); text-decoration:none; }
+  .nav-back:hover{ color:var(--noise); }
+</style>
+</head>
+<body>
+  <a class="nav-back" href="../index.html">&larr; All playgrounds</a>
+  <h1>Bootstrap calculator</h1>
+  <p class="sub">If we know the distribution, we know everything. Feed in a distribution — pick one and draw a
+     sample, or paste your own — then ask <b>any</b> question: <code>P(X &gt; T)</code> or
+     <code>P(T1 &le; X &le; T2)</code>. The bootstrap resamples 10,000&times; to tell you the answer
+     <em>and how sure we can be</em> — no formulas, no distribution assumptions.</p>
+
+  <!-- ============================ DATA SOURCE ============================ -->
+  <div class="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-gen"  role="tab" aria-selected="true">Pick a distribution</button>
+      <button class="tab" id="tab-paste" role="tab" aria-selected="false">Paste / upload a sample</button>
+    </div>
+
+    <!-- generate-from-distribution -->
+    <div id="mode-gen">
+      <div class="row" style="margin-bottom:.8rem">
+        <div class="field">
+          <label for="dist">Distribution</label>
+          <select id="dist">
+            <option value="ratings">Ratings 1–5 (categorical)</option>
+            <option value="normal">Test scores — Normal (0–100)</option>
+            <option value="bimodal">Bimodal — two groups (0–100)</option>
+            <option value="exp">Response time — Exponential</option>
+            <option value="uniform">Uniform</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nSamp">Sample size n: <span id="nOut" class="slider-val">120</span></label>
+          <div class="slider-row" style="width:240px">
+            <input type="range" id="nSamp" min="10" max="2000" step="10" value="120">
+          </div>
+        </div>
+        <button class="btn" id="draw">Draw sample &#8635;</button>
+      </div>
+
+      <!-- per-distribution parameter panels -->
+      <div id="p-ratings" class="dparams">
+        <label>Category weights (relative height of each bar)</label>
+        <div class="weights" id="ratingWeights">
+          <div class="w"><input type="range" min="0" max="100" value="4"  data-r="1"><div class="lab">1</div></div>
+          <div class="w"><input type="range" min="0" max="100" value="8"  data-r="2"><div class="lab">2</div></div>
+          <div class="w"><input type="range" min="0" max="100" value="18" data-r="3"><div class="lab">3</div></div>
+          <div class="w"><input type="range" min="0" max="100" value="40" data-r="4"><div class="lab">4</div></div>
+          <div class="w"><input type="range" min="0" max="100" value="30" data-r="5"><div class="lab">5</div></div>
+        </div>
+      </div>
+
+      <div id="p-normal" class="dparams hide">
+        <div class="row">
+          <div class="field"><label>Mean μ</label><input type="number" id="nMu" value="84" step="1"></div>
+          <div class="field"><label>Std dev σ</label><input type="number" id="nSd" value="9" step="0.5" min="0.5"></div>
+          <span class="note">Clipped to 0–100.</span>
+        </div>
+      </div>
+
+      <div id="p-bimodal" class="dparams hide">
+        <div class="row">
+          <div class="field"><label>Low group mean</label><input type="number" id="bMu1" value="55" step="1"></div>
+          <div class="field"><label>High group mean</label><input type="number" id="bMu2" value="90" step="1"></div>
+          <div class="field"><label>Spread σ</label><input type="number" id="bSd" value="6" step="0.5" min="0.5"></div>
+          <div class="field"><label>% in high group</label><input type="number" id="bMix" value="60" step="5" min="0" max="100"></div>
+        </div>
+      </div>
+
+      <div id="p-exp" class="dparams hide">
+        <div class="row">
+          <div class="field"><label>Mean (1/λ)</label><input type="number" id="eMean" value="30" step="1" min="1"></div>
+          <span class="note">e.g. seconds to resolve a ticket.</span>
+        </div>
+      </div>
+
+      <div id="p-uniform" class="dparams hide">
+        <div class="row">
+          <div class="field"><label>Min a</label><input type="number" id="uA" value="0" step="1"></div>
+          <div class="field"><label>Max b</label><input type="number" id="uB" value="100" step="1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- paste / upload -->
+    <div id="mode-paste" class="hide">
+      <label for="file">Upload a file of samples
+        <span class="note" style="font-weight:400">— <code>.csv</code> / <code>.txt</code> (one value per line, or the first column) or <code>.json</code> (array of numbers, or objects with a <code>score</code>/<code>value</code> field)</span></label>
+      <input type="file" id="file" accept=".csv,.tsv,.txt,.json,text/plain,text/csv,application/json">
+      <label for="data" style="margin-top:.9rem">…or paste values — one per line, or comma / space separated</label>
+      <textarea id="data" spellcheck="false"></textarea>
+      <div class="controls"><button class="btn ghost" id="usedata">Use this sample &#8635;</button></div>
+    </div>
+    <p class="note" id="parsed" style="margin:.7rem 0 0"></p>
+  </div>
+
+  <!-- ============================ THE QUESTION ============================ -->
+  <div class="panel">
+    <h3 style="margin-top:0">The question</h3>
+    <div class="row">
+      <div class="field">
+        <label for="qtype">Ask</label>
+        <select id="qtype">
+          <option value="gt">P(X &gt; T)</option>
+          <option value="ge">P(X &ge; T)</option>
+          <option value="lt">P(X &lt; T)</option>
+          <option value="le">P(X &le; T)</option>
+          <option value="range">P(T1 &le; X &le; T2)</option>
+          <option value="mean">P(mean of X &gt; T)</option>
+          <option value="median">P(median of X &gt; T)</option>
+        </select>
+      </div>
+      <div class="field" id="f-T">
+        <label for="T">Threshold T</label>
+        <input type="number" id="T" value="4" step="0.5">
+      </div>
+      <div class="field hide" id="f-T1">
+        <label for="T1">T1 (low)</label>
+        <input type="number" id="T1" value="3" step="0.5">
+      </div>
+      <div class="field hide" id="f-T2">
+        <label for="T2">T2 (high)</label>
+        <input type="number" id="T2" value="5" step="0.5">
+      </div>
+      <button class="btn" id="ask">Answer</button>
+    </div>
+    <div class="row" style="margin-top:.6rem">
+      <div class="field">
+        <label for="nRunsLocked">Runs per experiment (N)</label>
+        <input type="number" id="nRunsLocked" disabled style="opacity:.6; cursor:not-allowed;" title="Locked: a bootstrap experiment is a resample of your sample, so it must have the same size.">
+      </div>
+      <div class="field">
+        <label for="M">Number of experiments (M)</label>
+        <input type="number" id="M" value="10000" min="100" max="100000" step="100">
+      </div>
+    </div>
+    <p class="note" style="margin:.6rem 0 0" id="qhint"></p>
+    <p class="note" style="margin:.4rem 0 0">Same machine as the ratings demo: run M experiments and see how the answer spreads — but each experiment is a <em>resample of your sample</em>, so N is locked to your sample size. Resampling cannot invent data you didn't collect.</p>
+  </div>
+
+  <!-- ============================ RESULTS ============================ -->
+  <div class="panel" id="results" style="display:none">
+    <div class="readouts">
+      <div class="ro"><div class="k">n values</div><div class="v" id="nV">–</div></div>
+      <div class="ro"><div class="k" id="estK">Estimate</div><div class="v" id="estV" style="color:var(--noise)">–</div></div>
+      <div class="ro"><div class="k">95% interval</div><div class="v" id="ciV" style="font-size:1.25rem">–</div></div>
+    </div>
+
+    <p class="statement" id="statement"></p>
+
+    <h3>The distribution you asked about</h3>
+    <canvas id="dataHist" width="900" height="300"></canvas>
+    <p class="note" id="dataNote"></p>
+
+    <h3>How sure are we? — bootstrap distribution of the answer</h3>
+    <canvas id="bootHist" width="900" height="280"></canvas>
+    <p class="note" id="bootNote"></p>
+  </div>
+
+  <p class="note"><strong>Method.</strong> Nonparametric bootstrap. Whatever the question, we compute the answer once on
+     your sample, then resample the sample with replacement (same <code>n</code>) and recompute it — M&times;.
+     The spread of those M answers is our uncertainty: the 95% interval is the 2.5th–97.5th percentiles.
+     For an event like <code>P(X &gt; T)</code> the answer is the fraction of values in the event; for
+     <code>P(mean &gt; T)</code> the statistic is the mean. Same machine, any question — no closed-form formula needed.</p>
+
+<script>
+const $=id=>document.getElementById(id);
+let B=10000; // number of bootstrap experiments (M) — read from the M input on each run
+let data=[];          // current sample (array of numbers)
+let last=null;        // last computed result, for redraw-on-resize
+
+/* ---------------- RNG helpers ---------------- */
+function gaussian(mu,sd){ // Box–Muller
+  let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return mu + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+const clip=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
+
+/* ---------------- distribution generators ---------------- */
+function genSample(){
+  const n=+$("nSamp").value, kind=$("dist").value, out=[];
+  if(kind==="ratings"){
+    const ws=[...$("ratingWeights").querySelectorAll("input")].map(i=>+i.value);
+    const tot=ws.reduce((s,x)=>s+x,0)||1, cum=[]; let acc=0;
+    ws.forEach(w=>{ acc+=w/tot; cum.push(acc); });
+    for(let i=0;i<n;i++){ const u=Math.random(); let r=cum.findIndex(c=>u<=c); if(r<0)r=4; out.push(r+1); }
+  }else if(kind==="normal"){
+    const mu=+$("nMu").value, sd=+$("nSd").value;
+    for(let i=0;i<n;i++) out.push(+clip(gaussian(mu,sd),0,100).toFixed(1));
+  }else if(kind==="bimodal"){
+    const mu1=+$("bMu1").value, mu2=+$("bMu2").value, sd=+$("bSd").value, mix=+$("bMix").value/100;
+    for(let i=0;i<n;i++){ const m=Math.random()<mix?mu2:mu1; out.push(+clip(gaussian(m,sd),0,100).toFixed(1)); }
+  }else if(kind==="exp"){
+    const mean=+$("eMean").value, lam=1/Math.max(1e-9,mean);
+    for(let i=0;i<n;i++) out.push(+(-Math.log(Math.random())/lam).toFixed(2));
+  }else{ // uniform
+    let a=+$("uA").value, b=+$("uB").value; if(b<a){const t=a;a=b;b=t;}
+    for(let i=0;i<n;i++) out.push(+(a+Math.random()*(b-a)).toFixed(2));
+  }
+  return out;
+}
+
+/* ---------------- the statistic for the current question ---------------- */
+function eventTest(){
+  const t=$("qtype").value, T=+$("T").value, T1=+$("T1").value, T2=+$("T2").value;
+  if(t==="gt") return x=>x>T;
+  if(t==="ge") return x=>x>=T;
+  if(t==="lt") return x=>x<T;
+  if(t==="le") return x=>x<=T;
+  if(t==="range"){ const lo=Math.min(T1,T2), hi=Math.max(T1,T2); return x=>x>=lo && x<=hi; }
+  return null; // mean
+}
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const median=a=>{const s=Array.from(a).sort((x,y)=>x-y);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+function statFn(){
+  if($("qtype").value==="mean") return mean;
+  if($("qtype").value==="median") return median;
+  const test=eventTest();
+  return s=>{ let c=0; for(const x of s) if(test(x)) c++; return c/s.length; };
+}
+const isProb=()=>$("qtype").value!=="mean" && $("qtype").value!=="median";
+
+/* ---------------- bootstrap ---------------- */
+function bootstrap(sample, stat){
+  const n=sample.length, out=new Float64Array(B);
+  for(let b=0;b<B;b++){ const r=new Array(n); for(let k=0;k<n;k++) r[k]=sample[(Math.random()*n)|0]; out[b]=stat(r); }
+  return Array.from(out).sort((a,b)=>a-b);
+}
+const pctile=(sorted,p)=> sorted[Math.min(sorted.length-1, Math.max(0,Math.floor(p*sorted.length)))];
+
+/* ---------------- question description ---------------- */
+function questionText(){
+  const t=$("qtype").value, T=$("T").value, T1=$("T1").value, T2=$("T2").value;
+  const lo=Math.min(+T1,+T2), hi=Math.max(+T1,+T2);
+  if(t==="gt") return ["P(X > "+T+")","the true fraction of cases with X > "+T];
+  if(t==="ge") return ["P(X ≥ "+T+")","the true fraction of cases with X ≥ "+T];
+  if(t==="lt") return ["P(X < "+T+")","the true fraction of cases with X < "+T];
+  if(t==="le") return ["P(X ≤ "+T+")","the true fraction of cases with X ≤ "+T];
+  if(t==="range") return ["P("+lo+" ≤ X ≤ "+hi+")","the true fraction of cases with X in ["+lo+", "+hi+"]"];
+  if(t==="median") return ["median of X","the true median of X"];
+  return ["mean of X","the true mean of X"];
+}
+
+/* ---------------- run ---------------- */
+function run(){
+  if(data.length<2){ $("parsed").textContent="Need at least 2 values."; $("results").style.display="none"; return; }
+  B=Math.max(100, Math.min(100000, parseInt($("M").value)||10000)); $("M").value=B;
+  $("nRunsLocked").value=data.length;
+  const stat=statFn(), point=stat(data), sorted=bootstrap(data, stat);
+  const lo=pctile(sorted,0.025), hi=pctile(sorted,0.975);
+  last={sorted,point,lo,hi};
+  const [label, phrase]=questionText();
+  $("nV").textContent=data.length;
+  if(isProb()){
+    $("estK").textContent=label;
+    $("estV").textContent=fmtP(point);
+    $("ciV").textContent="["+fmtP(lo)+", "+fmtP(hi)+"]";
+    $("statement").innerHTML="We estimate <b>"+label+" ≈ "+fmtP(point)+"</b>. Resampling "+B.toLocaleString()+"&times;, "+
+      "we are <b>95% confident</b> that "+phrase+" lies between <b>"+fmtP(lo)+"</b> and <b>"+fmtP(hi)+"</b>.";
+  }else{
+    const qtype=$("qtype").value;
+    const statName=qtype==="mean"?"Mean":"Median";
+    $("estK").textContent=statName+" of X";
+    $("estV").textContent=point.toFixed(2);
+    $("ciV").textContent="["+lo.toFixed(2)+", "+hi.toFixed(2)+"]";
+    const T=+$("T").value, pAbove=sorted.filter(x=>x>T).length/sorted.length;
+    $("statement").innerHTML="The sample "+statName.toLowerCase()+" is <b>"+point.toFixed(2)+"</b>. We are <b>95% confident</b> the "+
+      "true "+statName.toLowerCase()+" is in <b>["+lo.toFixed(2)+", "+hi.toFixed(2)+"]</b>, and <b>P("+statName.toLowerCase()+" &gt; "+T+") ≈ "+fmtP(pAbove)+"</b>.";
+  }
+  $("results").style.display="block";
+  drawDataHist();
+  drawBootHist(sorted, point, lo, hi);
+}
+function fmtP(p){ return p>0.9995?">99.9%": p<0.0005?"<0.1%": (100*p).toFixed(1)+"%"; }
+
+/* ---------------- charts ---------------- */
+function setupCanvas(cv,cssH){
+  const ctx=cv.getContext("2d"), cssW=cv.clientWidth||900, dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+  return {ctx,cssW,cssH};
+}
+function vline(ctx,x,top,H,color,w,label,side){
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,top+H); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font="bold 12px system-ui,sans-serif"; ctx.textAlign=side==="left"?"right":"left";
+  const tx=x+(side==="left"?-5:5), ty=top+12;
+  ctx.lineWidth=3.5; ctx.strokeStyle="#fff"; ctx.lineJoin="round"; ctx.strokeText(label,tx,ty);
+  ctx.fillStyle=color; ctx.fillText(label,tx,ty);
+}
+
+// histogram of the data itself, with the event region shaded
+function drawDataHist(){
+  const cv=$("dataHist"); const {ctx,cssW,cssH}=setupCanvas(cv,300);
+  const padL=44,padR=16,padT=14,padB=40, W=cssW-padL-padR, H=cssH-padT-padB;
+  const discrete = data.every(x=>Number.isInteger(x)) && (Math.max(...data)-Math.min(...data))<=12;
+  let dmin=Math.min(...data), dmax=Math.max(...data);
+  const test = isProb()? eventTest() : null;
+  // include thresholds in the axis range
+  const Ts=[]; const qt=$("qtype").value;
+  if(qt==="range"){ Ts.push(+$("T1").value,+$("T2").value); } else if(qt!=="mean" && qt!=="median"){ Ts.push(+$("T").value); }
+  Ts.forEach(t=>{ dmin=Math.min(dmin,t); dmax=Math.max(dmax,t); });
+  if(dmin===dmax){ dmin-=1; dmax+=1; }
+
+  let bins, counts, hitFrac=[], LO, HI, bw;
+  if(discrete){
+    LO=Math.floor(dmin)-0.5; HI=Math.ceil(dmax)+0.5; bins=Math.round(HI-LO);
+    counts=new Array(bins).fill(0); const hit=new Array(bins).fill(0);
+    for(const v of data){ const b=Math.round(v-Math.ceil(LO)); if(b>=0&&b<bins){ counts[b]++; if(test&&test(v))hit[b]++; } }
+    hitFrac=counts.map((c,i)=> c? hit[i]/c : 0);
+  }else{
+    const pad=(dmax-dmin)*0.06||1; LO=dmin-pad; HI=dmax+pad; bins=40;
+    counts=new Array(bins).fill(0); const hit=new Array(bins).fill(0);
+    for(const v of data){ let b=Math.floor((v-LO)/(HI-LO)*bins); b=clip(b,0,bins-1);
+      counts[b]++; if(test&&test(v))hit[b]++; }
+    hitFrac=counts.map((c,i)=> c? hit[i]/c : 0);
+  }
+  const xs=v=>padL+(v-LO)/(HI-LO)*W; bw=W/bins;
+  const maxC=Math.max(1,...counts);
+  // bars: blue if (mostly) in event, grey otherwise
+  for(let b=0;b<bins;b++){ if(!counts[b])continue;
+    const h=counts[b]/maxC*(H-10), x=padL+b*bw+0.6, w=Math.max(0.6,bw-1.2);
+    ctx.fillStyle = !test ? "rgba(100,116,139,0.55)"
+                  : hitFrac[b]>0.5 ? "rgba(37,99,235,0.62)" : "rgba(148,163,184,0.45)";
+    ctx.fillRect(x,padT+H-h,w,h);
+  }
+  // axis
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,padT+H); ctx.lineTo(padL+W,padT+H); ctx.stroke();
+  ctx.fillStyle="#64748b"; ctx.font="12px system-ui,sans-serif"; ctx.textAlign="center";
+  const ticks=discrete? Math.min(bins,12):5;
+  for(let t=0;t<=ticks;t++){ const v=LO+t/ticks*(HI-LO); ctx.fillText((discrete?Math.round(v):v.toFixed(0)), xs(v), padT+H+18); }
+  // threshold lines
+  Ts.forEach(t=> vline(ctx,xs(t),padT,H,"#15803d",1.6,String(t),"right"));
+  // note
+  if(isProb()){
+    const [label]=questionText(); const pt=last?fmtP(last.point):"";
+    $("dataNote").innerHTML="Blue bars satisfy the event; grey bars don't. The blue mass is the point estimate of <b>"+label+" = "+pt+"</b>.";
+  }else{
+    const sn=$("qtype").value==="mean"?"mean":"median";
+    $("dataNote").innerHTML="The raw sample. The "+sn+" question is about the "+sn+", shown in the next chart.";
+  }
+}
+
+// bootstrap sampling distribution of the answer
+function drawBootHist(sorted, point, lo, hi){
+  const cv=$("bootHist"); const {ctx,cssW,cssH}=setupCanvas(cv,280);
+  const padL=44,padR=16,padT=14,padB=40, W=cssW-padL-padR, H=cssH-padT-padB;
+  let dmin=sorted[0], dmax=sorted[sorted.length-1]; const pad=(dmax-dmin)*0.12||(Math.abs(dmin)*0.05+0.01);
+  const LO=dmin-pad, HI=dmax+pad, xs=v=>padL+(v-LO)/(HI-LO)*W;
+  const BINS=50, counts=new Array(BINS).fill(0);
+  for(const v of sorted){ let b=Math.floor((v-LO)/(HI-LO)*BINS); b=clip(b,0,BINS-1); counts[b]++; }
+  const maxC=Math.max(1,...counts), bw=W/BINS;
+  ctx.fillStyle="rgba(37,99,235,0.10)"; ctx.fillRect(xs(lo),padT,Math.max(1,xs(hi)-xs(lo)),H);   // 95% band
+  ctx.fillStyle="rgba(37,99,235,0.5)";
+  for(let b=0;b<BINS;b++){ if(!counts[b])continue; const h=counts[b]/maxC*(H-10); ctx.fillRect(padL+b*bw+0.5,padT+H-h,Math.max(0.5,bw-1),h); }
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,padT+H); ctx.lineTo(padL+W,padT+H); ctx.stroke();
+  ctx.fillStyle="#64748b"; ctx.font="12px system-ui,sans-serif"; ctx.textAlign="center";
+  const fmtAx = isProb()? (v=>(100*v).toFixed(0)+"%") : (v=>v.toFixed(1));
+  for(let t=0;t<=5;t++){ const v=LO+t/5*(HI-LO); ctx.fillText(fmtAx(v), xs(v), padT+H+18); }
+  vline(ctx,xs(lo),padT,H,"#2563eb",1.4,"2.5%","left");
+  vline(ctx,xs(hi),padT,H,"#2563eb",1.4,"97.5%","right");
+  vline(ctx,xs(point),padT,H,"#b45309",2.5,isProb()?fmtP(point):point.toFixed(2),"left");
+  const lab = isProb()? questionText()[0] : ($("qtype").value==="mean"?"mean":"median");
+  $("bootNote").innerHTML="Each bar = one of "+B.toLocaleString()+" resampled estimates of <b>"+lab+"</b>. "+
+    "Shaded = 95% interval ["+(isProb()?fmtP(lo)+", "+fmtP(hi):lo.toFixed(2)+", "+hi.toFixed(2))+"]. "+
+    "A wider spread means more uncertainty — shrink it with a bigger sample.";
+}
+
+/* ---------------- parsing (paste / upload) ---------------- */
+function parseScores(txt){ return txt.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length).map(Number).filter(x=>!isNaN(x)); }
+function pickNum(o){
+  for(const k of ["score","value","rating","grade","mean","x"]) if(k in o && o[k]!=null && !isNaN(Number(o[k]))) return Number(o[k]);
+  for(const k in o){ const v=Number(o[k]); if(!isNaN(v)) return v; } return null;
+}
+function parseCSV(text){
+  const rows=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length).map(l=>l.split(/[,\t;]/).map(c=>c.trim()));
+  if(!rows.length) return [];
+  const ncol=Math.max(...rows.map(r=>r.length));
+  if(ncol===1) return rows.map(r=>Number(r[0])).filter(x=>!isNaN(x));
+  const headerIsText=rows[0].some(c=> c!=="" && isNaN(Number(c)));
+  let col=headerIsText ? rows[0].findIndex(c=>/score|value|rating|grade|result|mark|points?/i.test(c)) : -1;
+  const dataRows=headerIsText ? rows.slice(1) : rows;
+  if(col<0){ let best=0,bestN=-1;
+    for(let c=0;c<ncol;c++){ const n=dataRows.filter(r=>r[c]!=null && r[c]!=="" && !isNaN(Number(r[c]))).length;
+      if(n>=bestN){ bestN=n; best=c; } } col=best; }
+  return dataRows.map(r=>Number(r[col])).filter(x=>!isNaN(x));
+}
+function parseFile(name, text){
+  if(/\.json$/i.test(name)){
+    try{ const j=JSON.parse(text);
+      if(Array.isArray(j)) return j.map(v=> (v&&typeof v==="object") ? pickNum(v) : Number(v)).filter(x=>x!=null && !isNaN(x));
+    }catch(e){}
+    return [];
+  }
+  return parseCSV(text);
+}
+
+/* ---------------- UI wiring ---------------- */
+function showMode(gen){
+  $("tab-gen").setAttribute("aria-selected", gen); $("tab-paste").setAttribute("aria-selected", !gen);
+  $("mode-gen").classList.toggle("hide", !gen); $("mode-paste").classList.toggle("hide", gen);
+}
+$("tab-gen").onclick=()=>{ showMode(true); };
+$("tab-paste").onclick=()=>{ showMode(false); };
+
+function showDistParams(){
+  const k=$("dist").value;
+  ["ratings","normal","bimodal","exp","uniform"].forEach(d=> $("p-"+d).classList.toggle("hide", d!==k));
+}
+$("dist").onchange=()=>{ showDistParams(); drawAndRun(); };
+$("nSamp").oninput=()=>{ $("nOut").textContent=$("nSamp").value; };
+$("nSamp").onchange=()=>{ drawAndRun(); };
+$("ratingWeights").addEventListener("input", ()=>{ /* live preview only on draw */ });
+$("draw").onclick=drawAndRun;
+function drawAndRun(){ data=genSample(); $("parsed").textContent=data.length+" values drawn · mean "+mean(data).toFixed(2); run(); }
+
+$("usedata").onclick=()=>{ data=parseScores($("data").value); $("parsed").textContent=data.length+" values · mean "+(data.length?mean(data).toFixed(2):"–"); run(); };
+$("file").addEventListener("change", e=>{
+  const f=e.target.files && e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ const nums=parseFile(f.name, String(r.result));
+    if(!nums.length){ $("parsed").textContent="No numbers found in "+f.name+"."; return; }
+    data=nums; $("data").value=nums.join("\n"); $("parsed").textContent=data.length+" values · mean "+mean(data).toFixed(2); run(); };
+  r.readAsText(f);
+});
+
+function syncQuestionInputs(){
+  const t=$("qtype").value, range=t==="range";
+  $("f-T").classList.toggle("hide", range);
+  $("f-T1").classList.toggle("hide", !range);
+  $("f-T2").classList.toggle("hide", !range);
+  const hints={ gt:"Fraction of values strictly above T.", ge:"Fraction at or above T.",
+    lt:"Fraction strictly below T.", le:"Fraction at or below T.",
+    range:"Fraction of values between T1 and T2 (inclusive).",
+    mean:"Question about the average value, not a single case.",
+    median:"Question about the median value, not a single case." };
+  $("qhint").textContent=hints[t]||"";
+}
+$("qtype").onchange=()=>{ syncQuestionInputs(); run(); };
+$("ask").onclick=run;
+["T","T1","T2","M"].forEach(id=> $(id).addEventListener("change", run));
+window.addEventListener("resize", ()=>{ if(last){ drawDataHist(); drawBootHist(last.sorted,last.point,last.lo,last.hi);} });
+
+/* ---------------- init ---------------- */
+// Instantiate from URL params: ?counts=c1,c2,c3,c4,c5 (ratings 1–5) or ?sample=v,v,v…, plus &q=median&T=3.9
+// e.g. the event-simulator Estimate tab links here with its exact sample.
+function applyFromURL(){
+  const q=new URLSearchParams(location.search);
+  if(q.has('q')){ const t=q.get('q'); if([...$("qtype").options].some(o=>o.value===t)) $("qtype").value=t; }
+  if(q.has('T')){ const T=parseFloat(q.get('T')); if(!isNaN(T)) $("T").value=T; }
+  syncQuestionInputs();
+  let vals=null;
+  if(q.has('counts')){
+    const cs=q.get('counts').split(',').map(x=>Math.max(0, parseInt(x)||0)).slice(0,5);
+    vals=[]; cs.forEach((c,k)=>{ for(let i=0;i<c;i++) vals.push(k+1); });
+  }else if(q.has('sample')){
+    vals=parseScores(q.get('sample'));
+  }
+  if(vals && vals.length>=2){
+    data=vals; $("data").value=vals.join(' ');
+    showMode(false); // open on the paste tab so the handed-over sample is visible
+    $("parsed").textContent=data.length+" values loaded from the link · mean "+mean(data).toFixed(2);
+    run(); return true;
+  }
+  return false;
+}
+showMode(true); showDistParams(); syncQuestionInputs();
+if(!applyFromURL()) drawAndRun();
+</script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiple Hypothesis Testing Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+      --text: #e2e8f0; --text-dim: #8892a4;
+      --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+      --yellow: #eab308; --purple: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+
+    .layout { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(0, 2fr); gap: 1.5rem; padding: 0 1rem; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+
+    label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    input[type="range"] { width: 100%; background: transparent; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; margin: 0.3rem 0 0.6rem 0; }
+    input[type="range"]::-webkit-slider-track { background: var(--border); height: 6px; border-radius: 3px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-a); cursor: pointer; margin-top: -5px; }
+
+    .slider-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .slider-row label { flex-shrink: 0; margin-bottom: 0; min-width: 140px; }
+    .slider-row input { flex: 1; }
+    .slider-row .val { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent-a); min-width: 40px; text-align: right; }
+
+    .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent-a); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-warn { background: var(--accent-b); color: #fff; }
+    .btn-warn:hover { background: #ea580c; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-green:hover { background: #16a34a; }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .insight-banner strong { color: var(--text); }
+
+    .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+    .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .explainer summary:hover { color: var(--text); }
+    .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+
+    /* Tournament table */
+    .tournament-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .tournament-table th, .tournament-table td { padding: 0.4rem 0.6rem; text-align: center; border-bottom: 1px solid var(--border); }
+    .tournament-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.04em; }
+    .tournament-table td { color: var(--text); }
+    .tournament-table tr.winner { background: rgba(34,197,94,0.08); }
+    .tournament-table tr.winner td { color: var(--green); font-weight: 600; }
+    .tournament-table .cell-best { color: var(--green); font-weight: 700; }
+    .tournament-table .cell-true { color: var(--yellow); font-size: 0.7rem; }
+
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem; text-align: center; }
+    .stat-card .label { font-size: 0.68rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+    .stat-card .value { font-size: 1.2rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .stat-card .sub { font-size: 0.7rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 0.15rem; }
+
+    .chart-wrap { height: 250px; position: relative; }
+
+    .ship-box { background: var(--surface-2); border: 2px dashed var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; margin-bottom: 1rem; }
+    .ship-box h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .ship-box p { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.75rem; }
+
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .compare-table th, .compare-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; }
+
+    .step-indicator { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .step { padding: 0.35rem 0.75rem; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.7rem; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+    .step.active { background: rgba(59,130,246,0.1); color: var(--accent-a); border-color: var(--accent-a); }
+    .step.done { background: rgba(34,197,94,0.1); color: var(--green); border-color: var(--green); }
+  </style>
+</head>
+<body>
+  <h1>Multiple Hypothesis Testing Lab</h1>
+  <div class="subtitle">Source #4 — "You didn't peek at the data. You're still fooled."</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>The scenario:</strong> You design N prompt variants for a customer support bot. Each variant was crafted from different design principles — you never looked at the test data. You evaluate all N on the same test set (measuring <strong>Correctness</strong>) and pick the winner.</p>
+      <p><strong>The question:</strong> If you measured just <em>one</em> variant, your estimate of its Correctness would be unbiased — noisy, but centered on the truth. But when you test N and pick the best, the winner's score is <strong>biased upward</strong>. How much? The Gumbel distribution tells us exactly.</p>
+      <p><strong>Key distinction from overfitting (#3):</strong> In overfitting, you <em>see</em> the data and it shapes your system (information leakage). Here, you <em>never</em> see the data — but selecting best-of-N on the same dataset creates <strong>selection bias</strong>.</p>
+
+      <h4 style="margin-top:1rem; color:var(--yellow);">Why the Gumbel distribution?</h4>
+      <p>Each variant's measured score is a random variable: the true score plus noise ≈ Normal(0, σ/√n), where σ is the per-item standard deviation and n is the test set size. When you pick the <strong>maximum</strong> of N such i.i.d. normals, the distribution of that maximum follows a <strong>Gumbel distribution</strong> (the Type I extreme value distribution).</p>
+      <p>The expected inflation — how much the best-of-N is above the true score — is:</p>
+      <div style="text-align:center; margin:0.6rem 0; font-family:'DM Mono',monospace; font-size:0.85rem; color:var(--accent-a); background:rgba(59,130,246,0.08); padding:0.5rem; border-radius:6px;">
+        E[best-of-N] &minus; true &approx; (σ / √n) &times; √(2 &middot; ln N)
+      </div>
+      <p>Compare to a single variant: E[single] − true = 0. The gap between "one measurement" and "best of N measurements" is exactly this Gumbel offset.</p>
+      <p style="margin-top:0.5rem;"><strong>Intuition:</strong> Ask one person to guess your weight — their guess is unbiased, just noisy. Ask 50 people and keep the closest guess — that guess is biased toward being "too accurate." The more people guess, the luckier the best guesser was.</p>
+    </div>
+  </details>
+
+  <div class="step-indicator">
+    <span class="step active" id="step1-ind">1. Run Tournament</span>
+    <span class="step" id="step2-ind">2. Reveal Truth</span>
+    <span class="step" id="step3-ind">3. Single vs Best-of-N</span>
+  </div>
+
+  <div class="layout">
+    <div class="left-col">
+      <div class="panel">
+        <h2>Tournament Setup</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.75rem;">
+          All variants have the <strong>same true quality</strong>. Any differences in measured scores come purely from sampling noise.
+        </p>
+        <div class="slider-row">
+          <label>Num Variants (N)</label>
+          <input type="range" id="num-variants" min="2" max="50" value="10" oninput="document.getElementById('num-variants-val').textContent=this.value">
+          <span class="val" id="num-variants-val">10</span>
+        </div>
+        <div class="slider-row">
+          <label>Test Set Size (n)</label>
+          <input type="range" id="test-size" min="20" max="500" value="100" step="10" oninput="document.getElementById('test-size-val').textContent=this.value">
+          <span class="val" id="test-size-val">100</span>
+        </div>
+        <div class="slider-row">
+          <label>True Correctness</label>
+          <input type="range" id="true-score" min="2.0" max="4.5" value="3.8" step="0.1" oninput="document.getElementById('true-score-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="true-score-val">3.8</span>
+        </div>
+        <p style="font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;">
+          All N variants have this same true score. The spread comes from sampling noise only.
+        </p>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="runTournament()">1. Run Tournament</button>
+        <button class="btn btn-warn" onclick="revealTruth()">2. Reveal Truth</button>
+        <button class="btn btn-green" onclick="showBiasScaling()">3. Single vs Best-of-N</button>
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+        <p><strong style="color:var(--accent-a);">1. Run Tournament</strong> — Creates N variants (all with the same true Correctness) and evaluates each on a test set of n queries. You'll see a bar chart of variant scores and a leaderboard. The winner looks convincingly better — but it's noise.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--accent-b);">2. Reveal Truth</strong> — Re-evaluates the tournament winner on a fresh test set. The inflated score collapses back toward the true score. Also runs 50 tournaments to show winner instability — a different variant "wins" almost every time.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--green);">3. Single vs Best-of-N</strong> — Compares the distribution of <em>single-variant</em> estimates (unbiased) against <em>best-of-N</em> estimates (biased up), and checks whether the gap matches the Gumbel prediction (σ/√n)·√(2 ln N).</p>
+      </div>
+
+      <div class="panel" style="margin-top: 1rem;">
+        <h2>What's happening</h2>
+        <div id="explanation" style="font-size:0.78rem; line-height:1.5; color:var(--text-dim);">
+          Click "Run Tournament" to generate N variants and evaluate them on the same test set. The winner looks convincing — but is it real?
+        </div>
+      </div>
+    </div>
+
+    <div class="right-col" id="results">
+      <div class="insight-banner">
+        <strong>Start here:</strong> Click "Run Tournament" to evaluate N prompt variants on a test set. You'll pick a winner. Then we'll check if the winner is actually better.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== SAMPLING =====
+    function sampleGamma(shape) {
+      if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x, v;
+        do {
+          const u1 = Math.random();
+          const u2 = Math.random();
+          x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          v = 1 + c * x;
+        } while (v <= 0);
+        v = v * v * v;
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    }
+
+    function sampleBeta(alpha, beta) {
+      const x = sampleGamma(alpha);
+      const y = sampleGamma(beta);
+      return x / (x + y);
+    }
+
+    function evaluateVariant(trueScore, n) {
+      // Each variant has the same true score. Evaluate = draw n samples and average.
+      const mu = Math.max(0.01, Math.min(0.99, (trueScore - 1) / 4));
+      const concentration = 12;
+      const alpha = mu * concentration;
+      const beta = (1 - mu) * concentration;
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const u = sampleBeta(alpha, beta);
+        const score = 1 + u * 4;
+        sum += Math.round(score * 2) / 2;
+      }
+      return sum / n;
+    }
+
+    let trueCorrectness = 3.8;
+
+    let lastTournament = null;
+    const charts = {};
+
+    // ===== TOURNAMENT =====
+    function runTournament() {
+      const N = parseInt(document.getElementById('num-variants').value);
+      const n = parseInt(document.getElementById('test-size').value);
+      trueCorrectness = parseFloat(document.getElementById('true-score').value);
+
+      // Generate all variants' measured Correctness scores
+      const variants = [];
+      for (let i = 0; i < N; i++) {
+        variants.push({
+          id: i + 1,
+          name: `Variant #${i + 1}`,
+          correctness: evaluateVariant(trueCorrectness, n)
+        });
+      }
+
+      // Find winner (best Correctness)
+      let bestIdx = 0;
+      variants.forEach((v, i) => {
+        if (v.correctness > variants[bestIdx].correctness) bestIdx = i;
+      });
+
+      // Also evaluate winner on a fresh test set
+      const freshCorrectness = evaluateVariant(trueCorrectness, n);
+
+      lastTournament = { variants, bestIdx, N, n, freshCorrectness };
+
+      setStep(1);
+      renderTournamentResults();
+    }
+
+    function renderTournamentResults() {
+      const { variants, bestIdx, N, n } = lastTournament;
+      const winner = variants[bestIdx];
+      let html = '';
+
+      html += `<div class="insight-banner">
+        <strong>Tournament complete:</strong> ${N} prompt variants evaluated on the same ${n}-query test set.
+        The table below shows each variant's Correctness score. The winner (highlighted) scored highest.
+      </div>`;
+
+      // Show top variants in a table (all of them if N <= 20, else top 15 + bottom note)
+      const showAll = N <= 20;
+
+      html += `<div class="panel" style="overflow-x:auto;">
+        <h2>Tournament Results — Ranked by Correctness</h2>
+        <table class="tournament-table">
+          <thead>
+            <tr><th>Variant</th><th>Correctness</th></tr>
+          </thead>
+          <tbody>`;
+
+      // Sort by Correctness for display
+      const sorted = [...variants].sort((a, b) => b.correctness - a.correctness);
+      const display = showAll ? sorted : sorted.slice(0, 15);
+
+      display.forEach(v => {
+        const isWinner = v.id === winner.id;
+        html += `<tr class="${isWinner ? 'winner' : ''}">
+          <td>${v.name} ${isWinner ? '👑' : ''}</td>
+          <td class="${isWinner ? 'cell-best' : ''}">${v.correctness.toFixed(2)}</td>
+        </tr>`;
+      });
+
+      if (!showAll) {
+        html += `<tr><td colspan="2" style="color:var(--text-dim); font-style:italic;">... and ${N - 15} more variants</td></tr>`;
+      }
+
+      html += `</tbody></table></div>`;
+
+      // Ship decision
+      html += `<div class="ship-box">
+        <h3>${winner.name} wins with Correctness ${winner.correctness.toFixed(2)}</h3>
+        <p>That's ${(winner.correctness - trueCorrectness).toFixed(2)} above what you'd expect from a single variant. Impressive! Ship it?</p>
+        <button class="btn btn-warn" onclick="revealTruth()" style="font-size:0.9rem; padding:0.7rem 1.5rem;">
+          Check on fresh data →
+        </button>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+
+      document.getElementById('explanation').innerHTML = `
+        <strong>What you see:</strong> ${N} variants, all with the same true Correctness of ${trueCorrectness.toFixed(1)}.
+        Sampling noise created a spread. The "winner" scored ${winner.correctness.toFixed(2)} — but that's partly luck.
+        <br><br>The more variants you test, the luckier the luckiest one gets.
+      `;
+    }
+
+    function revealTruth() {
+      if (!lastTournament) { runTournament(); return; }
+      setStep(2);
+
+      const { variants, bestIdx, N, n, freshCorrectness } = lastTournament;
+      const winner = variants[bestIdx];
+      let html = '';
+
+      const inflatedScore = winner.correctness;
+      const freshScore = freshCorrectness;
+      const trueScore = trueCorrectness;
+      const selectionBias = inflatedScore - trueScore;
+
+      html += `<div class="insight-banner" style="border-left-color: var(--red);">
+        <strong>The reveal:</strong> All ${N} variants had true Correctness = ${trueScore.toFixed(1)}.
+        The winner scored ${inflatedScore.toFixed(2)} on the original test — but ${freshScore.toFixed(2)} on fresh data.
+        The gap of <strong>${selectionBias >= 0 ? '+' : ''}${selectionBias.toFixed(2)}</strong> is pure selection bias: you picked the luckiest, not the best.
+      </div>`;
+
+      // Side-by-side comparison
+      html += `<div class="stat-cards">
+        <div class="stat-card">
+          <div class="label">True Score</div>
+          <div class="value" style="color:var(--yellow);">${trueScore.toFixed(2)}</div>
+          <div class="sub">Same for all variants</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Tournament Score</div>
+          <div class="value" style="color:var(--green);">${inflatedScore.toFixed(2)}</div>
+          <div class="sub">Biased by selection</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Fresh Test Score</div>
+          <div class="value" style="color:var(--accent-a);">${freshScore.toFixed(2)}</div>
+          <div class="sub">Honest measurement</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Selection Bias</div>
+          <div class="value" style="color:var(--red);">+${selectionBias.toFixed(2)}</div>
+          <div class="sub">Winner's inflation</div>
+        </div>
+      </div>`;
+
+      // Histogram of all variants' scores + true value line
+      html += `<div class="panel">
+        <h2>Score Distribution Across Variants</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          Each bar is one variant's Correctness score. The yellow line is the true score (${trueScore.toFixed(1)}).
+          The green marker is the "winner." All variants are equally good — the winner just got lucky.
+        </p>
+        <div class="chart-wrap"><canvas id="variant-dist"></canvas></div>
+      </div>`;
+
+      // Run many tournaments to show instability
+      html += `<div class="panel">
+        <h2>Run It 50 Times — Different Winner Every Time</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          We re-ran the same ${N}-variant tournament 50 times. Each row shows a different tournament's winner.
+          The "best system" changes every time — because there is no best system.
+        </p>
+        <div class="chart-wrap" style="height:200px;"><canvas id="winner-instability"></canvas></div>
+      </div>`;
+
+      // Fix-it summary
+      html += `<div class="panel">
+        <h2>How To Fix It</h2>
+        <table class="compare-table">
+          <thead><tr><th>Strategy</th><th>How it works</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Two-stage evaluation</strong></td><td>Use one dataset to pick the winner, a <em>fresh</em> dataset to measure its true performance. The honest number comes from data the winner never touched.</td></tr>
+            <tr><td><strong>Bonferroni correction</strong></td><td>Divide your significance threshold by N. If testing 10 variants at α=0.05, require α=0.005 per comparison. Conservative but safe.</td></tr>
+            <tr><td><strong>Report N</strong></td><td>Always say "best of N variants" alongside the score. A score of 4.3 (best of 50) means something very different from 4.3 (only variant tested).</td></tr>
+            <tr><td><strong>Pre-registration</strong></td><td>Decide which variant you'll test before seeing any results. Eliminates post-hoc selection entirely.</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+
+      // Render charts
+      setTimeout(() => {
+        renderVariantDistribution(variants, trueScore, bestIdx);
+        renderWinnerInstability(N, n, trueScore);
+      }, 0);
+
+      document.getElementById('explanation').innerHTML = `
+        <strong>Selection bias in action.</strong> The winner scored ${inflatedScore.toFixed(2)} but the truth is ${trueScore.toFixed(1)}.
+        On fresh data it scored ${freshScore.toFixed(2)} — the inflation disappeared.
+        <br><br><strong>Does more data help?</strong> Partially. Larger n shrinks the per-variant noise, so the bias gets smaller. But it never reaches zero as long as you're picking best-of-N. The real fix is process: two-stage evaluation or statistical corrections.
+      `;
+    }
+
+    function showBiasScaling() {
+      if (!lastTournament) { runTournament(); }
+      setStep(3);
+
+      const N = parseInt(document.getElementById('num-variants').value);
+      const n = parseInt(document.getElementById('test-size').value);
+      const trueScore = parseFloat(document.getElementById('true-score').value);
+
+      let html = '';
+
+      html += `<div class="insight-banner" style="border-left-color: var(--yellow);">
+        <strong>Single variant vs best-of-N.</strong> If you evaluate <em>one</em> variant, your score estimate is unbiased — noisy but centered on the true value.
+        If you evaluate N variants and keep the best, the winner's score is systematically inflated. The Gumbel distribution predicts by how much.
+      </div>`;
+
+      // Side-by-side distributions
+      html += `<div class="panel">
+        <h2>Distribution of the Reported Score — Single vs Best-of-${N}</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          2,000 repetitions each. <span style="color:var(--accent-a);">Blue</span>: a single variant's measured Correctness (n=${n}).
+          <span style="color:var(--red);">Red</span>: the winner's Correctness after picking the best of N=${N}.
+          <span style="color:var(--yellow);">Yellow line</span>: true score. <span style="color:var(--accent-b);">Orange line</span>: Gumbel prediction E[best-of-N] = true + (σ/√n)·√(2 ln N).
+        </p>
+        <div class="chart-wrap" style="height:260px;"><canvas id="single-vs-bestofn"></canvas></div>
+      </div>`;
+
+      // Bias vs N
+      html += `<div class="panel">
+        <h2>Inflation vs Number of Variants</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          For each N we run 200 tournaments and measure the average gap between the winner's score and the true score.
+          The flat blue baseline is the single-variant estimate (bias = 0). Test set size n=${n}.
+        </p>
+        <div class="chart-wrap" style="height:280px;"><canvas id="bias-scaling"></canvas></div>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+
+      setTimeout(() => {
+        renderSingleVsBestOfN(N, n, trueScore);
+        renderBiasScaling(n, trueScore);
+      }, 0);
+
+      document.getElementById('explanation').innerHTML = `
+        <strong>The Gumbel offset is real and predictable.</strong> A single-variant estimate has zero bias.
+        A best-of-N estimate is shifted up by ≈ (σ/√n)·√(2 ln N) — the gold/orange line tracks the empirical red curve.
+        <br><br>This is why reporting "best of N" without correction overstates quality, and why a fresh test set is the cleanest fix.
+      `;
+    }
+
+    // ===== CHART RENDERING =====
+    function renderVariantDistribution(variants, trueScore, winnerIdx) {
+      const ctx = document.getElementById('variant-dist');
+      if (!ctx) return;
+      if (charts['variant-dist']) charts['variant-dist'].destroy();
+
+      const scores = variants.map(v => v.correctness);
+      const colors = variants.map((v, i) => i === winnerIdx ? '#22c55e' : '#3b82f680');
+      const borders = variants.map((v, i) => i === winnerIdx ? '#22c55e' : '#3b82f6');
+
+      charts['variant-dist'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: variants.map(v => `#${v.id}`),
+          datasets: [{
+            label: 'Correctness',
+            data: scores,
+            backgroundColor: colors,
+            borderColor: borders,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              min: Math.min(trueScore - 0.8, Math.min(...scores) - 0.2),
+              max: Math.max(trueScore + 0.8, Math.max(...scores) + 0.2),
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#8892a4' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: "'DM Mono', monospace", size: 9 }, color: '#8892a4', maxRotation: 45 }
+            }
+          }
+        },
+        plugins: [{
+          id: 'trueLine',
+          afterDatasetsDraw(chart) {
+            const yScale = chart.scales.y;
+            const y = yScale.getPixelForValue(trueScore);
+            chart.ctx.save();
+            chart.ctx.strokeStyle = '#eab308';
+            chart.ctx.lineWidth = 2;
+            chart.ctx.setLineDash([6, 4]);
+            chart.ctx.beginPath();
+            chart.ctx.moveTo(chart.chartArea.left, y);
+            chart.ctx.lineTo(chart.chartArea.right, y);
+            chart.ctx.stroke();
+            chart.ctx.restore();
+          }
+        }]
+      });
+    }
+
+    function renderWinnerInstability(N, n, trueScore) {
+      const ctx = document.getElementById('winner-instability');
+      if (!ctx) return;
+      if (charts['winner-instability']) charts['winner-instability'].destroy();
+
+      // Run 50 tournaments
+      const winnerScores = [];
+      for (let t = 0; t < 50; t++) {
+        let best = -Infinity;
+        for (let i = 0; i < N; i++) {
+          const score = evaluateVariant(trueScore, n);
+          if (score > best) best = score;
+        }
+        winnerScores.push(best);
+      }
+
+      charts['winner-instability'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: winnerScores.map((_, i) => `T${i + 1}`),
+          datasets: [{
+            data: winnerScores,
+            backgroundColor: '#a78bfa40',
+            borderColor: '#a78bfa',
+            borderWidth: 1,
+            borderRadius: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              min: trueScore - 0.3,
+              max: Math.max(...winnerScores) + 0.2,
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#8892a4' }
+            },
+            x: { display: false }
+          }
+        },
+        plugins: [{
+          id: 'trueLine2',
+          afterDatasetsDraw(chart) {
+            const y = chart.scales.y.getPixelForValue(trueScore);
+            chart.ctx.save();
+            chart.ctx.strokeStyle = '#eab308';
+            chart.ctx.lineWidth = 2;
+            chart.ctx.setLineDash([6, 4]);
+            chart.ctx.beginPath();
+            chart.ctx.moveTo(chart.chartArea.left, y);
+            chart.ctx.lineTo(chart.chartArea.right, y);
+            chart.ctx.stroke();
+            chart.ctx.restore();
+          }
+        }]
+      });
+    }
+
+    function renderBiasScaling(n, trueScore) {
+      const ctx = document.getElementById('bias-scaling');
+      if (!ctx) return;
+      if (charts['bias-scaling']) charts['bias-scaling'].destroy();
+
+      const Ns = [2, 5, 10, 15, 20, 30, 50];
+      const avgBias = [];
+      const singleBias = [];
+
+      Ns.forEach(N => {
+        const biases = [];
+        const singles = [];
+        for (let t = 0; t < 200; t++) {
+          let best = -Infinity;
+          for (let i = 0; i < N; i++) {
+            const score = evaluateVariant(trueScore, n);
+            if (score > best) best = score;
+          }
+          biases.push(best - trueScore);
+          singles.push(evaluateVariant(trueScore, n) - trueScore);
+        }
+        avgBias.push(biases.reduce((a, b) => a + b, 0) / biases.length);
+        singleBias.push(singles.reduce((a, b) => a + b, 0) / singles.length);
+      });
+
+      const gumbelTheory = Ns.map(N => gumbelOffset(N, n, trueScore));
+
+      charts['bias-scaling'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Ns.map(n => `N=${n}`),
+          datasets: [
+            {
+              label: 'Best-of-N (empirical)',
+              data: avgBias,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239,68,68,0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 5,
+              pointBackgroundColor: '#ef4444',
+              borderWidth: 2
+            },
+            {
+              label: 'Gumbel Theory: (σ/√n)·√(2 ln N)',
+              data: gumbelTheory,
+              borderColor: '#eab308',
+              borderWidth: 2.5,
+              borderDash: [8, 4],
+              tension: 0.3,
+              pointRadius: 4,
+              pointStyle: 'triangle',
+              pointBackgroundColor: '#eab308',
+              fill: false
+            },
+            {
+              label: 'Single variant (baseline, bias≈0)',
+              data: singleBias,
+              borderColor: '#3b82f6',
+              borderWidth: 2,
+              borderDash: [2, 3],
+              tension: 0,
+              pointRadius: 3,
+              pointBackgroundColor: '#3b82f6',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Score Inflation', color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#8892a4' }
+            },
+            x: {
+              title: { display: true, text: 'Variants Tested', color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } },
+              grid: { display: false },
+              ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#8892a4' }
+            }
+          }
+        }
+      });
+    }
+
+    function gumbelOffset(N, n, trueScore) {
+      const mu = Math.max(0.01, Math.min(0.99, (trueScore - 1) / 4));
+      const concentration = 12;
+      const alphaP = mu * concentration, betaP = (1 - mu) * concentration;
+      const betaVar = (alphaP * betaP) / ((alphaP + betaP) ** 2 * (alphaP + betaP + 1));
+      const itemSigma = Math.sqrt(betaVar) * 4;
+      const sigmaEff = Math.sqrt(itemSigma ** 2 + 0.08 ** 2);
+      return (sigmaEff / Math.sqrt(n)) * Math.sqrt(2 * Math.log(N));
+    }
+
+    function renderSingleVsBestOfN(N, n, trueScore) {
+      const ctx = document.getElementById('single-vs-bestofn');
+      if (!ctx) return;
+      if (charts['single-vs-bestofn']) charts['single-vs-bestofn'].destroy();
+
+      const reps = 2000;
+      const singleScores = [];
+      const bestOfNScores = [];
+      for (let t = 0; t < reps; t++) {
+        singleScores.push(evaluateVariant(trueScore, n));
+        let best = -Infinity;
+        for (let i = 0; i < N; i++) {
+          const s = evaluateVariant(trueScore, n);
+          if (s > best) best = s;
+        }
+        bestOfNScores.push(best);
+      }
+
+      // Histogram bins
+      const allVals = singleScores.concat(bestOfNScores);
+      const lo = Math.min(...allVals), hi = Math.max(...allVals);
+      const nBins = 40;
+      const binW = (hi - lo) / nBins;
+      const bins = Array.from({ length: nBins }, (_, i) => lo + (i + 0.5) * binW);
+      const singleHist = new Array(nBins).fill(0);
+      const bestHist = new Array(nBins).fill(0);
+      singleScores.forEach(v => { const b = Math.min(nBins - 1, Math.floor((v - lo) / binW)); singleHist[b]++; });
+      bestOfNScores.forEach(v => { const b = Math.min(nBins - 1, Math.floor((v - lo) / binW)); bestHist[b]++; });
+
+      const gumbelMean = trueScore + gumbelOffset(N, n, trueScore);
+
+      charts['single-vs-bestofn'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bins.map(b => b.toFixed(2)),
+          datasets: [
+            {
+              label: `Single variant (n=${n})`,
+              data: singleHist,
+              backgroundColor: 'rgba(59,130,246,0.45)',
+              borderColor: '#3b82f6',
+              borderWidth: 1,
+              categoryPercentage: 1.0,
+              barPercentage: 1.0
+            },
+            {
+              label: `Best of N=${N}`,
+              data: bestHist,
+              backgroundColor: 'rgba(239,68,68,0.45)',
+              borderColor: '#ef4444',
+              borderWidth: 1,
+              categoryPercentage: 1.0,
+              barPercentage: 1.0
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } } }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Count', color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#8892a4' }
+            },
+            x: {
+              title: { display: true, text: 'Reported Correctness Score', color: '#8892a4', font: { family: "'DM Mono', monospace", size: 11 } },
+              grid: { display: false },
+              ticks: { font: { family: "'DM Mono', monospace", size: 9 }, color: '#8892a4', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+              stacked: false
+            }
+          }
+        },
+        plugins: [{
+          id: 'markers',
+          afterDatasetsDraw(chart) {
+            const xScale = chart.scales.x;
+            const draw = (val, color, label) => {
+              const xIdx = Math.round((val - lo) / binW);
+              const x = xScale.getPixelForValue(xIdx);
+              chart.ctx.save();
+              chart.ctx.strokeStyle = color;
+              chart.ctx.lineWidth = 2;
+              chart.ctx.setLineDash([6, 4]);
+              chart.ctx.beginPath();
+              chart.ctx.moveTo(x, chart.chartArea.top);
+              chart.ctx.lineTo(x, chart.chartArea.bottom);
+              chart.ctx.stroke();
+              chart.ctx.setLineDash([]);
+              chart.ctx.fillStyle = color;
+              chart.ctx.font = "11px 'DM Mono', monospace";
+              chart.ctx.fillText(label, x + 4, chart.chartArea.top + 12);
+              chart.ctx.restore();
+            };
+            draw(trueScore, '#eab308', `true=${trueScore.toFixed(2)}`);
+            draw(gumbelMean, '#f97316', `Gumbel E[max]=${gumbelMean.toFixed(2)}`);
+          }
+        }]
+      });
+    }
+
+    // ===== STEP INDICATOR =====
+    function setStep(n) {
+      ['step1-ind', 'step2-ind', 'step3-ind'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        el.className = 'step';
+        if (i + 1 < n) el.className = 'step done';
+        if (i + 1 === n) el.className = 'step active';
+      });
+    }
+  </script>
+</body>
+</html>

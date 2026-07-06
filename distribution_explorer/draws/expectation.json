@@ -1,0 +1,17 @@
+{
+  "10": {
+    "n": 10,
+    "expectation_estimate": 0.8173,
+    "abs_error_vs_true_p": 0.0027
+  },
+  "30": {
+    "n": 30,
+    "expectation_estimate": 0.8181,
+    "abs_error_vs_true_p": 0.0019
+  },
+  "100": {
+    "n": 100,
+    "expectation_estimate": 0.8207,
+    "abs_error_vs_true_p": 0.0007
+  }
+}

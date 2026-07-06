@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Evaluation Playgrounds</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --border: #e2e8f0;
+      --text: #0f172a; --text-dim: #64748b;
+      --accent-a: #2563eb; --accent-b: #ea580c;
+      --green: #16a34a; --yellow: #ca8a04; --purple: #7c3aed;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2.5rem;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.3rem; }
+
+    .intro {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      max-width: 700px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+      display: block;
+    }
+    .card:hover {
+      border-color: var(--accent-a);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.10);
+      transform: translateY(-2px);
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+
+    .card .tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+      margin-right: 0.3rem;
+    }
+    .tag-interactive { background: rgba(22,163,74,0.08); color: var(--green); border: 1px solid rgba(22,163,74,0.25); }
+    .tag-stats { background: rgba(124,58,237,0.08); color: var(--purple); border: 1px solid rgba(124,58,237,0.25); }
+    .tag-key { background: rgba(202,138,4,0.08); color: var(--yellow); border: 1px solid rgba(202,138,4,0.3); }
+
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+    }
+    .footer a { color: var(--accent-a); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .site-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .site-nav .brand {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-a);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .site-nav .brand:hover { color: var(--text); }
+    .site-nav .links { display: flex; gap: 1rem; }
+    .site-nav .links a {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .site-nav .links a:hover,
+    .site-nav .links a.active {
+      color: var(--accent-a);
+      border-bottom-color: var(--accent-a);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="site-nav">
+      <a class="brand" href="https://reliableai.github.io/">Reliable AI</a>
+      <div class="links">
+        <a href="index.html" class="active">Playground</a>
+        <a href="https://reliableai.github.io/ai-ready-engineer-eval/index.html">Eval Course</a>
+      </div>
+    </nav>
+    <h1>AI Evaluation Playgrounds</h1>
+    <div class="intro">
+      Interactive labs — turn the dials and <strong>feel</strong> each source of uncertainty in AI evaluation, then see how to reduce it. No install, no code.
+    </div>
+
+    <div class="card-grid">
+
+      <a class="card" href="event_simulator/index.html">
+        <h3>Simulate Any Event</h3>
+        <p>Coins, dice, roulette, poker &mdash; compute any probability just by simulating. Three demos: simulate an event, a ratings distribution where whole-experiment statistics become certainties, and estimating claims from one sample (Beta, closed form, bootstrap).</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">probability by simulation</span>
+      </a>
+
+      <a class="card" href="accuracy_estimator/index.html">
+        <h3>Beta Calculator</h3>
+        <p>Enter how often an event occurred and get a posterior over the true rate: point estimate, 95% credible interval, and P(rate &gt; T). Powered by the Beta distribution with selectable priors.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">beta posterior</span>
+      </a>
+
+      <a class="card" href="bootstrap_calculator/index.html">
+        <h3>Bootstrap Calculator</h3>
+        <p>Pick a distribution or paste your own sample, then ask <em>any</em> question &mdash; P(X &gt; T), P(mean &gt; T), P(median &gt; T) &mdash; and get the answer plus a 95% interval for how sure you can be. No formulas.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">bootstrap</span>
+      </a>
+
+      <a class="card" href="basic_classification_and_noise/index.html">
+        <h3>Basic Classification + Noise</h3>
+        <p>A trained ML classifier over real datasets. Set a test-set size, spin the wheel, and watch accuracy, the confusion matrix, and a Beta credible interval move. A score is one draw.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">sampling noise</span>
+      </a>
+
+      <a class="card" href="sampling_noise/index.html">
+        <h3>Sampling Noise</h3>
+        <p>Run the same evaluation twice &mdash; get different numbers. Set true scores, pick a sample size, and watch the scorecard wobble. Then tame it with beta posteriors, bootstrap CIs, and confidence intervals.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">more data helps</span>
+      </a>
+
+      <a class="card" href="sampling_bias/index.html">
+        <h3>Sampling Bias</h3>
+        <p>Your test set is 70% English but production is 40%. The scorecard looks great &mdash; until you see what users actually experience. Explore biased vs. representative sampling with adjustable mixes.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">more data doesn&rsquo;t help</span>
+      </a>
+
+      <a class="card" href="distribution_explorer/index.html">
+        <h3>Bias&ndash;Variance&ndash;Noise Explorer</h3>
+        <p>Pull apart the three things that move a measurement &mdash; a systematic offset, spread, and random noise. Adjust the distributions and watch the shape, the mean, and the uncertainty change.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">distributions</span>
+      </a>
+
+      <a class="card" href="llm_as_a_judge/index.html">
+        <h3>LLM as a Judge</h3>
+        <p>The LLM as the thing that judges your AI's answers. An LLM that <strong>classifies</strong> (real predictions, confusion matrix, the lean that is bias), then the <strong>scoring</strong> judge: turn the bias and noise dials and watch noise widen the interval while bias slides it off the truth.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">judge noise &amp; bias</span>
+      </a>
+
+      <a class="card" href="judge_audit/index.html">
+        <h3>Judge Auditor</h3>
+        <p>Audit an LLM judge against trusted human labels: measure agreement, surface systematic bias, and see how a subjective rubric shifts the score &mdash; before you trust the judge to grade anything.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">judge of judges</span>
+      </a>
+
+      <a class="card" href="multiple_hypothesis_testing/index.html">
+        <h3>Lucky-Winner Finder</h3>
+        <p>You test 10 prompt variants. The winner scores 4.3 &mdash; ship it? All variants had the same true score; the &ldquo;winner&rdquo; was just the luckiest. See how selection bias grows with the number of things you try.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">selection bias</span>
+      </a>
+
+      <a class="card" href="holdout_simulator/index.html">
+        <h3>Holdout Simulator</h3>
+        <p>Iterate on a prompt against a dev set and watch the score climb across versions &mdash; then check the held-out set and see the gap. The difference between fitting the data and fitting the world.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">process discipline</span>
+      </a>
+
+      <a class="card" href="domain_variance/index.html">
+        <h3>Variance Across Domains</h3>
+        <p>Aggregate says 4.0, but Client A sees 4.5 and Client B sees 3.0 &mdash; the aggregate hides the story. Includes a Simpson&rsquo;s Paradox demo where the &ldquo;winning&rdquo; system actually loses everywhere.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">property of the world</span>
+      </a>
+
+      <a class="card" href="metric_choice/index.html">
+        <h3>Choice of Metric</h3>
+        <p>Mean says A wins. Threshold rate says B wins. Worst-case says B wins clearly. The winner changes with every tab click &mdash; the data didn&rsquo;t change, the question did.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">design decision</span>
+      </a>
+
+      <a class="card" href="llm_evolution/index.html">
+        <h3>LLM Evolution</h3>
+        <p>GPT-4: 97.6% &rarr; 2.4% in 3 months. Same prompt, same task &mdash; the model changed under you. Real documented cases plus a simulated version timeline.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">version discipline</span>
+      </a>
+
+      <a class="card" href="temporal_drift/index.html">
+        <h3>Temporal Drift Lab</h3>
+        <p>Your January eval says nothing about April. Simulate 12 months of gradual degradation and sudden shocks, and see how long it takes to notice without continuous monitoring.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">fresh data over time</span>
+      </a>
+
+      <a class="card" href="judges_and_compounding/index.html">
+        <h3>Judges &amp; Compounding</h3>
+        <p>Every source applies again at the judge level. See how judge noise widens CIs, judge bias shifts scores, and stacking uncertainties makes a measurement unreliable.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">cross-cutting</span>
+      </a>
+
+      <a class="card" href="experiment_report/index.html">
+        <h3>Experiment-Report Evaluator</h3>
+        <p>Submit an eval write-up and check whether the evidence supports the decision. The capstone tool that turns a measured result into a ship, canary, or iterate recommendation.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-key">capstone</span>
+      </a>
+
+      <a class="card" href="convolution_of_independent_random_variables/index.html">
+        <h3>N Coin Flips</h3>
+        <p>Watch the bell curve emerge as you add coin flips &mdash; a visual introduction to the Central Limit Theorem and the convolution of independent random variables.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">CLT</span>
+      </a>
+
+      <a class="card" href="bootstrap_lab/index.html">
+        <h3>Bootstrap Lab</h3>
+        <p>Hands-on bootstrapping: resample your data, build sampling distributions, compute confidence intervals, and test whether two samples differ. The engine behind many of the uncertainty fixes.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">bootstrap</span>
+      </a>
+
+    </div>
+
+    <div class="footer">
+      Fabio Casati &middot; <a href="https://reliableai.github.io/">Reliable AI</a> &middot; <a href="https://www.linkedin.com/in/sphoebs/">LinkedIn</a> &middot; <a href="https://x.com/sphoebs">X</a>
+    </div>
+  </div>
+</body>
+</html>

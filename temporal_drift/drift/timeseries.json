@@ -1,0 +1,808 @@
+{
+  "series": [
+    {
+      "day": 0,
+      "accuracy": 0.8333333333333334,
+      "urgent_rate": 0.15,
+      "mean_length": 53.3,
+      "segment_accuracy": {
+        "consumer": 0.8928571428571429,
+        "smb": 0.8571428571428571,
+        "enterprise": 0.625,
+        "vip": 1.0
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 1,
+      "accuracy": 0.8083333333333333,
+      "urgent_rate": 0.16666666666666666,
+      "mean_length": 54.833333333333336,
+      "segment_accuracy": {
+        "consumer": 0.896551724137931,
+        "smb": 0.8484848484848485,
+        "enterprise": 0.6666666666666666,
+        "vip": 0.375
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 2,
+      "accuracy": 0.85,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 57.291666666666664,
+      "segment_accuracy": {
+        "consumer": 0.8958333333333334,
+        "smb": 0.8095238095238095,
+        "enterprise": 0.9,
+        "vip": 0.7
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 3,
+      "accuracy": 0.7333333333333333,
+      "urgent_rate": 0.10833333333333334,
+      "mean_length": 56.36666666666667,
+      "segment_accuracy": {
+        "consumer": 0.864406779661017,
+        "smb": 0.6071428571428571,
+        "enterprise": 0.6,
+        "vip": 0.625
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 4,
+      "accuracy": 0.8333333333333334,
+      "urgent_rate": 0.18333333333333332,
+      "mean_length": 57.55833333333333,
+      "segment_accuracy": {
+        "consumer": 0.8909090909090909,
+        "smb": 0.8214285714285714,
+        "enterprise": 0.8076923076923077,
+        "vip": 0.6363636363636364
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 5,
+      "accuracy": 0.8416666666666667,
+      "urgent_rate": 0.21666666666666667,
+      "mean_length": 55.74166666666667,
+      "segment_accuracy": {
+        "consumer": 0.8909090909090909,
+        "smb": 0.8,
+        "enterprise": 0.8076923076923077,
+        "vip": 0.75
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 6,
+      "accuracy": 0.85,
+      "urgent_rate": 0.15833333333333333,
+      "mean_length": 54.18333333333333,
+      "segment_accuracy": {
+        "consumer": 0.8392857142857143,
+        "smb": 0.7941176470588235,
+        "enterprise": 0.9523809523809523,
+        "vip": 0.8888888888888888
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 7,
+      "accuracy": 0.775,
+      "urgent_rate": 0.19166666666666668,
+      "mean_length": 57.916666666666664,
+      "segment_accuracy": {
+        "consumer": 0.8461538461538461,
+        "smb": 0.65625,
+        "enterprise": 0.7407407407407407,
+        "vip": 0.8888888888888888
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 8,
+      "accuracy": 0.8416666666666667,
+      "urgent_rate": 0.125,
+      "mean_length": 56.858333333333334,
+      "segment_accuracy": {
+        "consumer": 0.8695652173913043,
+        "smb": 0.8055555555555556,
+        "enterprise": 0.8571428571428571,
+        "vip": 0.8
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 9,
+      "accuracy": 0.775,
+      "urgent_rate": 0.15,
+      "mean_length": 54.96666666666667,
+      "segment_accuracy": {
+        "consumer": 0.8070175438596491,
+        "smb": 0.7352941176470589,
+        "enterprise": 0.7727272727272727,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 10,
+      "accuracy": 0.825,
+      "urgent_rate": 0.15833333333333333,
+      "mean_length": 54.325,
+      "segment_accuracy": {
+        "consumer": 0.8301886792452831,
+        "smb": 0.9,
+        "enterprise": 0.7368421052631579,
+        "vip": 0.625
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 11,
+      "accuracy": 0.7833333333333333,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 59.891666666666666,
+      "segment_accuracy": {
+        "consumer": 0.8979591836734694,
+        "smb": 0.8,
+        "enterprise": 0.5217391304347826,
+        "vip": 0.7692307692307693
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 12,
+      "accuracy": 0.8083333333333333,
+      "urgent_rate": 0.20833333333333334,
+      "mean_length": 53.05833333333333,
+      "segment_accuracy": {
+        "consumer": 0.864406779661017,
+        "smb": 0.8823529411764706,
+        "enterprise": 0.7,
+        "vip": 0.2857142857142857
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 13,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.24166666666666667,
+      "mean_length": 56.84166666666667,
+      "segment_accuracy": {
+        "consumer": 0.7959183673469388,
+        "smb": 0.7631578947368421,
+        "enterprise": 0.68,
+        "vip": 0.875
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 14,
+      "accuracy": 0.8,
+      "urgent_rate": 0.15833333333333333,
+      "mean_length": 57.05,
+      "segment_accuracy": {
+        "consumer": 0.8679245283018868,
+        "smb": 0.7560975609756098,
+        "enterprise": 0.75,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 15,
+      "accuracy": 0.75,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 53.0,
+      "segment_accuracy": {
+        "consumer": 0.8275862068965517,
+        "smb": 0.7352941176470589,
+        "enterprise": 0.56,
+        "vip": 1.0
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 16,
+      "accuracy": 0.8416666666666667,
+      "urgent_rate": 0.175,
+      "mean_length": 56.958333333333336,
+      "segment_accuracy": {
+        "consumer": 0.9272727272727272,
+        "smb": 0.7586206896551724,
+        "enterprise": 0.8076923076923077,
+        "vip": 0.7
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 17,
+      "accuracy": 0.8333333333333334,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 55.05833333333333,
+      "segment_accuracy": {
+        "consumer": 0.86,
+        "smb": 0.8571428571428571,
+        "enterprise": 0.7727272727272727,
+        "vip": 0.6666666666666666
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 18,
+      "accuracy": 0.8666666666666667,
+      "urgent_rate": 0.16666666666666666,
+      "mean_length": 54.2,
+      "segment_accuracy": {
+        "consumer": 0.9285714285714286,
+        "smb": 0.8571428571428571,
+        "enterprise": 0.7727272727272727,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 19,
+      "accuracy": 0.8416666666666667,
+      "urgent_rate": 0.16666666666666666,
+      "mean_length": 56.94166666666667,
+      "segment_accuracy": {
+        "consumer": 0.8541666666666666,
+        "smb": 0.9069767441860465,
+        "enterprise": 0.7619047619047619,
+        "vip": 0.625
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 20,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.14166666666666666,
+      "mean_length": 57.43333333333333,
+      "segment_accuracy": {
+        "consumer": 0.8666666666666667,
+        "smb": 0.8,
+        "enterprise": 0.64,
+        "vip": 0.5
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 21,
+      "accuracy": 0.7916666666666666,
+      "urgent_rate": 0.14166666666666666,
+      "mean_length": 57.791666666666664,
+      "segment_accuracy": {
+        "consumer": 0.8035714285714286,
+        "smb": 0.8076923076923077,
+        "enterprise": 0.8387096774193549,
+        "vip": 0.42857142857142855
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 22,
+      "accuracy": 0.8166666666666667,
+      "urgent_rate": 0.14166666666666666,
+      "mean_length": 54.041666666666664,
+      "segment_accuracy": {
+        "consumer": 0.9056603773584906,
+        "smb": 0.7567567567567568,
+        "enterprise": 0.7692307692307693,
+        "vip": 0.5
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 23,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.125,
+      "mean_length": 55.575,
+      "segment_accuracy": {
+        "consumer": 0.864406779661017,
+        "smb": 0.7,
+        "enterprise": 0.68,
+        "vip": 0.5
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 24,
+      "accuracy": 0.825,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 54.31666666666667,
+      "segment_accuracy": {
+        "consumer": 0.9016393442622951,
+        "smb": 0.8148148148148148,
+        "enterprise": 0.68,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 25,
+      "accuracy": 0.8416666666666667,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 56.50833333333333,
+      "segment_accuracy": {
+        "consumer": 0.9361702127659575,
+        "smb": 0.8157894736842105,
+        "enterprise": 0.7586206896551724,
+        "vip": 0.6666666666666666
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 26,
+      "accuracy": 0.825,
+      "urgent_rate": 0.18333333333333332,
+      "mean_length": 55.516666666666666,
+      "segment_accuracy": {
+        "consumer": 0.8181818181818182,
+        "smb": 0.868421052631579,
+        "enterprise": 0.8,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 27,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.10833333333333334,
+      "mean_length": 58.675,
+      "segment_accuracy": {
+        "consumer": 0.8571428571428571,
+        "smb": 0.75,
+        "enterprise": 0.6521739130434783,
+        "vip": 0.6666666666666666
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 28,
+      "accuracy": 0.7416666666666667,
+      "urgent_rate": 0.125,
+      "mean_length": 57.24166666666667,
+      "segment_accuracy": {
+        "consumer": 0.8301886792452831,
+        "smb": 0.7666666666666667,
+        "enterprise": 0.5666666666666667,
+        "vip": 0.7142857142857143
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 29,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.21666666666666667,
+      "mean_length": 54.5,
+      "segment_accuracy": {
+        "consumer": 0.8421052631578947,
+        "smb": 0.7948717948717948,
+        "enterprise": 0.5882352941176471,
+        "vip": 0.42857142857142855
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 30,
+      "accuracy": 0.8083333333333333,
+      "urgent_rate": 0.14166666666666666,
+      "mean_length": 53.475,
+      "segment_accuracy": {
+        "consumer": 0.8888888888888888,
+        "smb": 0.7297297297297297,
+        "enterprise": 0.75,
+        "vip": 0.7777777777777778
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 31,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.11666666666666667,
+      "mean_length": 56.708333333333336,
+      "segment_accuracy": {
+        "consumer": 0.8035714285714286,
+        "smb": 0.8378378378378378,
+        "enterprise": 0.6666666666666666,
+        "vip": 0.3333333333333333
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 32,
+      "accuracy": 0.7583333333333333,
+      "urgent_rate": 0.18333333333333332,
+      "mean_length": 51.925,
+      "segment_accuracy": {
+        "consumer": 0.8382352941176471,
+        "smb": 0.75,
+        "enterprise": 0.5882352941176471,
+        "vip": 0.42857142857142855
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 33,
+      "accuracy": 0.7583333333333333,
+      "urgent_rate": 0.175,
+      "mean_length": 62.0,
+      "segment_accuracy": {
+        "consumer": 0.7358490566037735,
+        "smb": 0.8333333333333334,
+        "enterprise": 0.7307692307692307,
+        "vip": 0.7272727272727273
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 34,
+      "accuracy": 0.7583333333333333,
+      "urgent_rate": 0.13333333333333333,
+      "mean_length": 62.88333333333333,
+      "segment_accuracy": {
+        "consumer": 0.8043478260869565,
+        "smb": 0.7692307692307693,
+        "enterprise": 0.6521739130434783,
+        "vip": 0.75
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 35,
+      "accuracy": 0.7583333333333333,
+      "urgent_rate": 0.16666666666666666,
+      "mean_length": 62.94166666666667,
+      "segment_accuracy": {
+        "consumer": 0.7636363636363637,
+        "smb": 0.7586206896551724,
+        "enterprise": 0.7407407407407407,
+        "vip": 0.7777777777777778
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 36,
+      "accuracy": 0.6916666666666667,
+      "urgent_rate": 0.21666666666666667,
+      "mean_length": 63.96666666666667,
+      "segment_accuracy": {
+        "consumer": 0.7272727272727273,
+        "smb": 0.7272727272727273,
+        "enterprise": 0.5833333333333334,
+        "vip": 0.625
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 37,
+      "accuracy": 0.7666666666666667,
+      "urgent_rate": 0.21666666666666667,
+      "mean_length": 63.24166666666667,
+      "segment_accuracy": {
+        "consumer": 0.7592592592592593,
+        "smb": 0.7804878048780488,
+        "enterprise": 0.7692307692307693,
+        "vip": 0.75
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 38,
+      "accuracy": 0.7416666666666667,
+      "urgent_rate": 0.19166666666666668,
+      "mean_length": 68.34166666666667,
+      "segment_accuracy": {
+        "consumer": 0.7017543859649122,
+        "smb": 0.7857142857142857,
+        "enterprise": 0.7272727272727273,
+        "vip": 0.8461538461538461
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 39,
+      "accuracy": 0.775,
+      "urgent_rate": 0.23333333333333334,
+      "mean_length": 61.03333333333333,
+      "segment_accuracy": {
+        "consumer": 0.8181818181818182,
+        "smb": 0.7142857142857143,
+        "enterprise": 0.7142857142857143,
+        "vip": 0.8
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 40,
+      "accuracy": 0.7,
+      "urgent_rate": 0.16666666666666666,
+      "mean_length": 64.33333333333333,
+      "segment_accuracy": {
+        "consumer": 0.8596491228070176,
+        "smb": 0.6129032258064516,
+        "enterprise": 0.4444444444444444,
+        "vip": 0.8
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 41,
+      "accuracy": 0.7333333333333333,
+      "urgent_rate": 0.2833333333333333,
+      "mean_length": 71.20833333333333,
+      "segment_accuracy": {
+        "consumer": 0.7692307692307693,
+        "smb": 0.6551724137931034,
+        "enterprise": 0.7777777777777778,
+        "vip": 0.6666666666666666
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 42,
+      "accuracy": 0.6833333333333333,
+      "urgent_rate": 0.30833333333333335,
+      "mean_length": 69.53333333333333,
+      "segment_accuracy": {
+        "consumer": 0.7090909090909091,
+        "smb": 0.71875,
+        "enterprise": 0.5,
+        "vip": 0.7692307692307693
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 43,
+      "accuracy": 0.6333333333333333,
+      "urgent_rate": 0.225,
+      "mean_length": 71.45833333333333,
+      "segment_accuracy": {
+        "consumer": 0.7307692307692307,
+        "smb": 0.65625,
+        "enterprise": 0.48148148148148145,
+        "vip": 0.4444444444444444
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 44,
+      "accuracy": 0.775,
+      "urgent_rate": 0.25833333333333336,
+      "mean_length": 65.95,
+      "segment_accuracy": {
+        "consumer": 0.7936507936507936,
+        "smb": 0.8055555555555556,
+        "enterprise": 0.6111111111111112,
+        "vip": 1.0
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 45,
+      "accuracy": 0.7,
+      "urgent_rate": 0.24166666666666667,
+      "mean_length": 75.34166666666667,
+      "segment_accuracy": {
+        "consumer": 0.7818181818181819,
+        "smb": 0.7931034482758621,
+        "enterprise": 0.4583333333333333,
+        "vip": 0.5833333333333334
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 46,
+      "accuracy": 0.6916666666666667,
+      "urgent_rate": 0.2916666666666667,
+      "mean_length": 80.375,
+      "segment_accuracy": {
+        "consumer": 0.6829268292682927,
+        "smb": 0.8292682926829268,
+        "enterprise": 0.64,
+        "vip": 0.38461538461538464
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 47,
+      "accuracy": 0.7166666666666667,
+      "urgent_rate": 0.325,
+      "mean_length": 77.20833333333333,
+      "segment_accuracy": {
+        "consumer": 0.8604651162790697,
+        "smb": 0.6428571428571429,
+        "enterprise": 0.7142857142857143,
+        "vip": 0.2857142857142857
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 48,
+      "accuracy": 0.7333333333333333,
+      "urgent_rate": 0.31666666666666665,
+      "mean_length": 75.65,
+      "segment_accuracy": {
+        "consumer": 0.8305084745762712,
+        "smb": 0.75,
+        "enterprise": 0.5,
+        "vip": 0.5555555555555556
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 49,
+      "accuracy": 0.6833333333333333,
+      "urgent_rate": 0.21666666666666667,
+      "mean_length": 75.95,
+      "segment_accuracy": {
+        "consumer": 0.7288135593220338,
+        "smb": 0.7272727272727273,
+        "enterprise": 0.5,
+        "vip": 0.6666666666666666
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 50,
+      "accuracy": 0.6833333333333333,
+      "urgent_rate": 0.3416666666666667,
+      "mean_length": 78.80833333333334,
+      "segment_accuracy": {
+        "consumer": 0.6909090909090909,
+        "smb": 0.6666666666666666,
+        "enterprise": 0.7777777777777778,
+        "vip": 0.5454545454545454
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 51,
+      "accuracy": 0.6583333333333333,
+      "urgent_rate": 0.375,
+      "mean_length": 76.28333333333333,
+      "segment_accuracy": {
+        "consumer": 0.71875,
+        "smb": 0.5806451612903226,
+        "enterprise": 0.6470588235294118,
+        "vip": 0.5
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 52,
+      "accuracy": 0.5833333333333334,
+      "urgent_rate": 0.3416666666666667,
+      "mean_length": 81.4,
+      "segment_accuracy": {
+        "consumer": 0.603448275862069,
+        "smb": 0.6206896551724138,
+        "enterprise": 0.6666666666666666,
+        "vip": 0.25
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 53,
+      "accuracy": 0.6,
+      "urgent_rate": 0.35833333333333334,
+      "mean_length": 82.525,
+      "segment_accuracy": {
+        "consumer": 0.6530612244897959,
+        "smb": 0.6216216216216216,
+        "enterprise": 0.5769230769230769,
+        "vip": 0.25
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 54,
+      "accuracy": 0.7,
+      "urgent_rate": 0.31666666666666665,
+      "mean_length": 79.44166666666666,
+      "segment_accuracy": {
+        "consumer": 0.7627118644067796,
+        "smb": 0.6666666666666666,
+        "enterprise": 0.4666666666666667,
+        "vip": 0.8571428571428571
+      },
+      "out_of_band": false
+    },
+    {
+      "day": 55,
+      "accuracy": 0.675,
+      "urgent_rate": 0.4,
+      "mean_length": 86.575,
+      "segment_accuracy": {
+        "consumer": 0.7692307692307693,
+        "smb": 0.6666666666666666,
+        "enterprise": 0.5384615384615384,
+        "vip": 0.5555555555555556
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 56,
+      "accuracy": 0.5833333333333334,
+      "urgent_rate": 0.35833333333333334,
+      "mean_length": 89.49166666666666,
+      "segment_accuracy": {
+        "consumer": 0.7115384615384616,
+        "smb": 0.4594594594594595,
+        "enterprise": 0.6111111111111112,
+        "vip": 0.38461538461538464
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 57,
+      "accuracy": 0.6583333333333333,
+      "urgent_rate": 0.38333333333333336,
+      "mean_length": 84.99166666666666,
+      "segment_accuracy": {
+        "consumer": 0.74,
+        "smb": 0.627906976744186,
+        "enterprise": 0.6190476190476191,
+        "vip": 0.3333333333333333
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 58,
+      "accuracy": 0.6333333333333333,
+      "urgent_rate": 0.275,
+      "mean_length": 87.53333333333333,
+      "segment_accuracy": {
+        "consumer": 0.6875,
+        "smb": 0.6136363636363636,
+        "enterprise": 0.631578947368421,
+        "vip": 0.4444444444444444
+      },
+      "out_of_band": true
+    },
+    {
+      "day": 59,
+      "accuracy": 0.5583333333333333,
+      "urgent_rate": 0.48333333333333334,
+      "mean_length": 88.45,
+      "segment_accuracy": {
+        "consumer": 0.6610169491525424,
+        "smb": 0.48148148148148145,
+        "enterprise": 0.4642857142857143,
+        "vip": 0.3333333333333333
+      },
+      "out_of_band": true
+    }
+  ],
+  "control_band": {
+    "center": 0.8055555555555554,
+    "sd": 0.037289211749500756,
+    "lower": 0.6936879203070531,
+    "upper": 0.9174231908040577
+  },
+  "change_point": 30,
+  "segments": [
+    "consumer",
+    "smb",
+    "enterprise",
+    "vip"
+  ],
+  "drift": {
+    "psi_length": 0.30966447799006924,
+    "psi_product": 0.04066179935531819,
+    "ks_length": {
+      "statistic": 0.2311111111111111,
+      "pvalue": 1.1095040473475864e-84
+    },
+    "urgent_rate_ref": 0.15694444444444444,
+    "urgent_rate_cur": 0.26805555555555555,
+    "urgent_rate_delta": 0.1111111111111111
+  }
+}

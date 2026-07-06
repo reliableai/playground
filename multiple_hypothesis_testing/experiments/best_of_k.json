@@ -1,0 +1,126 @@
+{
+  "experiment": "best_of_k",
+  "k": 20,
+  "true_acc": 0.85,
+  "n_test": 500,
+  "n_fresh": 500,
+  "variants": [
+    {
+      "name": "variant_00",
+      "true_acc": 0.85,
+      "measured_acc": 0.858
+    },
+    {
+      "name": "variant_01",
+      "true_acc": 0.85,
+      "measured_acc": 0.848
+    },
+    {
+      "name": "variant_02",
+      "true_acc": 0.85,
+      "measured_acc": 0.832
+    },
+    {
+      "name": "variant_03",
+      "true_acc": 0.85,
+      "measured_acc": 0.824
+    },
+    {
+      "name": "variant_04",
+      "true_acc": 0.85,
+      "measured_acc": 0.844
+    },
+    {
+      "name": "variant_05",
+      "true_acc": 0.85,
+      "measured_acc": 0.824
+    },
+    {
+      "name": "variant_06",
+      "true_acc": 0.85,
+      "measured_acc": 0.846
+    },
+    {
+      "name": "variant_07",
+      "true_acc": 0.85,
+      "measured_acc": 0.852
+    },
+    {
+      "name": "variant_08",
+      "true_acc": 0.85,
+      "measured_acc": 0.86
+    },
+    {
+      "name": "variant_09",
+      "true_acc": 0.85,
+      "measured_acc": 0.862
+    },
+    {
+      "name": "variant_10",
+      "true_acc": 0.85,
+      "measured_acc": 0.874
+    },
+    {
+      "name": "variant_11",
+      "true_acc": 0.85,
+      "measured_acc": 0.848
+    },
+    {
+      "name": "variant_12",
+      "true_acc": 0.85,
+      "measured_acc": 0.812
+    },
+    {
+      "name": "variant_13",
+      "true_acc": 0.85,
+      "measured_acc": 0.868
+    },
+    {
+      "name": "variant_14",
+      "true_acc": 0.85,
+      "measured_acc": 0.864
+    },
+    {
+      "name": "variant_15",
+      "true_acc": 0.85,
+      "measured_acc": 0.854
+    },
+    {
+      "name": "variant_16",
+      "true_acc": 0.85,
+      "measured_acc": 0.854
+    },
+    {
+      "name": "variant_17",
+      "true_acc": 0.85,
+      "measured_acc": 0.868
+    },
+    {
+      "name": "variant_18",
+      "true_acc": 0.85,
+      "measured_acc": 0.836
+    },
+    {
+      "name": "variant_19",
+      "true_acc": 0.85,
+      "measured_acc": 0.902
+    }
+  ],
+  "selection": {
+    "winner": "variant_19",
+    "winner_measured": 0.902,
+    "winner_true": 0.85,
+    "mean_true": 0.85,
+    "inflation_vs_winner_true": 0.052000000000000046,
+    "inflation_vs_mean_true": 0.052000000000000046
+  },
+  "fresh_confirm": {
+    "winner": "variant_19",
+    "selection_score": 0.902,
+    "fresh_score": 0.836,
+    "true_acc": 0.85,
+    "regression": 0.06600000000000006
+  },
+  "fwer_alpha05": 0.6415140775914581,
+  "bonferroni_alpha05": 0.0025
+}

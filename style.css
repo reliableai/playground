@@ -1,0 +1,100 @@
+/* Shared playground shell.
+   Use alongside the site stylesheet (../style.css):
+       <link rel="stylesheet" href="../../style.css">
+       <link rel="stylesheet" href="../style.css">
+   Individual playgrounds layer their own page-specific styles on top of this.
+*/
+
+.nav-back {
+  margin-bottom: 1.5rem;
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.nav-back:hover {
+  color: var(--color-primary);
+}
+
+/* A lab-section is a logical chunk of a lab page — heading + prose + figures + takeaway. */
+.lab-section {
+  margin: 2.5rem 0;
+}
+.lab-section h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+}
+.lab-section p {
+  margin: 0.6rem 0;
+}
+.lab-section ul,
+.lab-section ol {
+  margin: 0.6rem 0 0.6rem 1.35rem;
+}
+.lab-section li {
+  margin: 0.25rem 0;
+}
+
+/* Takeaway: blue side-bar callout for the punchline of a section. */
+.lab-section .takeaway {
+  background: rgba(37, 99, 235, 0.06);
+  border-left: 3px solid var(--color-primary);
+  padding: 0.9rem 1.15rem;
+  margin: 1rem 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.95rem;
+}
+.lab-section .takeaway strong {
+  color: var(--color-text);
+}
+
+/* Figure card: grey block introducing a chart, an illustrative table, or a code output. */
+.lab-section .figure {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.lab-section .figure strong {
+  color: var(--color-text);
+}
+
+/* Tables inside lab sections — for per-label F1s, summaries, comparison rows. */
+.lab-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.lab-section th,
+.lab-section td {
+  padding: 0.5rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+.lab-section th {
+  font-weight: 600;
+  background: var(--color-surface);
+}
+.lab-section td.num,
+.lab-section th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lab-section tfoot td {
+  border-top: 2px solid var(--color-border-strong);
+  border-bottom: none;
+}
+
+.lab-section .note {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* Code in lab sections — slightly smaller and lighter than the global default. */
+.lab-section code {
+  font-size: 0.85em;
+}

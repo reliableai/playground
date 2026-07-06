@@ -1,0 +1,96 @@
+{
+  "experiment": "inflation_curve",
+  "true_acc": 0.85,
+  "n_test": 500,
+  "n_repeats": 4000,
+  "curve": [
+    {
+      "k": 1,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8503615,
+      "mean_inflation": 0.0003615000000000146,
+      "fwer_alpha05": 0.050000000000000044,
+      "bonferroni_alpha05": 0.05
+    },
+    {
+      "k": 2,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8586545,
+      "mean_inflation": 0.00865450000000001,
+      "fwer_alpha05": 0.09750000000000003,
+      "bonferroni_alpha05": 0.025
+    },
+    {
+      "k": 3,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8632190000000001,
+      "mean_inflation": 0.013219000000000092,
+      "fwer_alpha05": 0.1426250000000001,
+      "bonferroni_alpha05": 0.016666666666666666
+    },
+    {
+      "k": 5,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8682059999999999,
+      "mean_inflation": 0.018205999999999944,
+      "fwer_alpha05": 0.22621906250000023,
+      "bonferroni_alpha05": 0.01
+    },
+    {
+      "k": 8,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.872462,
+      "mean_inflation": 0.022461999999999982,
+      "fwer_alpha05": 0.33657956871093775,
+      "bonferroni_alpha05": 0.00625
+    },
+    {
+      "k": 10,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8742929999999999,
+      "mean_inflation": 0.024292999999999898,
+      "fwer_alpha05": 0.4012630607616213,
+      "bonferroni_alpha05": 0.005
+    },
+    {
+      "k": 15,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8773695,
+      "mean_inflation": 0.027369500000000047,
+      "fwer_alpha05": 0.536708769840247,
+      "bonferroni_alpha05": 0.0033333333333333335
+    },
+    {
+      "k": 20,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.878787,
+      "mean_inflation": 0.028787000000000007,
+      "fwer_alpha05": 0.6415140775914581,
+      "bonferroni_alpha05": 0.0025
+    },
+    {
+      "k": 30,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.881693,
+      "mean_inflation": 0.03169299999999997,
+      "fwer_alpha05": 0.7853612360570628,
+      "bonferroni_alpha05": 0.0016666666666666668
+    },
+    {
+      "k": 50,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8849405,
+      "mean_inflation": 0.03494050000000004,
+      "fwer_alpha05": 0.9230550247232868,
+      "bonferroni_alpha05": 0.001
+    },
+    {
+      "k": 100,
+      "true_acc": 0.85,
+      "mean_best_measured": 0.8887775000000001,
+      "mean_inflation": 0.03877750000000013,
+      "fwer_alpha05": 0.994079470779666,
+      "bonferroni_alpha05": 0.0005
+    }
+  ]
+}

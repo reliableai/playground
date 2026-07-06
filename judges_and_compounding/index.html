@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Judges &amp; Compounding Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+    :root {
+      --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+      --text: #e2e8f0; --text-dim: #8892a4;
+      --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+      --yellow: #eab308; --purple: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+    .layout { display: grid; grid-template-columns: minmax(350px,1fr) minmax(0,2fr); gap: 1.5rem; padding: 0 1rem; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+    label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+    input[type="range"] { width: 100%; background: transparent; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; margin: 0.3rem 0 0.5rem 0; }
+    input[type="range"]::-webkit-slider-track { background: var(--border); height: 6px; border-radius: 3px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-a); cursor: pointer; margin-top: -5px; }
+    .slider-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .slider-row label { flex-shrink: 0; margin-bottom: 0; min-width: 130px; }
+    .slider-row input { flex: 1; }
+    .slider-row .val { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent-a); min-width: 45px; text-align: right; }
+    .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent-a); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-warn { background: var(--accent-b); color: #fff; }
+    .btn-warn:hover { background: #ea580c; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .insight-banner strong { color: var(--text); }
+    .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+    .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+    .chart-wrap { height: 280px; position: relative; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; }
+    .stat-card .label { font-size: 0.65rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .stat-card .value { font-size: 1.1rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .stat-card .sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .compare-table th, .compare-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; }
+    .tab-row { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border); }
+    .tab { padding: 0.6rem 1rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--text-dim); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent-a); border-bottom-color: var(--accent-a); }
+  </style>
+</head>
+<body>
+  <h1>Judges &amp; Compounding Lab</h1>
+  <div class="subtitle">Cross-cutting layer + Capstone — "Every uncertainty applies again at the judge level."</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>Sources #1–9 assumed a perfect judge.</strong> You asked "is this response correct?" and got the right answer. In reality, the judge is itself an imperfect system. Every uncertainty source applies <em>again</em> at the judge level.</p>
+      <p><strong>Compounding:</strong> Judge uncertainty doesn't just add to other uncertainties — it <strong>multiplies</strong>. A noisy judge + sampling noise = much wider CIs than either alone. A biased judge + biased sample = errors that reinforce each other.</p>
+      <p><strong>Part 1 — Judge Noise:</strong> Same judge, same input, different scores each time. See how judge noise widens your confidence intervals.</p>
+      <p><strong>Part 2 — Judge Bias:</strong> A generous vs harsh judge. Same outputs, different scorecards.</p>
+      <p><strong>Part 3 — Compounding:</strong> Stack multiple sources together and see the total uncertainty explode.</p>
+    </div>
+  </details>
+
+  <div class="tab-row">
+    <div class="tab active" id="tab-noise" onclick="switchTab('noise')">Judge Noise</div>
+    <div class="tab" id="tab-bias" onclick="switchTab('bias')">Judge Bias</div>
+    <div class="tab" id="tab-compound" onclick="switchTab('compound')">Compounding</div>
+  </div>
+
+  <div class="layout">
+    <div class="left-col">
+      <!-- Judge noise panel -->
+      <div class="panel" id="panel-noise">
+        <h2>Judge Noise Settings</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.6rem;">
+          The judge scores each item on 1-5, but with some noise. Higher noise = the same item gets different scores each time.
+        </p>
+        <div class="slider-row">
+          <label>True Score</label>
+          <input type="range" id="judge-true" min="2.0" max="4.8" value="3.8" step="0.1" oninput="document.getElementById('judge-true-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="judge-true-val">3.8</span>
+        </div>
+        <div class="slider-row">
+          <label>Sample Size (n)</label>
+          <input type="range" id="judge-n" min="10" max="200" value="50" step="10" oninput="document.getElementById('judge-n-val').textContent=this.value">
+          <span class="val" id="judge-n-val">50</span>
+        </div>
+        <div class="slider-row">
+          <label>Judge Noise (σ)</label>
+          <input type="range" id="judge-noise" min="0" max="1.5" value="0" step="0.1" oninput="document.getElementById('judge-noise-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="judge-noise-val">0.0</span>
+        </div>
+        <p style="font-size:0.68rem; color:var(--text-dim); margin-top:0.3rem;">σ=0: perfect judge. σ=1: each item's score can shift ±1 randomly. σ=1.5: very noisy judge.</p>
+      </div>
+
+      <!-- Judge bias panel (hidden initially) -->
+      <div class="panel" id="panel-bias" style="display:none;">
+        <h2>Judge Bias Settings</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.6rem;">
+          Compare a generous judge vs a harsh judge on the same set of outputs.
+        </p>
+        <div class="slider-row">
+          <label>True Score</label>
+          <input type="range" id="bias-true" min="2.0" max="4.8" value="3.8" step="0.1" oninput="document.getElementById('bias-true-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="bias-true-val">3.8</span>
+        </div>
+        <div class="slider-row">
+          <label>Sample Size (n)</label>
+          <input type="range" id="bias-n" min="20" max="200" value="100" step="10" oninput="document.getElementById('bias-n-val').textContent=this.value">
+          <span class="val" id="bias-n-val">100</span>
+        </div>
+        <div class="slider-row">
+          <label>Generous Bias</label>
+          <input type="range" id="bias-generous" min="0" max="1.0" value="0.5" step="0.1" oninput="document.getElementById('bias-gen-val').textContent='+'+parseFloat(this.value).toFixed(1)">
+          <span class="val" id="bias-gen-val">+0.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Harsh Bias</label>
+          <input type="range" id="bias-harsh" min="0" max="1.0" value="0.4" step="0.1" oninput="document.getElementById('bias-harsh-val').textContent='−'+parseFloat(this.value).toFixed(1)">
+          <span class="val" id="bias-harsh-val">−0.4</span>
+        </div>
+      </div>
+
+      <!-- Compounding panel (hidden initially) -->
+      <div class="panel" id="panel-compound" style="display:none;">
+        <h2>Stack Uncertainties</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.6rem;">
+          Toggle sources on/off to see how the total CI grows when uncertainties compound.
+        </p>
+        <div class="slider-row">
+          <label>True Score</label>
+          <input type="range" id="comp-true" min="2.0" max="4.8" value="3.8" step="0.1" oninput="document.getElementById('comp-true-val').textContent=parseFloat(this.value).toFixed(1)">
+          <span class="val" id="comp-true-val">3.8</span>
+        </div>
+        <div class="slider-row">
+          <label>Sample Size (n)</label>
+          <input type="range" id="comp-n" min="20" max="200" value="50" step="10" oninput="document.getElementById('comp-n-val').textContent=this.value">
+          <span class="val" id="comp-n-val">50</span>
+        </div>
+        <div style="margin-top:0.5rem;">
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; margin-bottom:0.4rem;">
+            <input type="checkbox" id="comp-sampling" checked> <span>Sampling noise (n queries)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; margin-bottom:0.4rem;">
+            <input type="checkbox" id="comp-judge-noise"> <span>Judge noise (σ=0.8 per item)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; margin-bottom:0.4rem;">
+            <input type="checkbox" id="comp-judge-bias"> <span>Judge bias (+0.3 systematic)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; margin-bottom:0.4rem;">
+            <input type="checkbox" id="comp-sample-bias"> <span>Sample bias (test ≠ production)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="runCurrentTab()">Run Simulation</button>
+        <button class="btn btn-warn" onclick="run100()">Run 100×</button>
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+        <p><strong style="color:var(--accent-a);">Run Simulation</strong> — Runs a single evaluation using the settings of the currently active tab. On the Judge Noise tab: scores n items with a perfect vs noisy judge and shows the score difference. On Judge Bias: compares a generous vs harsh judge on the same outputs. On Compounding: evaluates with all toggled uncertainty sources active.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--accent-b);">Run 100×</strong> — Repeats the evaluation 100 times and shows the full distribution of results. On Judge Noise: two histograms (perfect vs noisy) revealing how noise widens the spread. On Judge Bias: two histograms centered on different means. On Compounding: a single histogram showing the total CI — toggle sources on/off and re-run to see the CI explode as you stack uncertainties.</p>
+        <p style="margin-top:0.5rem;"><strong style="color:var(--text);">Tabs:</strong> <strong>Judge Noise</strong> = same judge, random variation per item. <strong>Judge Bias</strong> = generous vs harsh judge on same outputs. <strong>Compounding</strong> = stack multiple sources (sampling noise, judge noise, judge bias, sample bias) and watch the total uncertainty multiply.</p>
+      </div>
+    </div>
+
+    <div class="right-col" id="results">
+      <div class="insight-banner">
+        <strong>Start here:</strong> Set judge noise to 0 (perfect judge) and click "Run 100×". Then increase noise to 0.8 and run again. Watch the CI width explode.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const charts = {};
+    let currentTab = 'noise';
+
+    // Sampling
+    function sampleGamma(shape) {
+      if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1/3, c = 1/Math.sqrt(9*d);
+      while (true) {
+        let x, v;
+        do { const u1=Math.random(), u2=Math.random(); x=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); v=1+c*x; } while(v<=0);
+        v=v*v*v; const u=Math.random();
+        if (u<1-0.0331*(x*x)*(x*x)) return d*v;
+        if (Math.log(u)<0.5*x*x+d*(1-v+Math.log(v))) return d*v;
+      }
+    }
+    function betaSample(a, b) { const x=sampleGamma(a), y=sampleGamma(b); return x/(x+y); }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function boxMuller() { return Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random()); }
+
+    function generateEval(trueScore, n, judgeNoise, judgeBias) {
+      const mu = clamp((trueScore - 1) / 4, 0.02, 0.98);
+      const alpha = mu * 12, beta = (1 - mu) * 12;
+      const scores = [];
+      for (let i = 0; i < n; i++) {
+        let realScore = 1 + betaSample(alpha, beta) * 4;
+        // Judge adds noise and bias
+        let judged = realScore + (judgeNoise > 0 ? boxMuller() * judgeNoise : 0) + (judgeBias || 0);
+        judged = clamp(Math.round(judged * 2) / 2, 1, 5);
+        scores.push(judged);
+      }
+      return scores;
+    }
+
+    function bootstrapCI(scores) {
+      const n = scores.length;
+      const means = [];
+      for (let i = 0; i < 2000; i++) {
+        let sum = 0;
+        for (let j = 0; j < n; j++) sum += scores[Math.floor(Math.random() * n)];
+        means.push(sum / n);
+      }
+      means.sort((a, b) => a - b);
+      return { lower: means[Math.floor(0.025 * means.length)], upper: means[Math.floor(0.975 * means.length)] };
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ['noise', 'bias', 'compound'].forEach(t => {
+        document.getElementById(`tab-${t}`).className = t === tab ? 'tab active' : 'tab';
+        document.getElementById(`panel-${t}`).style.display = t === tab ? 'block' : 'none';
+      });
+    }
+
+    function runCurrentTab() {
+      if (currentTab === 'noise') runNoiseDemo();
+      else if (currentTab === 'bias') runBiasDemo();
+      else runCompoundDemo();
+    }
+
+    function run100() {
+      if (currentTab === 'noise') runNoise100();
+      else if (currentTab === 'bias') runBias100();
+      else runCompound100();
+    }
+
+    // ===== JUDGE NOISE =====
+    function runNoise100() {
+      const trueScore = parseFloat(document.getElementById('judge-true').value);
+      const n = parseInt(document.getElementById('judge-n').value);
+      const noise = parseFloat(document.getElementById('judge-noise').value);
+
+      // Compare: perfect judge vs noisy judge
+      const perfectMeans = [], noisyMeans = [];
+      const perfectCIs = [], noisyCIs = [];
+
+      for (let i = 0; i < 100; i++) {
+        const perfect = generateEval(trueScore, n, 0, 0);
+        const noisy = generateEval(trueScore, n, noise, 0);
+        perfectMeans.push(perfect.reduce((a, b) => a + b, 0) / n);
+        noisyMeans.push(noisy.reduce((a, b) => a + b, 0) / n);
+      }
+
+      const perfectCI = { lower: perfectMeans.sort((a,b)=>a-b)[2], upper: perfectMeans[97] };
+      const noisyCI = { lower: noisyMeans.sort((a,b)=>a-b)[2], upper: noisyMeans[97] };
+
+      let html = '';
+      html += `<div class="insight-banner" style="border-left-color: ${noise > 0.5 ? 'var(--red)' : 'var(--yellow)'};">
+        <strong>100 repeated evaluations:</strong> same ${n} items, scored by the judge each time.
+        <br>Perfect judge (σ=0): 95% of mean scores fall in [${perfectCI.lower.toFixed(2)}, ${perfectCI.upper.toFixed(2)}] — width ${(perfectCI.upper - perfectCI.lower).toFixed(2)}.
+        <br>Noisy judge (σ=${noise.toFixed(1)}): 95% of mean scores fall in [${noisyCI.lower.toFixed(2)}, ${noisyCI.upper.toFixed(2)}] — width ${(noisyCI.upper - noisyCI.lower).toFixed(2)}.
+        <br><strong>The noisy judge ${noise > 0 ? `multiplies your uncertainty by ${((noisyCI.upper - noisyCI.lower) / Math.max(0.01, perfectCI.upper - perfectCI.lower)).toFixed(1)}×` : 'adds no extra uncertainty (σ=0)'}.</strong>
+      </div>`;
+
+      html += `<div class="stat-cards">
+        <div class="stat-card"><div class="label">Perfect CI Width</div><div class="value" style="color:var(--green);">${(perfectCI.upper - perfectCI.lower).toFixed(3)}</div></div>
+        <div class="stat-card"><div class="label">Noisy CI Width</div><div class="value" style="color:var(--red);">${(noisyCI.upper - noisyCI.lower).toFixed(3)}</div></div>
+        <div class="stat-card"><div class="label">Multiplier</div><div class="value" style="color:var(--yellow);">${((noisyCI.upper - noisyCI.lower) / Math.max(0.01, perfectCI.upper - perfectCI.lower)).toFixed(1)}×</div></div>
+        <div class="stat-card"><div class="label">True Score</div><div class="value">${trueScore.toFixed(1)}</div></div>
+      </div>`;
+
+      // Histogram comparison
+      html += `<div class="panel"><h2>Distribution of Mean Scores (100 runs)</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">Blue = perfect judge. Orange = noisy judge (σ=${noise.toFixed(1)}). Same items, same system — the spread is entirely from judge noise.</p>
+        <div class="chart-wrap"><canvas id="noise-hist"></canvas></div></div>`;
+
+      document.getElementById('results').innerHTML = html;
+      setTimeout(() => renderDualHist('noise-hist', perfectMeans, noisyMeans, trueScore, 'Perfect Judge', `Noisy Judge (σ=${noise.toFixed(1)})`), 0);
+    }
+
+    function runNoiseDemo() { runNoise100(); }
+
+    // ===== JUDGE BIAS =====
+    function runBias100() {
+      const trueScore = parseFloat(document.getElementById('bias-true').value);
+      const n = parseInt(document.getElementById('bias-n').value);
+      const genBias = parseFloat(document.getElementById('bias-generous').value);
+      const harshBias = -parseFloat(document.getElementById('bias-harsh').value);
+
+      const genMeans = [], harshMeans = [];
+      for (let i = 0; i < 100; i++) {
+        const gen = generateEval(trueScore, n, 0.3, genBias);
+        const harsh = generateEval(trueScore, n, 0.3, harshBias);
+        genMeans.push(gen.reduce((a,b) => a+b, 0) / n);
+        harshMeans.push(harsh.reduce((a,b) => a+b, 0) / n);
+      }
+
+      const genAvg = genMeans.reduce((a,b)=>a+b,0)/100;
+      const harshAvg = harshMeans.reduce((a,b)=>a+b,0)/100;
+
+      let html = `<div class="insight-banner" style="border-left-color: var(--red);">
+        <strong>Same outputs, different judges.</strong> The generous judge (bias +${genBias.toFixed(1)}) reports an average of ${genAvg.toFixed(2)}.
+        The harsh judge (bias ${harshBias.toFixed(1)}) reports ${harshAvg.toFixed(2)}.
+        That's a gap of ${(genAvg - harshAvg).toFixed(2)} points — from the judge alone.
+        <br><strong>True score: ${trueScore.toFixed(1)}. Neither judge gets it right. Both are very precise (low noise) — and precisely wrong.</strong>
+      </div>`;
+
+      html += `<div class="stat-cards">
+        <div class="stat-card"><div class="label">Generous Judge</div><div class="value" style="color:var(--green);">${genAvg.toFixed(2)}</div><div class="sub">bias +${genBias.toFixed(1)}</div></div>
+        <div class="stat-card"><div class="label">Harsh Judge</div><div class="value" style="color:var(--red);">${harshAvg.toFixed(2)}</div><div class="sub">bias ${harshBias.toFixed(1)}</div></div>
+        <div class="stat-card"><div class="label">Truth</div><div class="value" style="color:var(--yellow);">${trueScore.toFixed(1)}</div></div>
+        <div class="stat-card"><div class="label">Judge Gap</div><div class="value">${(genAvg - harshAvg).toFixed(2)}</div></div>
+      </div>`;
+
+      html += `<div class="panel"><h2>Generous vs Harsh (100 runs each)</h2>
+        <div class="chart-wrap"><canvas id="bias-hist"></canvas></div></div>`;
+
+      html += `<div class="panel"><h2>Key Insight</h2>
+        <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.6;">
+          If your judge is biased, <strong style="color:var(--text);">more data makes it worse</strong> — you get a very precise wrong answer.
+          At n=${n}, the CIs are tight, so you're confident in a number that's off by ${Math.abs(genAvg - trueScore).toFixed(2)} (generous) or ${Math.abs(harshAvg - trueScore).toFixed(2)} (harsh).
+          <br><br>This is exactly source #2 (sampling bias) applied to the measurement instrument.
+        </p></div>`;
+
+      document.getElementById('results').innerHTML = html;
+      setTimeout(() => renderDualHist('bias-hist', genMeans, harshMeans, trueScore, 'Generous', 'Harsh'), 0);
+    }
+
+    function runBiasDemo() { runBias100(); }
+
+    // ===== COMPOUNDING =====
+    function runCompound100() {
+      const trueScore = parseFloat(document.getElementById('comp-true').value);
+      const n = parseInt(document.getElementById('comp-n').value);
+      const useSampling = document.getElementById('comp-sampling').checked;
+      const useJudgeNoise = document.getElementById('comp-judge-noise').checked;
+      const useJudgeBias = document.getElementById('comp-judge-bias').checked;
+      const useSampleBias = document.getElementById('comp-sample-bias').checked;
+
+      const judgeNoise = useJudgeNoise ? 0.8 : 0;
+      const judgeBias = useJudgeBias ? 0.3 : 0;
+      const sampleBiasShift = useSampleBias ? 0.25 : 0; // test set slightly easier than production
+
+      // Baseline: perfect everything
+      const baselineMeans = [];
+      const compoundMeans = [];
+
+      for (let i = 0; i < 200; i++) {
+        // Baseline: no noise, no bias
+        const baseline = generateEval(trueScore, useSampling ? n : 500, 0, 0);
+        baselineMeans.push(baseline.reduce((a,b)=>a+b,0) / baseline.length);
+
+        // Compound: stack all enabled sources
+        const effectiveTrue = trueScore + sampleBiasShift; // biased sample sees easier queries
+        const sampleN = useSampling ? n : 500;
+        const compound = generateEval(effectiveTrue, sampleN, judgeNoise, judgeBias);
+        compoundMeans.push(compound.reduce((a,b)=>a+b,0) / compound.length);
+      }
+
+      baselineMeans.sort((a,b) => a-b);
+      compoundMeans.sort((a,b) => a-b);
+
+      const baseCI = { lower: baselineMeans[5], upper: baselineMeans[194] };
+      const compCI = { lower: compoundMeans[5], upper: compoundMeans[194] };
+      const baseWidth = baseCI.upper - baseCI.lower;
+      const compWidth = compCI.upper - compCI.lower;
+
+      const enabled = [];
+      if (useSampling) enabled.push(`sampling noise (n=${n})`);
+      if (useJudgeNoise) enabled.push('judge noise (σ=0.8)');
+      if (useJudgeBias) enabled.push('judge bias (+0.3)');
+      if (useSampleBias) enabled.push('sample bias (+0.25)');
+
+      let html = `<div class="insight-banner" style="border-left-color: var(--purple);">
+        <strong>Compounding:</strong> ${enabled.length > 0 ? enabled.join(' + ') : 'nothing enabled'}.
+        <br>Baseline CI width (no uncertainty): ${baseWidth.toFixed(3)}
+        <br>Compound CI width: ${compWidth.toFixed(3)} — <strong>${(compWidth / Math.max(0.001, baseWidth)).toFixed(1)}× wider</strong>
+        ${useJudgeBias || useSampleBias ? `<br>Compound mean: ${(compoundMeans.reduce((a,b)=>a+b,0)/200).toFixed(2)} (true: ${trueScore.toFixed(1)}) — biased!` : ''}
+      </div>`;
+
+      html += `<div class="stat-cards">
+        <div class="stat-card"><div class="label">Baseline CI</div><div class="value" style="color:var(--green);">${baseWidth.toFixed(3)}</div><div class="sub">[${baseCI.lower.toFixed(2)}, ${baseCI.upper.toFixed(2)}]</div></div>
+        <div class="stat-card"><div class="label">Compound CI</div><div class="value" style="color:var(--red);">${compWidth.toFixed(3)}</div><div class="sub">[${compCI.lower.toFixed(2)}, ${compCI.upper.toFixed(2)}]</div></div>
+        <div class="stat-card"><div class="label">Multiplier</div><div class="value" style="color:var(--yellow);">${(compWidth / Math.max(0.001, baseWidth)).toFixed(1)}×</div></div>
+        <div class="stat-card"><div class="label">Sources Stacked</div><div class="value">${enabled.length}</div></div>
+      </div>`;
+
+      html += `<div class="panel"><h2>Baseline vs Compound (200 runs)</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">Green: ideal conditions. Red: with ${enabled.join(' + ')}. Yellow line: true score.</p>
+        <div class="chart-wrap"><canvas id="compound-hist"></canvas></div></div>`;
+
+      html += `<div class="panel"><h2>The Big Picture</h2>
+        <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.6;">
+          Each source of uncertainty on its own might seem manageable. Stacked together, they create a measurement that can be far from reality.
+          <br><br>
+          <strong style="color:var(--text);">Variances add. Biases compound.</strong>
+          Sampling noise (source #1) gives ±X. Add judge noise and it's ±2X. Add judge bias and the center shifts.
+          Add sample bias and you're measuring the wrong thing precisely with the wrong instrument.
+          <br><br>
+          The only defense: understand each source, measure it, and mitigate it deliberately. There is no single fix.
+        </p></div>`;
+
+      document.getElementById('results').innerHTML = html;
+      setTimeout(() => renderDualHist('compound-hist', baselineMeans, compoundMeans, trueScore, 'Baseline', 'Compound'), 0);
+    }
+
+    function runCompoundDemo() { runCompound100(); }
+
+    // ===== CHART =====
+    function renderDualHist(canvasId, dataA, dataB, trueLine, labelA, labelB) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const all = [...dataA, ...dataB];
+      const min = Math.floor(Math.min(...all) * 10) / 10;
+      const max = Math.ceil(Math.max(...all) * 10) / 10;
+      const binWidth = 0.05;
+      const bins = [];
+      for (let v = min; v <= max + binWidth; v += binWidth) bins.push(parseFloat(v.toFixed(2)));
+
+      function histogram(data) {
+        const counts = new Array(bins.length).fill(0);
+        data.forEach(v => {
+          const idx = Math.min(bins.length - 1, Math.floor((v - min) / binWidth));
+          if (idx >= 0) counts[idx]++;
+        });
+        return counts;
+      }
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bins.map(b => b.toFixed(2)),
+          datasets: [
+            { label: labelA, data: histogram(dataA), backgroundColor: '#22c55e40', borderColor: '#22c55e', borderWidth: 1, borderRadius: 2 },
+            { label: labelB, data: histogram(dataB), backgroundColor: '#ef444440', borderColor: '#ef4444', borderWidth: 1, borderRadius: 2 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#8892a4', font: { family: "'DM Mono'", size: 11 } } } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { family: "'DM Mono'", size: 10 }, color: '#8892a4' } },
+            x: { display: false }
+          }
+        },
+        plugins: [{
+          id: 'trueLine',
+          afterDatasetsDraw(chart) {
+            const xScale = chart.scales.x;
+            const trueIdx = Math.floor((trueLine - min) / binWidth);
+            const x = xScale.getPixelForValue(trueIdx);
+            chart.ctx.save();
+            chart.ctx.strokeStyle = '#eab308';
+            chart.ctx.lineWidth = 2;
+            chart.ctx.setLineDash([6, 4]);
+            chart.ctx.beginPath();
+            chart.ctx.moveTo(x, chart.chartArea.top);
+            chart.ctx.lineTo(x, chart.chartArea.bottom);
+            chart.ctx.stroke();
+            chart.ctx.restore();
+          }
+        }]
+      });
+    }
+  </script>
+</body>
+</html>

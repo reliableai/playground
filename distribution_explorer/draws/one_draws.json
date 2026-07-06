@@ -1,0 +1,66 @@
+[
+  {
+    "seed": 100,
+    "n": 10,
+    "k": 8,
+    "proportion": 0.8,
+    "wilson_lo": 0.4902,
+    "wilson_hi": 0.9433
+  },
+  {
+    "seed": 101,
+    "n": 10,
+    "k": 6,
+    "proportion": 0.6,
+    "wilson_lo": 0.3127,
+    "wilson_hi": 0.8318
+  },
+  {
+    "seed": 102,
+    "n": 10,
+    "k": 7,
+    "proportion": 0.7,
+    "wilson_lo": 0.3968,
+    "wilson_hi": 0.8922
+  },
+  {
+    "seed": 103,
+    "n": 10,
+    "k": 10,
+    "proportion": 1.0,
+    "wilson_lo": 0.7225,
+    "wilson_hi": 1.0
+  },
+  {
+    "seed": 104,
+    "n": 10,
+    "k": 10,
+    "proportion": 1.0,
+    "wilson_lo": 0.7225,
+    "wilson_hi": 1.0
+  },
+  {
+    "seed": 105,
+    "n": 10,
+    "k": 5,
+    "proportion": 0.5,
+    "wilson_lo": 0.2366,
+    "wilson_hi": 0.7634
+  },
+  {
+    "seed": 106,
+    "n": 10,
+    "k": 8,
+    "proportion": 0.8,
+    "wilson_lo": 0.4902,
+    "wilson_hi": 0.9433
+  },
+  {
+    "seed": 107,
+    "n": 10,
+    "k": 9,
+    "proportion": 0.9,
+    "wilson_lo": 0.5958,
+    "wilson_hi": 0.9821
+  }
+]

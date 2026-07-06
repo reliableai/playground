@@ -1,0 +1,23 @@
+{
+  "flat_prior_9_of_10": {
+    "alpha_post": 10.0,
+    "beta_post": 2.0,
+    "post_mean": 0.8333,
+    "prior_mean": 0.5,
+    "proportion": 0.9
+  },
+  "skeptical_prior_9_of_10": {
+    "alpha_post": 17.0,
+    "beta_post": 3.0,
+    "post_mean": 0.85,
+    "prior_mean": 0.8,
+    "proportion": 0.9
+  },
+  "flat_prior_900_of_1000": {
+    "alpha_post": 901.0,
+    "beta_post": 101.0,
+    "post_mean": 0.8992,
+    "prior_mean": 0.5,
+    "proportion": 0.9
+  }
+}

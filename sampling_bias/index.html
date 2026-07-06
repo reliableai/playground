@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sampling Bias Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #0c0f14;
+      --surface: #151a23;
+      --surface-2: #1c2230;
+      --border: #2a3040;
+      --text: #e2e8f0;
+      --text-dim: #8892a4;
+      --accent-a: #3b82f6;
+      --accent-a-dim: rgba(59,130,246,0.15);
+      --accent-b: #f97316;
+      --accent-b-dim: rgba(249,115,22,0.15);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --purple: #a78bfa;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(400px, 1fr) minmax(0, 1.8fr);
+      gap: 1.5rem;
+      padding: 0 1rem;
+    }
+
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .panel h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-bottom: 0.2rem;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      background: transparent;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      margin: 0.3rem 0 0.6rem 0;
+    }
+    input[type="range"]::-webkit-slider-track {
+      background: var(--border);
+      height: 6px;
+      border-radius: 3px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent-a);
+      cursor: pointer;
+      margin-top: -5px;
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--accent-a); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-warn { background: var(--accent-b); color: #fff; }
+    .btn-warn:hover { background: #ea580c; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-green:hover { background: #16a34a; }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    .insight-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-a);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+    .insight-banner strong { color: var(--text); }
+
+    /* Segment config */
+    .segment-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 50px;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+    .segment-row .seg-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+    .segment-row .seg-pct {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--accent-a);
+      text-align: right;
+    }
+
+    /* Scorecards */
+    .scorecard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .scorecard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .scorecard h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+      font-family: 'DM Mono', monospace;
+    }
+    .scorecard.highlight-bad {
+      border-color: var(--red);
+      box-shadow: 0 0 12px rgba(239,68,68,0.15);
+    }
+    .scorecard.highlight-good {
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(34,197,94,0.15);
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+    }
+    .metric-row .metric-name { font-weight: 600; }
+    .metric-row .metric-val {
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+    }
+    .metric-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+      border: 1px solid var(--border);
+    }
+    .metric-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .delta-badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      margin-left: 0.3rem;
+    }
+    .delta-badge.neg { background: rgba(239,68,68,0.15); color: var(--red); }
+    .delta-badge.pos { background: rgba(34,197,94,0.15); color: var(--green); }
+    .delta-badge.neutral { background: rgba(136,146,164,0.15); color: var(--text-dim); }
+
+    /* Ship decision */
+    .ship-box {
+      background: var(--surface-2);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .ship-box h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .ship-box p {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Explainer */
+    .explainer {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .explainer summary {
+      padding: 0.7rem 1rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+    }
+    .explainer summary:hover { color: var(--text); }
+    .explainer-content {
+      padding: 0 1rem 1rem;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+
+    /* Comparison table */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin: 0.5rem 0;
+    }
+    .compare-table th, .compare-table td {
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table th {
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+    }
+    .compare-table td { color: var(--text); }
+
+    .chart-wrap { height: 200px; position: relative; }
+
+    .mix-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .mix-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    .mix-card h4 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 0.5rem;
+    }
+
+    .step-indicator {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .step {
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      background: var(--surface-2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .step.active {
+      background: var(--accent-a-dim);
+      color: var(--accent-a);
+      border-color: var(--accent-a);
+    }
+    .step.done {
+      background: rgba(34,197,94,0.1);
+      color: var(--green);
+      border-color: var(--green);
+    }
+  </style>
+</head>
+<body>
+  <h1>Sampling Bias Lab</h1>
+  <div class="subtitle">Source #2 — "Does my test set look like production?"</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>The scenario:</strong> You're evaluating an AI customer support assistant. Your test set has queries in several languages — English, Spanish, Italian, German, Japanese. But does the mix of languages in your test set match what real users actually send?</p>
+      <p><strong>Why it matters:</strong> If your system scores 4.5 on English but 2.8 on Japanese, and your test set is 80% English while production is only 50% English, your test scorecard will be wildly optimistic. You'll ship thinking the system is great — and users will disagree.</p>
+      <p><strong>The lesson:</strong> Language is just one axis. Bias can hide in complexity, domain, user type, synthetic vs. real, question length — any dimension where the test set doesn't match production. Always ask: <strong>"Does my test set look like production?"</strong></p>
+      <p><strong>Step 1 — Feel it:</strong> See the scorecard from a biased test set. Decide whether to ship. Then reveal what production actually looks like.</p>
+      <p><strong>Step 2 — Explore:</strong> Adjust the test set mix and production mix with sliders. Watch the gap appear and disappear.</p>
+      <p><strong>Step 3 — Fix it:</strong> See per-segment breakdowns and stratified sampling. The fix isn't more data — it's representative data.</p>
+    </div>
+  </details>
+
+  <div class="step-indicator">
+    <span class="step active" id="step1-ind">1. Feel it</span>
+    <span class="step" id="step2-ind">2. Explore</span>
+    <span class="step" id="step3-ind">3. Fix it</span>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT COLUMN: Controls -->
+    <div class="left-col">
+      <div class="panel" id="panel-true-scores">
+        <h2>True Scores by Segment</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.75rem;">
+          These are the system's real quality scores in each language segment. In practice you wouldn't know these — the playground lets you set them to see the effect.
+        </p>
+        <table class="compare-table" id="true-scores-table">
+          <thead>
+            <tr><th>Segment</th><th>Correct.</th><th>Helpful.</th><th>Tone</th><th>Complet.</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="panel" id="panel-mix">
+        <h2>Distribution Mix</h2>
+        <div class="mix-compare">
+          <div class="mix-card">
+            <h4>Test Set Mix</h4>
+            <div id="test-mix-sliders"></div>
+            <div style="font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;" id="test-mix-total"></div>
+          </div>
+          <div class="mix-card">
+            <h4>Production Mix</h4>
+            <div id="prod-mix-sliders"></div>
+            <div style="font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;" id="prod-mix-total"></div>
+          </div>
+        </div>
+        <div class="insight-banner" style="border-left-color: var(--yellow); margin-bottom:0;">
+          <strong>The mismatch is the bias.</strong> When test mix ≠ production mix, the aggregate scorecard lies. The per-segment scores are fine — it's the weighted average that misleads.
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="runFeelIt()">1. Evaluate (Biased Test)</button>
+        <button class="btn btn-warn" onclick="revealProduction()">2. Reveal Production Reality</button>
+        <button class="btn btn-green" onclick="showFixIt()">3. Fix It — Stratified</button>
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+        <p><strong style="color:var(--accent-a);">1. Evaluate (Biased Test)</strong> — Runs the evaluation using your current test mix (set in the sliders above). You'll see per-segment scorecards and a pie chart of the test composition. The overall score looks good because the test is dominated by the segments where the system is strong.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--accent-b);">2. Reveal Production Reality</strong> — Shows what each segment's real production traffic looks like — often very different from the test mix. Displays a side-by-side pie chart comparison (test vs production), a gap summary table, and highlights which segments are over/under-represented. The overall production score may be much lower.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--green);">3. Fix It — Stratified</strong> — Re-runs the evaluation using stratified sampling: each segment is weighted by its production proportion. The new score reflects reality, not your test set's bias. Shows the corrected scorecard and how much the gap closed.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Results -->
+    <div class="right-col" id="results">
+      <div class="insight-banner">
+        <strong>Start here:</strong> Click "Evaluate (Biased Test)" to see what your test scorecard shows. Then ask yourself — would you ship this system?
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIGURATION =====
+    const segments = [
+      { id: 'english',  name: 'English',  color: '#3b82f6' },
+      { id: 'spanish',  name: 'Spanish',  color: '#f97316' },
+      { id: 'italian',  name: 'Italian',  color: '#22c55e' },
+      { id: 'german',   name: 'German',   color: '#a78bfa' },
+      { id: 'japanese', name: 'Japanese', color: '#ef4444' }
+    ];
+
+    // True scores per segment per metric (the "reality" the student doesn't see at first)
+    // System is great at English, decent at European languages, struggles with Japanese
+    const trueScores = {
+      english:  { Correctness: 4.5, Helpfulness: 4.3, Tone: 4.6, Completeness: 4.2 },
+      spanish:  { Correctness: 3.9, Helpfulness: 3.7, Tone: 4.3, Completeness: 3.5 },
+      italian:  { Correctness: 3.6, Helpfulness: 3.4, Tone: 4.1, Completeness: 3.2 },
+      german:   { Correctness: 3.7, Helpfulness: 3.5, Tone: 4.0, Completeness: 3.3 },
+      japanese: { Correctness: 2.8, Helpfulness: 2.5, Tone: 3.5, Completeness: 2.3 }
+    };
+
+    const metrics = ['Correctness', 'Helpfulness', 'Tone', 'Completeness'];
+    const metricColors = {
+      Correctness: '#3b82f6',
+      Helpfulness: '#f97316',
+      Tone: '#22c55e',
+      Completeness: '#a78bfa'
+    };
+
+    // Default mixes: biased test set (English-heavy) vs production (more diverse)
+    let testMix  = { english: 70, spanish: 15, italian: 5,  german: 7,  japanese: 3 };
+    let prodMix  = { english: 40, spanish: 15, italian: 15, german: 10, japanese: 20 };
+
+    let currentStep = 0; // 0=initial, 1=feel-it, 2=revealed, 3=fix-it
+
+    // ===== GAMMA / BETA SAMPLING =====
+    function sampleGamma(shape) {
+      if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x, v;
+        do {
+          const u1 = Math.random();
+          const u2 = Math.random();
+          x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          v = 1 + c * x;
+        } while (v <= 0);
+        v = v * v * v;
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    }
+
+    function sampleFromBeta(alpha, beta) {
+      const x = sampleGamma(alpha);
+      const y = sampleGamma(beta);
+      return x / (x + y);
+    }
+
+    function generateScore(trueScore, n) {
+      // Generate n samples from a beta distribution centered on trueScore (1-5 scale)
+      const mu = Math.max(0.01, Math.min(0.99, (trueScore - 1) / 4));
+      const concentration = 12;
+      const alpha = mu * concentration;
+      const beta = (1 - mu) * concentration;
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const u = sampleFromBeta(alpha, beta);
+        const score = 1 + u * 4;
+        const discretized = Math.round(score * 2) / 2;
+        sum += discretized;
+      }
+      return sum / n;
+    }
+
+    // Weighted scorecard from a mix
+    function computeWeightedScorecard(mix) {
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      const result = {};
+      metrics.forEach(m => {
+        let weighted = 0;
+        segments.forEach(seg => {
+          const w = (mix[seg.id] || 0) / total;
+          // Simulate with some noise
+          const score = generateScore(trueScores[seg.id][m], 30);
+          weighted += w * score;
+        });
+        result[m] = weighted;
+      });
+      return result;
+    }
+
+    // Exact weighted scorecard (no noise, for comparison)
+    function computeExactWeightedScorecard(mix) {
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      const result = {};
+      metrics.forEach(m => {
+        let weighted = 0;
+        segments.forEach(seg => {
+          const w = (mix[seg.id] || 0) / total;
+          weighted += w * trueScores[seg.id][m];
+        });
+        result[m] = weighted;
+      });
+      return result;
+    }
+
+    // ===== UI INIT =====
+    function initTrueScoresTable() {
+      const tbody = document.querySelector('#true-scores-table tbody');
+      tbody.innerHTML = '';
+      segments.forEach(seg => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="color:${seg.color}; font-weight:600;">${seg.name}</td>
+          ${metrics.map(m => `<td>${trueScores[seg.id][m].toFixed(1)}</td>`).join('')}
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function initMixSliders() {
+      buildMixSliders('test-mix-sliders', testMix, 'test', 'test-mix-total');
+      buildMixSliders('prod-mix-sliders', prodMix, 'prod', 'prod-mix-total');
+    }
+
+    function buildMixSliders(containerId, mixObj, prefix, totalId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      segments.forEach(seg => {
+        const div = document.createElement('div');
+        div.className = 'segment-row';
+        div.innerHTML = `
+          <span class="seg-name" style="color:${seg.color};">${seg.name}</span>
+          <input type="range" min="0" max="80" value="${mixObj[seg.id]}"
+                 id="${prefix}-${seg.id}"
+                 oninput="updateMix('${prefix}', '${seg.id}', this.value)">
+          <span class="seg-pct" id="${prefix}-${seg.id}-val">${mixObj[seg.id]}%</span>
+        `;
+        container.appendChild(div);
+      });
+      updateMixTotal(prefix, totalId);
+    }
+
+    function updateMix(prefix, segId, val) {
+      val = parseInt(val);
+      if (prefix === 'test') testMix[segId] = val;
+      else prodMix[segId] = val;
+      document.getElementById(`${prefix}-${segId}-val`).textContent = val + '%';
+      const totalId = prefix === 'test' ? 'test-mix-total' : 'prod-mix-total';
+      updateMixTotal(prefix, totalId);
+    }
+
+    function updateMixTotal(prefix, totalId) {
+      const mix = prefix === 'test' ? testMix : prodMix;
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      const el = document.getElementById(totalId);
+      if (total !== 100) {
+        el.innerHTML = `Total: <strong style="color:var(--red);">${total}%</strong> (should be 100%)`;
+      } else {
+        el.innerHTML = `Total: <strong style="color:var(--green);">${total}%</strong>`;
+      }
+    }
+
+    // ===== SCORECARD RENDERING =====
+    function renderScorecard(title, scores, opts = {}) {
+      const { highlight, comparison, label } = opts;
+      let cls = 'scorecard';
+      if (highlight === 'bad') cls += ' highlight-bad';
+      if (highlight === 'good') cls += ' highlight-good';
+
+      let html = `<div class="${cls}">`;
+      html += `<h3>${title}</h3>`;
+      if (label) html += `<p style="font-size:0.72rem; color:var(--text-dim); margin-bottom:0.6rem;">${label}</p>`;
+
+      metrics.forEach(m => {
+        const val = scores[m];
+        const pct = (val / 5) * 100;
+        const color = metricColors[m];
+
+        let deltaHtml = '';
+        if (comparison) {
+          const diff = val - comparison[m];
+          const cls = diff < -0.15 ? 'neg' : diff > 0.15 ? 'pos' : 'neutral';
+          deltaHtml = `<span class="delta-badge ${cls}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</span>`;
+        }
+
+        html += `
+          <div>
+            <div class="metric-row">
+              <span class="metric-name">${m}</span>
+              <span><span class="metric-val">${val.toFixed(2)}</span>${deltaHtml}</span>
+            </div>
+            <div class="metric-bar-wrap">
+              <div class="metric-fill" style="width:${pct}%; background:${color};"></div>
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
+      return html;
+    }
+
+    function renderSegmentBreakdown() {
+      let html = `<div class="insight-banner" style="border-left-color: var(--green);">
+        <strong>The fix — per-segment reporting:</strong> Never trust only the aggregate. Break the scorecard down by segment. The system isn't "3.8 overall" — it's "4.5 on English, 2.8 on Japanese." These are different stories with different consequences.
+      </div>`;
+
+      html += `<div class="scorecard-grid">`;
+      segments.forEach(seg => {
+        const scores = {};
+        metrics.forEach(m => {
+          scores[m] = generateScore(trueScores[seg.id][m], 50);
+        });
+        const isBad = metrics.some(m => scores[m] < 3.5);
+        html += renderScorecard(seg.name, scores, {
+          highlight: isBad ? 'bad' : 'good',
+          label: `Segment true quality — scores based on n=50 queries`
+        });
+      });
+      html += `</div>`;
+
+      return html;
+    }
+
+    // ===== STEP FUNCTIONS =====
+    function setStep(n) {
+      currentStep = n;
+      ['step1-ind', 'step2-ind', 'step3-ind'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        el.className = 'step';
+        if (i + 1 < n) el.className = 'step done';
+        if (i + 1 === n) el.className = 'step active';
+      });
+    }
+
+    function runFeelIt() {
+      setStep(1);
+      const biasedScores = computeWeightedScorecard(testMix);
+      let html = '';
+
+      html += `<div class="insight-banner">
+        <strong>Your test set evaluation is ready.</strong> This is what you'd report to your team. The numbers below are the weighted average across your test set's language mix.
+        Your test set is ${testMix.english}% English — and your system happens to be best at English.
+      </div>`;
+
+      html += renderScorecard('Test Set Scorecard', biasedScores, {
+        highlight: 'good',
+        label: `Weighted by test set mix: ${segments.map(s => s.name + ' ' + testMix[s.id] + '%').join(', ')}`
+      });
+
+      html += `<div class="ship-box">
+        <h3>Based on these numbers — would you ship?</h3>
+        <p>The scores look solid. Your team is waiting. The deadline is tomorrow.</p>
+        <button class="btn btn-warn" onclick="revealProduction()" style="font-size:0.9rem; padding:0.7rem 1.5rem;">
+          Reveal what production looks like →
+        </button>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function revealProduction() {
+      setStep(2);
+      const biasedScores = computeWeightedScorecard(testMix);
+      const prodScores = computeWeightedScorecard(prodMix);
+
+      let html = '';
+
+      html += `<div class="insight-banner" style="border-left-color: var(--red);">
+        <strong>The reveal:</strong> Production traffic is ${prodMix.english}% English, not ${testMix.english}%.
+        With ${prodMix.japanese}% Japanese traffic (where the system scores ~2.8), the real-world experience is noticeably worse.
+        The system didn't change — the population did. <strong>More test data wouldn't fix this. Only representative data would.</strong>
+      </div>`;
+
+      html += `<div class="scorecard-grid">`;
+      html += renderScorecard('Test Set Scorecard', biasedScores, {
+        label: `Test mix: ${segments.map(s => s.name + ' ' + testMix[s.id] + '%').join(', ')}`
+      });
+      html += renderScorecard('Production Scorecard', prodScores, {
+        highlight: 'bad',
+        comparison: biasedScores,
+        label: `Production mix: ${segments.map(s => s.name + ' ' + prodMix[s.id] + '%').join(', ')}`
+      });
+      html += `</div>`;
+
+      // Gap summary
+      html += `<div class="panel">
+        <h2>The Bias Gap</h2>
+        <p style="font-size:0.78rem; color:var(--text-dim); margin-bottom:0.75rem;">
+          The difference between what your test set told you and what users actually experience.
+          Red deltas mean production is worse than your test predicted.
+        </p>
+        <table class="compare-table">
+          <thead><tr><th>Metric</th><th>Test Says</th><th>Production Reality</th><th>Gap</th></tr></thead>
+          <tbody>
+            ${metrics.map(m => {
+              const gap = prodScores[m] - biasedScores[m];
+              const color = gap < -0.15 ? 'var(--red)' : gap > 0.15 ? 'var(--green)' : 'var(--text-dim)';
+              return `<tr>
+                <td>${m}</td>
+                <td>${biasedScores[m].toFixed(2)}</td>
+                <td>${prodScores[m].toFixed(2)}</td>
+                <td style="color:${color}; font-weight:600;">${gap >= 0 ? '+' : ''}${gap.toFixed(2)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+      // Mix comparison chart
+      html += `<div class="mix-compare">
+        <div class="mix-card">
+          <h4>Test Set Mix</h4>
+          <div class="chart-wrap"><canvas id="test-mix-chart"></canvas></div>
+        </div>
+        <div class="mix-card">
+          <h4>Production Mix</h4>
+          <div class="chart-wrap"><canvas id="prod-mix-chart"></canvas></div>
+        </div>
+      </div>`;
+
+      html += `<div style="text-align:center; margin-top:0.5rem;">
+        <button class="btn btn-green" onclick="showFixIt()" style="font-size:0.9rem; padding:0.7rem 1.5rem;">
+          Show me a mitigation strategy →
+        </button>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+
+      // Render pie charts
+      setTimeout(() => {
+        renderPieChart('test-mix-chart', testMix);
+        renderPieChart('prod-mix-chart', prodMix);
+      }, 0);
+    }
+
+    function showFixIt() {
+      setStep(3);
+      const biasedScores = computeWeightedScorecard(testMix);
+      const prodScores = computeWeightedScorecard(prodMix);
+      // Stratified = use production mix to weight the same per-segment scores
+      const stratifiedScores = computeWeightedScorecard(prodMix);
+
+      let html = '';
+
+      html += `<div class="insight-banner" style="border-left-color: var(--green);">
+        <strong>Fix #1 — Stratified sampling:</strong> Sample your test set proportionally to the production mix.
+        If production is ${prodMix.japanese}% Japanese, your test set should be too.
+        The stratified scorecard below uses the production mix to weight segment scores — giving you an honest preview of what users will experience.
+      </div>`;
+
+      html += `<div class="scorecard-grid">`;
+      html += renderScorecard('Biased Test Scorecard', biasedScores, {
+        label: 'Original test set (English-heavy)'
+      });
+      html += renderScorecard('Stratified Scorecard', stratifiedScores, {
+        highlight: Object.values(stratifiedScores).some(v => v < 3.5) ? 'bad' : 'good',
+        comparison: biasedScores,
+        label: 'Sampled proportionally to production mix'
+      });
+      html += `</div>`;
+
+      // Fix #2: per-segment breakdown
+      html += renderSegmentBreakdown();
+
+      // Key takeaways
+      html += `<div class="panel">
+        <h2>Key Takeaways</h2>
+        <table class="compare-table">
+          <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Does more data help?</strong></td>
+              <td>Not on its own. 10,000 English-only queries give a very precise estimate — of the wrong thing.
+                  More data helps <em>only if it's representative</em>.</td>
+            </tr>
+            <tr>
+              <td><strong>How do we fix it?</strong></td>
+              <td>Know your production distribution. Use stratified sampling. Always report per-segment scores.</td>
+            </tr>
+            <tr>
+              <td><strong>Is language the only axis?</strong></td>
+              <td>No — bias can hide along complexity, domain, user type, synthetic vs. real, time of day, question length, etc.
+                  Language is just the easiest to demonstrate.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    // ===== CHARTS =====
+    const charts = {};
+    function renderPieChart(canvasId, mix) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      charts[canvasId] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: segments.map(s => s.name),
+          datasets: [{
+            data: segments.map(s => mix[s.id]),
+            backgroundColor: segments.map(s => s.color + '80'),
+            borderColor: segments.map(s => s.color),
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#8892a4',
+                font: { family: "'DM Mono', monospace", size: 11 },
+                padding: 8
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${ctx.parsed}% (${(ctx.parsed / total * 100).toFixed(0)}% of total)`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ===== INIT =====
+    initTrueScoresTable();
+    initMixSliders();
+  </script>
+</body>
+</html>

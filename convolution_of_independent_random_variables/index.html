@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convolution of Independent Random Variables</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e0e0e0; }
+
+  /* Layout */
+  .page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 2rem; color: #fff; margin-bottom: 0.25rem; }
+  .page-sub { color: #999; font-size: 1rem; margin-bottom: 2.5rem; }
+
+  /* Tabs */
+  .tab-bar { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 2px solid #2a2d3a; flex-wrap: wrap; }
+  .tab { padding: 0.65rem 1.1rem; font-size: 0.92rem; font-weight: 600; color: #888; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .tab:hover { color: #bbb; }
+  .tab.active { color: #fff; border-bottom-color: #5b8df9; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Section cards */
+  .card { background: #1a1d28; border-radius: 14px; padding: 1.75rem; margin-bottom: 1.5rem; border: 1px solid #2a2d3a; }
+  .card h2 { font-size: 1.1rem; color: #5b8df9; margin-bottom: 0.75rem; }
+  .card p { font-size: 0.92rem; color: #bbb; line-height: 1.65; margin-bottom: 0.5rem; }
+  .math { font-family: 'Georgia', serif; font-style: italic; color: #e8d5b7; }
+  .hl { background: #1e2a42; border-left: 3px solid #5b8df9; padding: 0.7rem 1rem; border-radius: 0 8px 8px 0; margin: 0.75rem 0; font-size: 0.9rem; color: #c8d6e5; }
+
+  /* Slider controls */
+  .controls { display: flex; align-items: center; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
+  .controls label { font-size: 0.9rem; color: #999; }
+  .controls input[type=range] { flex: 1; max-width: 240px; accent-color: #5b8df9; }
+  .controls .n-val { font-size: 1.3rem; font-weight: 700; color: #5b8df9; min-width: 2ch; text-align: center; }
+
+  /* Chart area */
+  .chart-wrap { position: relative; height: 220px; margin: 1rem 0; }
+  canvas { width: 100%; height: 100%; }
+
+  /* Convolution table */
+  .conv-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+  .conv-table th { background: #252836; color: #8b9dc3; padding: 0.5rem; text-align: center; border: 1px solid #2a2d3a; }
+  .conv-table td { padding: 0.5rem; text-align: center; border: 1px solid #2a2d3a; color: #ccc; }
+  .conv-table .header-col { background: #1e2545; color: #7ba0d9; font-weight: 600; }
+  .conv-table .sum-cell { transition: background 0.3s; }
+
+  .step-btn { background: #5b8df9; color: #fff; border: none; padding: 0.5rem 1.2rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+  .step-btn:hover { background: #4a7ae8; }
+
+  .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 700px) { .side-by-side { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Convolution of Independent Random Variables</h1>
+  <p class="page-sub">How the distribution of a sum emerges from the distributions of its parts</p>
+
+  <!-- ==================== THEORY SECTION ==================== -->
+  <div class="card" style="border-color:#3a3d4a;">
+    <h2 style="font-size:1.2rem;">The Convolution Formula</h2>
+    <p>If <span class="math">X₁</span> and <span class="math">X₂</span> are <strong>independent</strong>, the distribution of <span class="math">S = X₁ + X₂</span> is computed by <strong>convolution</strong>:</p>
+    <div class="side-by-side" style="margin-top:0.75rem;">
+      <div style="background:#1a2028; border:2px solid #5b8df9; border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+        <span style="font-size:0.8rem; color:#5b8df9; text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:0.5rem;">Discrete case</span>
+        <span class="math" style="font-size:1.35rem; color:#fff;">P(S = s) &nbsp;=&nbsp; <span style="font-size:1.6rem; vertical-align:middle;">Σ</span><sub style="font-size:0.65rem;">k</sub> P(X₁ = k) · P(X₂ = s − k)</span>
+      </div>
+      <div style="background:#1a2420; border:2px solid #02c39a; border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+        <span style="font-size:0.8rem; color:#02c39a; text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:0.5rem;">Continuous case</span>
+        <span class="math" style="font-size:1.35rem; color:#fff;">f<sub>S</sub>(s) &nbsp;=&nbsp; <span style="font-size:1.8rem; vertical-align:middle;">∫</span><sub style="font-size:0.65rem;">−∞</sub><sup style="font-size:0.65rem;">+∞</sup> f<sub>X₁</sub>(t) · f<sub>X₂</sub>(s − t) &thinsp;dt</span>
+      </div>
+    </div>
+    <p style="margin-top:0.75rem;">The idea: to get a sum of <span class="math">s</span>, we enumerate every way <span class="math">X₁</span> could contribute some amount <span class="math">k</span> while <span class="math">X₂</span> contributes the rest <span class="math">s − k</span>. Independence lets us <strong>multiply</strong> those two probabilities, then we <strong>sum</strong> over all possible splits.</p>
+    <p>For <span class="math">N</span> variables, we simply convolve repeatedly: <span class="math">P<sub>S</sub> = P<sub>X₁</sub> ⊛ P<sub>X₂</sub> ⊛ ⋯ ⊛ P<sub>Xₙ</sub></span></p>
+  </div>
+
+  <div class="card" style="border-color:#3a3d4a;">
+    <h2 style="font-size:1.2rem;">Why E[S] = E[X₁] + E[X₂] + ⋯ + E[Xₙ]</h2>
+    <p>This is the <strong>linearity of expectation</strong> — it always holds, even without independence:</p>
+    <div class="hl" style="border-color:#02c39a;">
+      <span class="math">E[S] = E[X₁ + X₂ + ⋯ + Xₙ]</span><br><br>
+      By definition, expectation is a sum (or integral) — and sums can be split:<br><br>
+      <span class="math">&nbsp;&nbsp;= E[X₁] + E[X₂] + ⋯ + E[Xₙ]</span><br><br>
+      No conditions needed. This works for <em>any</em> random variables, correlated or not.
+    </div>
+    <p style="margin-top:0.75rem;">For <span class="math">N</span> identical variables with mean <span class="math">μ</span>: &nbsp;<span class="math">E[S] = Nμ</span>. That's all there is to it.</p>
+  </div>
+
+  <div class="card" style="border-color:#3a3d4a;">
+    <h2 style="font-size:1.2rem;">Why Var(S) = Var(X₁) + Var(X₂) + ⋯ + Var(Xₙ)  <span style="color:#f43f5e;font-size:0.85rem;">(requires independence!)</span></h2>
+    <p>Start from the definition <span class="math">Var(S) = E[(S − E[S])²] = E[S²] − (E[S])²</span>:</p>
+    <div class="hl" style="border-color:#a855f7;">
+      <span class="math">Var(X₁ + X₂) = E[(X₁+X₂)²] − (E[X₁+X₂])²</span><br><br>
+      Expand the square:<br>
+      <span class="math">&nbsp;&nbsp;= E[X₁²] + 2E[X₁X₂] + E[X₂²] − (E[X₁])² − 2E[X₁]E[X₂] − (E[X₂])²</span><br><br>
+      Rearrange into individual variances + a cross term:<br>
+      <span class="math">&nbsp;&nbsp;= Var(X₁) + Var(X₂) + 2(E[X₁X₂] − E[X₁]E[X₂])</span><br><br>
+      The cross term is <span class="math">2 Cov(X₁, X₂)</span>. If <span class="math">X₁</span> and <span class="math">X₂</span> are <strong>independent</strong>, then <span class="math">E[X₁X₂] = E[X₁]E[X₂]</span>, so the covariance is <strong>zero</strong> and:<br><br>
+      <span class="math">&nbsp;&nbsp;= Var(X₁) + Var(X₂)</span> &nbsp;✓
+    </div>
+    <p style="margin-top:0.75rem;">The same argument extends by induction to N variables. For <span class="math">N</span> identical independent variables with variance <span class="math">σ²</span>: &nbsp;<span class="math">Var(S) = Nσ²</span>.</p>
+    <p><strong>Key contrast:</strong> expectation always adds. Variance only adds when the variables are independent. If they're positively correlated, variance grows <em>faster</em> than linearly; if negatively correlated, it grows <em>slower</em>.</p>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('coins')">Coin Flips</button>
+    <button class="tab" onclick="switchTab('dice')">Dice Rolls</button>
+    <button class="tab" onclick="switchTab('exponential')">Exponential</button>
+    <button class="tab" onclick="switchTab('poisson')">Poisson</button>
+    <button class="tab" onclick="switchTab('trimodal')">Weird Trimodal</button>
+  </div>
+
+  <!-- ==================== COINS TAB ==================== -->
+  <div id="tab-coins" class="tab-content active">
+    <div class="card">
+      <h2>The Building Block: One Coin Flip</h2>
+      <p>Each flip <span class="math">Xᵢ</span> is a Bernoulli(<span class="math">p</span>) random variable: it equals 1 (heads) with probability <span class="math">p</span> and 0 (tails) with probability <span class="math">1−p</span>. Every flip is <strong>independent</strong> of every other.</p>
+      <div class="side-by-side" style="margin-top:1rem;">
+        <div><canvas id="coin-single" height="120"></canvas></div>
+        <div class="hl" style="align-self:center;">
+          <span class="math">P(X = 0) = 1−p</span><br>
+          <span class="math">P(X = 1) = p</span><br><br>
+          <span class="math">E[X] = p &nbsp;&nbsp; Var(X) = p(1−p)</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Two Coins: The Convolution Table</h2>
+      <p>To find <span class="math">S = X₁ + X₂</span>, we list all joint outcomes. Independence means we <strong>multiply</strong> probabilities. Then we <strong>collect</strong> cells with the same sum.</p>
+      <table class="conv-table" id="coin-conv-table">
+        <tr>
+          <th style="background:#1a1d28;">X₁ ╲ X₂</th>
+          <th class="header-col">0 (T) · (1−p)</th>
+          <th class="header-col">1 (H) · p</th>
+        </tr>
+        <tr>
+          <th class="header-col">0 (T) · (1−p)</th>
+          <td class="sum-cell" data-sum="0"><strong>S=0</strong><br><span style="color:#777;">(1−p)²</span></td>
+          <td class="sum-cell" data-sum="1"><strong>S=1</strong><br><span style="color:#777;">p(1−p)</span></td>
+        </tr>
+        <tr>
+          <th class="header-col">1 (H) · p</th>
+          <td class="sum-cell" data-sum="1"><strong>S=1</strong><br><span style="color:#777;">p(1−p)</span></td>
+          <td class="sum-cell" data-sum="2"><strong>S=2</strong><br><span style="color:#777;">p²</span></td>
+        </tr>
+      </table>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="step-btn" onclick="highlightCoinSum(0)">Show S=0</button>
+        <button class="step-btn" onclick="highlightCoinSum(1)">Show S=1</button>
+        <button class="step-btn" onclick="highlightCoinSum(2)">Show S=2</button>
+        <button class="step-btn" onclick="highlightCoinSum(-1)" style="background:#444;">Clear</button>
+      </div>
+      <div class="hl" style="margin-top:1rem;">
+        <strong>S=1 gets probability from two cells</strong> — paths HT and TH both produce a sum of 1, each contributing <span class="math">p(1−p)</span>. So <span class="math">P(S=1) = 2p(1−p)</span>. This "piling up" in the middle is the essence of convolution — and the seed of the bell curve.
+      </div>
+    </div>
+    <div class="card">
+      <h2>N Coin Flips</h2>
+      <p>As we add more independent flips, <span class="math">S = X₁ + X₂ + ⋯ + Xₙ</span>, the distribution gets more values and the shape converges toward a <strong>Gaussian</strong> (Central Limit Theorem).</p>
+      <div class="controls">
+        <label>Number of coins (N):</label>
+        <input type="range" id="coin-n" min="1" max="30" value="2" oninput="updateCoinChart()">
+        <span class="n-val" id="coin-n-val">2</span>
+      </div>
+      <div class="chart-wrap"><canvas id="coin-chart"></canvas></div>
+      <div class="side-by-side">
+        <div class="hl"><span class="math">E[S] = Np = <span id="coin-mean">1.0</span></span></div>
+        <div class="hl"><span class="math">Var(S) = Np(1−p) = <span id="coin-var">0.5</span></span></div>
+      </div>
+      <div class="hl" style="margin-top:0.5rem;">
+        Each new coin's distribution is convolved with the running total. Variance <strong>adds</strong> because the coins are independent: <span class="math">Var(S) = Var(X₁) + ⋯ + Var(Xₙ)</span>. (Chart uses <span class="math">p = ½</span>.)
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DICE TAB ==================== -->
+  <div id="tab-dice" class="tab-content">
+    <div class="card">
+      <h2>The Building Block: One Fair Die Roll</h2>
+      <p>Each roll <span class="math">Dᵢ</span> is uniform on {1, 2, 3, 4, 5, 6}, each with probability ⅙. A richer starting distribution than the coin.</p>
+      <div class="side-by-side" style="margin-top:1rem;">
+        <div><canvas id="die-single" height="120"></canvas></div>
+        <div class="hl" style="align-self:center;">
+          <span class="math">P(D = k) = ⅙</span> for k ∈ {1,…,6}<br><br>
+          <span class="math">E[D] = 3.5 &nbsp;&nbsp; Var(D) = 35/12</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Two Dice: The 6×6 Convolution Table</h2>
+      <p>Same principle: list all 36 equally likely joint outcomes, then count how many give each sum from 2 to 12.</p>
+      <div style="overflow-x:auto;"><table class="conv-table" id="dice-conv-table"></table></div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;" id="dice-sum-buttons"></div>
+      <div class="hl" style="margin-top:1rem;">
+        Sum=7 has <strong>6 paths</strong> (1+6, 2+5, 3+4, 4+3, 5+2, 6+1) while sum=2 and sum=12 have only 1. The triangular shape is the convolution of two uniform distributions.
+      </div>
+    </div>
+    <div class="card">
+      <h2>N Dice: Triangular → Bell Curve</h2>
+      <p>With 2 dice the distribution is triangular. Add more dice and it rapidly smooths into a Gaussian — the CLT at work.</p>
+      <div class="controls">
+        <label>Number of dice (N):</label>
+        <input type="range" id="dice-n" min="1" max="20" value="2" oninput="updateDiceChart()">
+        <span class="n-val" id="dice-n-val">2</span>
+      </div>
+      <div class="chart-wrap"><canvas id="dice-chart"></canvas></div>
+      <div class="side-by-side">
+        <div class="hl"><span class="math">E[S] = 3.5N = <span id="dice-mean">7.0</span></span></div>
+        <div class="hl"><span class="math">Var(S) = 35N/12 ≈ <span id="dice-var">5.8</span></span></div>
+      </div>
+      <div class="hl" style="margin-top:0.5rem;">
+        Even though each die is <em>uniform</em> (flat), the sum quickly looks normal. The convolution smears and smooths, and the CLT guarantees convergence.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EXPONENTIAL TAB ==================== -->
+  <div id="tab-exponential" class="tab-content">
+    <div class="card">
+      <h2>The Building Block: One Exponential(λ) Variable</h2>
+      <p>Think of it as the waiting time until an event: a server request, a radioactive decay, a bus arrival. It's <strong>continuous</strong>, <strong>always positive</strong>, and <strong>heavily right-skewed</strong> — the exact opposite of a bell curve.</p>
+      <div class="side-by-side" style="margin-top:1rem;">
+        <div><canvas id="exp-single" height="120"></canvas></div>
+        <div class="hl" style="align-self:center;">
+          <span class="math">f(x) = λe<sup>−λx</sup></span> for x ≥ 0<br><br>
+          <span class="math">E[X] = 1/λ &nbsp;&nbsp; Var(X) = 1/λ²</span><br><br>
+          Chart uses <span class="math">λ = 1</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>N Exponentials: Skewed → Gamma → Gaussian</h2>
+      <p>The sum of <span class="math">N</span> independent Exp(<span class="math">λ</span>) variables is exactly a <strong>Gamma(N, λ)</strong> distribution. As N grows, even this extremely skewed starting shape becomes bell-shaped.</p>
+      <div class="controls">
+        <label>Number of variables (N):</label>
+        <input type="range" id="exp-n" min="1" max="30" value="1" oninput="updateExpChart()">
+        <span class="n-val" id="exp-n-val">1</span>
+      </div>
+      <div class="chart-wrap"><canvas id="exp-chart"></canvas></div>
+      <div class="side-by-side">
+        <div class="hl"><span class="math">E[S] = N/λ = <span id="exp-mean">1.0</span></span></div>
+        <div class="hl"><span class="math">Var(S) = N/λ² = <span id="exp-var">1.0</span></span></div>
+      </div>
+      <div class="hl" style="margin-top:0.5rem;">
+        The sum <span class="math">S ~ Gamma(N, λ)</span>. At N=1 it's a pure exponential (maximally skewed). By N≈5 the skew is visible but softening. By N≈15–20 it's practically Gaussian. The <strong>CLT doesn't care</strong> that the starting distribution was wildly asymmetric.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== POISSON TAB ==================== -->
+  <div id="tab-poisson" class="tab-content">
+    <div class="card">
+      <h2>The Building Block: One Poisson(λ) Variable</h2>
+      <p>Counts of rare independent events in a fixed interval: emails per hour, typos per page, earthquakes per year. Discrete, non-negative, and skewed for small <span class="math">λ</span>.</p>
+      <div class="side-by-side" style="margin-top:1rem;">
+        <div><canvas id="pois-single" height="120"></canvas></div>
+        <div class="hl" style="align-self:center;">
+          <span class="math">P(X = k) = λ<sup>k</sup>e<sup>−λ</sup> / k!</span><br><br>
+          <span class="math">E[X] = λ &nbsp;&nbsp; Var(X) = λ</span><br><br>
+          Chart uses <span class="math">λ = 2</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>N Poisson Variables: A Beautiful Exact Result</h2>
+      <p>The sum of <span class="math">N</span> independent Poisson(<span class="math">λ</span>) variables is exactly <strong>Poisson(Nλ)</strong>. No approximation needed — Poisson is closed under convolution! And as Nλ grows, it too becomes Gaussian.</p>
+      <div class="controls">
+        <label>Number of variables (N):</label>
+        <input type="range" id="pois-n" min="1" max="30" value="1" oninput="updatePoisChart()">
+        <span class="n-val" id="pois-n-val">1</span>
+      </div>
+      <div class="chart-wrap"><canvas id="pois-chart"></canvas></div>
+      <div class="side-by-side">
+        <div class="hl"><span class="math">E[S] = Nλ = <span id="pois-mean">2.0</span></span></div>
+        <div class="hl"><span class="math">Var(S) = Nλ = <span id="pois-var">2.0</span></span></div>
+      </div>
+      <div class="hl" style="margin-top:0.5rem;">
+        <strong>Poisson ⊛ Poisson = Poisson.</strong> The family is closed under convolution — the sum stays Poisson, just with a larger rate parameter. Mean <em>and</em> variance are both Nλ (they're always equal for Poisson). As Nλ grows large, the distribution approaches Gaussian.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TRIMODAL TAB ==================== -->
+  <div id="tab-trimodal" class="tab-content">
+    <div class="card">
+      <h2>The Building Block: A Weird Trimodal Distribution</h2>
+      <p>This is deliberately pathological — three sharp peaks at different locations with a gap between them. Nothing like a bell curve. The point: <strong>the CLT doesn't care</strong>.</p>
+      <div class="side-by-side" style="margin-top:1rem;">
+        <div><canvas id="tri-single" height="120"></canvas></div>
+        <div class="hl" style="align-self:center;">
+          Three peaks at <span class="math">x ≈ 1, 5, 9</span><br>
+          with different heights and widths<br><br>
+          <span class="math">E[X] ≈ 4.6 &nbsp;&nbsp; Var(X) ≈ 9.4</span><br><br>
+          As ugly as it gets!
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>N Trimodals: from Mess to Harmony</h2>
+      <p>Watch the three peaks blur together. By N≈3–4 you can still see bumps. By N≈8 it's basically a bell curve. The CLT is relentless.</p>
+      <div class="controls">
+        <label>Number of variables (N):</label>
+        <input type="range" id="tri-n" min="1" max="20" value="1" oninput="updateTriChart()">
+        <span class="n-val" id="tri-n-val">1</span>
+      </div>
+      <div class="chart-wrap"><canvas id="tri-chart"></canvas></div>
+      <div class="side-by-side">
+        <div class="hl"><span class="math">E[S] = N × 4.6 ≈ <span id="tri-mean">4.6</span></span></div>
+        <div class="hl"><span class="math">Var(S) = N × 9.4 ≈ <span id="tri-var">9.4</span></span></div>
+      </div>
+      <div class="hl" style="margin-top:0.5rem;">
+        This is the <strong>strongest demonstration of the CLT</strong>: even a trimodal, asymmetric, gapped distribution converges to Gaussian under repeated convolution. Each convolution step smears the peaks further until they merge into a single smooth bell.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== TAB SWITCHING ====================
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  const inits = {
+    coins: () => { drawCoinSingle(); updateCoinChart(); },
+    dice: () => { drawDieSingle(); updateDiceChart(); },
+    exponential: () => { drawExpSingle(); updateExpChart(); },
+    poisson: () => { drawPoisSingle(); updatePoisChart(); },
+    trimodal: () => { drawTriSingle(); updateTriChart(); },
+  };
+  inits[id]();
+}
+
+// ==================== HIGHLIGHT HELPERS ====================
+function highlightCoinSum(s) {
+  document.querySelectorAll('#coin-conv-table .sum-cell').forEach(cell => {
+    if (s === -1) { cell.style.background = ''; return; }
+    cell.style.background = parseInt(cell.dataset.sum) === s ? '#2a3f6f' : '#111318';
+  });
+}
+
+// ==================== DICE TABLE ====================
+(function buildDiceTable() {
+  const table = document.getElementById('dice-conv-table');
+  let html = '<tr><th style="background:#1a1d28;">D₁ ╲ D₂</th>';
+  for (let j = 1; j <= 6; j++) html += `<th class="header-col">${j}</th>`;
+  html += '</tr>';
+  for (let i = 1; i <= 6; i++) {
+    html += `<tr><th class="header-col">${i}</th>`;
+    for (let j = 1; j <= 6; j++) {
+      const s = i + j;
+      html += `<td class="sum-cell" data-sum="${s}" style="font-size:0.8rem;"><strong>${s}</strong></td>`;
+    }
+    html += '</tr>';
+  }
+  table.innerHTML = html;
+  const btnContainer = document.getElementById('dice-sum-buttons');
+  for (let s = 2; s <= 12; s++) {
+    const btn = document.createElement('button');
+    btn.className = 'step-btn';
+    btn.textContent = `S=${s}`;
+    btn.style.cssText = 'padding:0.35rem 0.7rem;font-size:0.8rem;';
+    btn.onclick = () => {
+      document.querySelectorAll('#dice-conv-table .sum-cell').forEach(cell => {
+        cell.style.background = parseInt(cell.dataset.sum) === s ? '#2a3f6f' : '#111318';
+      });
+    };
+    btnContainer.appendChild(btn);
+  }
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'step-btn';
+  clearBtn.textContent = 'Clear';
+  clearBtn.style.cssText = 'background:#444;padding:0.35rem 0.7rem;font-size:0.8rem;';
+  clearBtn.onclick = () => {
+    document.querySelectorAll('#dice-conv-table .sum-cell').forEach(c => c.style.background = '');
+  };
+  btnContainer.appendChild(clearBtn);
+})();
+
+// ==================== DISTRIBUTION MATH ====================
+
+// --- Discrete convolution helper ---
+function convolveArrays(a, b) {
+  const out = new Array(a.length + b.length - 1).fill(0);
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < b.length; j++) {
+      out[i + j] += a[i] * b[j];
+    }
+  }
+  return out;
+}
+
+function nFoldConvolve(base, n) {
+  let d = base.slice();
+  for (let i = 1; i < n; i++) d = convolveArrays(d, base);
+  return d;
+}
+
+// --- Coins (Bernoulli p=0.5) ---
+function coinDist(n) { return nFoldConvolve([0.5, 0.5], n); }
+
+// --- Dice (Uniform 1-6) ---
+function diceDist(n) {
+  const single = [0, 1/6, 1/6, 1/6, 1/6, 1/6, 1/6]; // index = face value
+  return nFoldConvolve(single, n);
+}
+
+// --- Exponential (discretized, λ=1) ---
+// Discretize into bins of width δ. P(bin k) ≈ δ·f(kδ) = δ·λ·exp(-λ·k·δ)
+function expBaseDist() {
+  const lambda = 1, delta = 0.1, maxBins = 80; // 0 to 8
+  const d = [];
+  let total = 0;
+  for (let k = 0; k < maxBins; k++) {
+    const x = k * delta;
+    const p = delta * lambda * Math.exp(-lambda * x);
+    d.push(p);
+    total += p;
+  }
+  // Normalize to sum to 1
+  for (let k = 0; k < d.length; k++) d[k] /= total;
+  return d;
+}
+
+function expDist(n) { return nFoldConvolve(expBaseDist(), n); }
+
+// --- Poisson (λ=2) ---
+function poisBaseDist() {
+  const lambda = 2, maxK = 15;
+  const d = [];
+  let total = 0;
+  for (let k = 0; k <= maxK; k++) {
+    // P(X=k) = λ^k e^{-λ} / k!
+    let p = Math.exp(-lambda);
+    for (let i = 1; i <= k; i++) p *= lambda / i;
+    d.push(p);
+    total += p;
+  }
+  for (let k = 0; k < d.length; k++) d[k] /= total;
+  return d;
+}
+
+function poisDist(n) { return nFoldConvolve(poisBaseDist(), n); }
+
+// --- Weird Trimodal (discretized) ---
+// Three Gaussian-ish peaks at x≈1, x≈5, x≈9 with different weights/widths
+function triBaseDist() {
+  const delta = 0.2, maxBins = 60; // 0 to 12
+  const d = [];
+  let total = 0;
+  for (let k = 0; k < maxBins; k++) {
+    const x = k * delta;
+    // Three Gaussian bumps: weight, center, sigma
+    const peak1 = 0.45 * Math.exp(-0.5 * ((x - 1.0) / 0.5) ** 2);
+    const peak2 = 0.25 * Math.exp(-0.5 * ((x - 5.0) / 0.8) ** 2);
+    const peak3 = 0.55 * Math.exp(-0.5 * ((x - 9.0) / 0.6) ** 2);
+    const p = delta * (peak1 + peak2 + peak3);
+    d.push(p);
+    total += p;
+  }
+  for (let k = 0; k < d.length; k++) d[k] /= total;
+  return d;
+}
+
+// Precompute trimodal stats
+const _triBase = triBaseDist();
+const _triDelta = 0.2;
+let _triMean = 0, _triVar = 0;
+for (let k = 0; k < _triBase.length; k++) {
+  const x = k * _triDelta;
+  _triMean += x * _triBase[k];
+}
+for (let k = 0; k < _triBase.length; k++) {
+  const x = k * _triDelta;
+  _triVar += (x - _triMean) ** 2 * _triBase[k];
+}
+
+function triDist(n) { return nFoldConvolve(_triBase, n); }
+
+// ==================== DRAWING ====================
+function drawBarChart(canvas, labels, values, color, maxVal) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const n = values.length;
+  const pad = { top: 10, bottom: 28, left: 10, right: 10 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const barW = Math.min(chartW / n * 0.8, 40);
+  const gap = chartW / n;
+  const max = maxVal || Math.max(...values) * 1.15;
+
+  for (let i = 0; i < n; i++) {
+    const x = pad.left + i * gap + gap / 2;
+    const h = (values[i] / max) * chartH;
+    const y = pad.top + chartH - h;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    const r = Math.min(3, barW / 2);
+    ctx.moveTo(x - barW / 2, y + r);
+    ctx.arcTo(x - barW / 2, y, x, y, r);
+    ctx.arcTo(x + barW / 2, y, x + barW / 2, y + r, r);
+    ctx.lineTo(x + barW / 2, pad.top + chartH);
+    ctx.lineTo(x - barW / 2, pad.top + chartH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Labels
+    ctx.fillStyle = '#777';
+    ctx.font = n > 40 ? '7px system-ui' : n > 25 ? '8px system-ui' : '10px system-ui';
+    ctx.textAlign = 'center';
+    const labelStep = n > 60 ? Math.ceil(n / 20) : n > 30 ? Math.ceil(n / 25) : 1;
+    if (i % labelStep === 0 && labels[i] !== undefined) {
+      ctx.fillText(labels[i], x, H - 6);
+    }
+
+    if (n <= 15 && values[i] > 0.005) {
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px system-ui';
+      ctx.fillText((values[i] * 100).toFixed(1) + '%', x, y - 4);
+    }
+  }
+
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top + chartH);
+  ctx.lineTo(W - pad.right, pad.top + chartH);
+  ctx.stroke();
+}
+
+// ==================== SINGLE DISTRIBUTION DRAWS ====================
+function drawCoinSingle() {
+  drawBarChart(document.getElementById('coin-single'), ['0 (T): 1−p', '1 (H): p'], [0.5, 0.5], '#5b8df9', 0.7);
+}
+function drawDieSingle() {
+  drawBarChart(document.getElementById('die-single'), ['1','2','3','4','5','6'], [1/6,1/6,1/6,1/6,1/6,1/6], '#e07b4a', 0.3);
+}
+function drawExpSingle() {
+  const d = expBaseDist();
+  const labels = d.map((_, i) => (i % 10 === 0) ? (i * 0.1).toFixed(0) : '');
+  drawBarChart(document.getElementById('exp-single'), labels, d, '#02c39a');
+}
+function drawPoisSingle() {
+  const d = poisBaseDist();
+  const labels = d.map((_, i) => String(i));
+  drawBarChart(document.getElementById('pois-single'), labels, d, '#a855f7');
+}
+function drawTriSingle() {
+  const d = _triBase;
+  const labels = d.map((_, i) => (i % 5 === 0) ? (i * 0.2).toFixed(0) : '');
+  drawBarChart(document.getElementById('tri-single'), labels, d, '#f43f5e');
+}
+
+// ==================== N-VARIABLE CHART UPDATES ====================
+function updateCoinChart() {
+  const n = parseInt(document.getElementById('coin-n').value);
+  document.getElementById('coin-n-val').textContent = n;
+  document.getElementById('coin-mean').textContent = (n / 2).toFixed(1);
+  document.getElementById('coin-var').textContent = (n / 4).toFixed(1);
+  const dist = coinDist(n);
+  drawBarChart(document.getElementById('coin-chart'), dist.map((_, i) => String(i)), dist, '#5b8df9');
+}
+
+function updateDiceChart() {
+  const n = parseInt(document.getElementById('dice-n').value);
+  document.getElementById('dice-n-val').textContent = n;
+  document.getElementById('dice-mean').textContent = (3.5 * n).toFixed(1);
+  document.getElementById('dice-var').textContent = (35 / 12 * n).toFixed(1);
+  const dist = diceDist(n);
+  const minVal = n, maxVal = 6 * n;
+  const labels = [], values = [];
+  for (let i = minVal; i <= maxVal; i++) { labels.push(String(i)); values.push(dist[i] || 0); }
+  drawBarChart(document.getElementById('dice-chart'), labels, values, '#e07b4a');
+}
+
+function updateExpChart() {
+  const n = parseInt(document.getElementById('exp-n').value);
+  document.getElementById('exp-n-val').textContent = n;
+  document.getElementById('exp-mean').textContent = (n * 1.0).toFixed(1);
+  document.getElementById('exp-var').textContent = (n * 1.0).toFixed(1);
+  const dist = expDist(n);
+  const delta = 0.1;
+  // Trim trailing near-zeros
+  let end = dist.length - 1;
+  while (end > 0 && dist[end] < 1e-6) end--;
+  end = Math.min(end + 5, dist.length - 1);
+  const labels = [], values = [];
+  for (let i = 0; i <= end; i++) {
+    labels.push((i % Math.max(1, Math.round(10 / (n > 10 ? 2 : 1))) === 0) ? (i * delta).toFixed(1) : '');
+    values.push(dist[i]);
+  }
+  drawBarChart(document.getElementById('exp-chart'), labels, values, '#02c39a');
+}
+
+function updatePoisChart() {
+  const n = parseInt(document.getElementById('pois-n').value);
+  const totalLambda = 2 * n;
+  document.getElementById('pois-n-val').textContent = n;
+  document.getElementById('pois-mean').textContent = totalLambda.toFixed(1);
+  document.getElementById('pois-var').textContent = totalLambda.toFixed(1);
+  const dist = poisDist(n);
+  // Trim trailing near-zeros
+  let end = dist.length - 1;
+  while (end > 0 && dist[end] < 1e-5) end--;
+  end = Math.min(end + 3, dist.length - 1);
+  const labels = [], values = [];
+  for (let i = 0; i <= end; i++) { labels.push(String(i)); values.push(dist[i]); }
+  drawBarChart(document.getElementById('pois-chart'), labels, values, '#a855f7');
+}
+
+function updateTriChart() {
+  const n = parseInt(document.getElementById('tri-n').value);
+  document.getElementById('tri-n-val').textContent = n;
+  document.getElementById('tri-mean').textContent = (_triMean * n).toFixed(1);
+  document.getElementById('tri-var').textContent = (_triVar * n).toFixed(1);
+  const dist = triDist(n);
+  const delta = 0.2;
+  let end = dist.length - 1;
+  while (end > 0 && dist[end] < 1e-6) end--;
+  end = Math.min(end + 5, dist.length - 1);
+  const labels = [], values = [];
+  const labelStep = Math.max(1, Math.round(5 / (n > 5 ? 0.5 : 1)));
+  for (let i = 0; i <= end; i++) {
+    labels.push((i % labelStep === 0) ? (i * delta).toFixed(0) : '');
+    values.push(dist[i]);
+  }
+  drawBarChart(document.getElementById('tri-chart'), labels, values, '#f43f5e');
+}
+
+// ==================== INIT ====================
+window.addEventListener('load', () => { drawCoinSingle(); updateCoinChart(); });
+window.addEventListener('resize', () => {
+  // Redraw whichever tab is active
+  const tabs = ['coins','dice','exponential','poisson','trimodal'];
+  for (const t of tabs) {
+    if (document.getElementById('tab-' + t).classList.contains('active')) {
+      switchTab(t); break;
+    }
+  }
+});
+</script>
+</body>
+</html>

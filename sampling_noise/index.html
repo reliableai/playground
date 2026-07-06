@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sampling Noise Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-dim: #64748b;
+      --accent-a: #2563eb;
+      --accent-a-dim: rgba(37,99,235,0.12);
+      --accent-b: #ea580c;
+      --accent-b-dim: rgba(234,88,12,0.12);
+      --green: #16a34a;
+      --red: #dc2626;
+      --yellow: #ca8a04;
+      --purple: #7c3aed;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(0, 1.6fr);
+      gap: 1.5rem;
+      max-width: none;
+      width: auto;
+      margin: 0;
+      padding: 0 1.5rem;
+    }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .panel h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-bottom: 0.2rem;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="number"], input[type="range"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.6rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      margin-bottom: 0.6rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="number"]:focus, input[type="range"]:focus {
+      border-color: var(--accent-a);
+    }
+
+    input[type="range"] {
+      padding: 0;
+      height: 6px;
+      margin-bottom: 0.35rem;
+    }
+
+    .slider-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .metric-control {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: var(--surface-2);
+      border-radius: 8px;
+      border-left: 3px solid var(--border);
+    }
+
+    .metric-control.metric-correctness { border-left-color: var(--accent-a); }
+    .metric-control.metric-helpfulness { border-left-color: var(--accent-b); }
+    .metric-control.metric-tone { border-left-color: var(--green); }
+    .metric-control.metric-completeness { border-left-color: var(--purple); }
+
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+    }
+
+    .metric-correctness .metric-label { color: var(--accent-a); }
+    .metric-helpfulness .metric-label { color: var(--accent-b); }
+    .metric-tone .metric-label { color: var(--green); }
+    .metric-completeness .metric-label { color: var(--purple); }
+
+    .config-row { margin-bottom: 0.6rem; }
+
+    .btn {
+      width: 100%;
+      padding: 0.7rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-a), #6366f1);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--accent-b), #fb923c);
+      color: #fff;
+    }
+
+    .btn-primary:hover, .btn-secondary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.6; pointer-events: none; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.82rem;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      accent-color: var(--accent-a);
+    }
+
+    .results { display: flex; flex-direction: column; gap: 1rem; }
+
+    .scorecard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .scorecard h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .metric-bar {
+      margin-bottom: 1rem;
+    }
+
+    .metric-bar-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.35rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .metric-bar-label-name {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .metric-bar-value {
+      font-family: 'DM Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .metric-bar-value.with-ci {
+      font-size: 0.75rem;
+    }
+
+    .bar-container {
+      width: 100%;
+      height: 24px;
+      background: var(--surface-2);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--border);
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease-out;
+      position: relative;
+    }
+
+    .bar-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .metric-correctness .bar-fill { background: var(--accent-a); }
+    .metric-helpfulness .bar-fill { background: var(--accent-b); }
+    .metric-tone .bar-fill { background: var(--green); }
+    .metric-completeness .bar-fill { background: var(--purple); }
+
+    .ci-indicator {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    .ci-range {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent-a);
+      margin-left: 0.5rem;
+    }
+
+    .ci-bar {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background: rgba(59, 130, 246, 0.25);
+      border-left: 2px solid var(--accent-a);
+      border-right: 2px solid var(--accent-a);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .true-marker {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 2px;
+      background: var(--yellow);
+      border-left: 1px dashed var(--yellow);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .true-marker::after {
+      content: '▼';
+      position: absolute;
+      top: -12px;
+      left: -4px;
+      font-size: 8px;
+      color: var(--yellow);
+    }
+
+    .bar-legend {
+      margin-top: 0.25rem;
+      font-family: 'DM Mono', monospace;
+      line-height: 1.3;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+    }
+
+    .chart-card h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .chart-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.55;
+      margin-bottom: 0.8rem;
+      padding: 0.5rem 0.65rem;
+      background: var(--surface-2);
+      border-radius: 6px;
+      border-left: 3px solid var(--border);
+    }
+
+    .chart-wrap { position: relative; height: 200px; }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat-card .label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-card .value {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: var(--surface-2);
+      border-radius: 8px;
+      font-size: 0.78rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+    }
+
+    /* --- Explainer panel --- */
+    .explainer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      margin-left: 1.5rem;
+      margin-right: 1.5rem;
+      overflow: hidden;
+    }
+    .explainer-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+    }
+    .explainer-toggle:hover { background: var(--surface-2); }
+    .explainer-toggle .arrow { transition: transform 0.25s; font-size: 0.8rem; color: var(--text-dim); }
+    .explainer-toggle.open .arrow { transform: rotate(180deg); }
+
+    .explainer-body {
+      display: none;
+      padding: 0 1.25rem 1.25rem;
+      line-height: 1.7;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    .explainer-body.open { display: block; }
+
+    .explainer-body h3 {
+      color: var(--text);
+      font-size: 0.85rem;
+      margin: 1rem 0 0.4rem;
+      font-weight: 600;
+    }
+    .explainer-body h3:first-child { margin-top: 0.25rem; }
+
+    .explainer-body p { margin-bottom: 0.5rem; }
+
+    .explainer-body .step-list {
+      counter-reset: steps;
+      list-style: none;
+      padding: 0;
+      margin-bottom: 0.5rem;
+    }
+    .explainer-body .step-list li {
+      counter-increment: steps;
+      padding-left: 2rem;
+      position: relative;
+      margin-bottom: 0.35rem;
+    }
+    .explainer-body .step-list li::before {
+      content: counter(steps);
+      position: absolute;
+      left: 0;
+      width: 1.4rem;
+      height: 1.4rem;
+      background: var(--accent-a-dim);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent-a);
+      top: 0.15rem;
+    }
+
+    .vs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0;
+      font-size: 0.8rem;
+    }
+    .vs-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: 'DM Mono', monospace;
+    }
+    .vs-table td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid rgba(15,23,42,0.08);
+    }
+    .vs-table tr:last-child td { border-bottom: none; }
+
+    /* --- Insight banners --- */
+    .insight-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-a);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+    .metric-sliders {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .insight-banner strong {
+      color: var(--text);
+    }
+    .insight-banner em {
+      color: var(--text);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Sampling Noise Lab</h1>
+  <p class="subtitle">Why your scorecard lies when n is small</p>
+
+  <!-- Explainer Panel -->
+  <div class="explainer">
+    <button class="explainer-toggle" onclick="toggleExplainer()" id="expToggle">
+      <span>What is this? &mdash; The problem, the math, and what to look for</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="explainer-body" id="expBody">
+
+      <h3>The Scenario</h3>
+      <p>You&rsquo;ve built an AI system (a chatbot, a summarizer, a classifier). To evaluate it, you run it on <strong>n</strong> test queries and have an LLM judge score each output from 1 to 5 on four metrics: <span style="color:#2563eb;">Correctness</span>, <span style="color:#ea580c;">Helpfulness</span>, <span style="color:#16a34a;">Tone</span>, and <span style="color:#7c3aed;">Completeness</span>. You average the scores and get a <strong>scorecard</strong>. That scorecard is your basis for shipping (or not).</p>
+      <p><strong>The problem:</strong> that scorecard is <em>one random sample</em>. Run the same evaluation again with a different set of n queries from the same population, and you&rsquo;ll get different numbers. At small n, the numbers can be <em>wildly</em> different &mdash; different enough to change your decision.</p>
+
+      <h3>What to Try</h3>
+      <ol class="step-list">
+        <li>Set the <strong>true scores</strong> on the left (these are the &ldquo;real&rdquo; quality of your system, which you normally don&rsquo;t know).</li>
+        <li>Set <strong>n = 20</strong> and click <strong>Run Evaluation</strong> several times. Watch the scorecard change each time &mdash; same system, different measurement.</li>
+        <li>Now set <strong>n = 500</strong> and click again. The scorecard barely moves. <em>That&rsquo;s</em> the effect of sample size.</li>
+        <li>Click <strong>Run 100 Evaluations</strong> to see the full sampling distribution &mdash; how much the measured mean varies across repeated experiments.</li>
+        <li>Toggle on <strong>Beta posteriors</strong> and <strong>Bootstrap distributions</strong> to see two ways of quantifying the uncertainty.</li>
+      </ol>
+
+      <h3>The Key Insight</h3>
+      <p>A single evaluation gives you a <strong>point estimate</strong>, not the truth. The truth is a <em>distribution</em> of possible measurements. Without a confidence interval, your scorecard is meaningless &mdash; you don&rsquo;t know if &ldquo;4.1&rdquo; means &ldquo;somewhere between 3.5 and 4.7&rdquo; (useless) or &ldquo;between 4.0 and 4.2&rdquo; (actionable).</p>
+
+      <h3>Three Ways to Quantify Uncertainty</h3>
+      <table class="vs-table">
+        <tr>
+          <th>Method</th>
+          <th>How it works</th>
+          <th>When to use</th>
+        </tr>
+        <tr>
+          <td><strong>Confidence interval</strong></td>
+          <td>mean &plusmn; z &middot; (std / &radic;n). Assumes approximate normality (works well for n &gt; 30 by CLT).</td>
+          <td>Quick sanity check. Always report this alongside any point estimate.</td>
+        </tr>
+        <tr>
+          <td><strong>Beta posterior</strong></td>
+          <td>Binarize scores (&ge;4 = &ldquo;good&rdquo;). Count successes k out of n. Posterior is Beta(k+1, n&minus;k+1). The full curve shows your uncertainty about the &ldquo;good rate.&rdquo;</td>
+          <td>When you care about a pass/fail threshold (e.g., &ldquo;what fraction of outputs are good enough?&rdquo;). Exact &mdash; no normality assumption needed.</td>
+        </tr>
+        <tr>
+          <td><strong>Bootstrap</strong></td>
+          <td>Resample your n scores <em>with replacement</em> 5,000 times. Each resample gives a different mean. The spread of these means <em>is</em> your uncertainty.</td>
+          <td>Works for any statistic (mean, median, percentile) and any distribution. No assumptions. The workhorse method.</td>
+        </tr>
+      </table>
+
+      <h3>Does More Data Help?</h3>
+      <p><strong>Yes &mdash; this is the one source of uncertainty where more data is a clean fix.</strong> The standard error of the mean shrinks as 1/&radic;n. Double n, uncertainty shrinks by ~30%. Quadruple n, it halves. The beta posterior tightens, the bootstrap distribution narrows. Try it: drag n from 20 to 200 and watch the uncertainty collapse.</p>
+      <p>But beware: this only fixes <em>sampling noise</em>. If your sample is biased, your judge is noisy, or your prompt is brittle, more data gives you a very precise <em>wrong</em> answer. Sampling noise is source #1 of 9 &mdash; the easy one.</p>
+
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: Controls -->
+    <div>
+      <div class="panel">
+        <h2>Setup: True Scores</h2>
+        <p style="font-size:0.8rem; color: var(--text-dim); margin-bottom:1rem;">
+          Set the true average score and spread for each metric. <strong>Spread</strong> controls how much individual scores vary around the mean: high spread means some outputs score 2 and others score 5, even though the average is 3.8. Low spread means most outputs score close to the mean.
+        </p>
+
+        <div class="metric-control metric-correctness">
+          <div class="metric-label">Correctness</div>
+          <div class="metric-sliders">
+            <div>
+              <label>True score</label>
+              <input type="range" id="metric-correctness" min="1" max="5" step="0.1" value="3.8">
+              <div class="slider-value"><span id="val-correctness">3.8</span> / 5</div>
+            </div>
+            <div>
+              <label>Spread</label>
+              <input type="range" id="spread-correctness" min="2" max="50" step="1" value="10">
+              <div class="slider-value"><span id="spread-val-correctness">medium</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-control metric-helpfulness">
+          <div class="metric-label">Helpfulness</div>
+          <div class="metric-sliders">
+            <div>
+              <label>True score</label>
+              <input type="range" id="metric-helpfulness" min="1" max="5" step="0.1" value="4.1">
+              <div class="slider-value"><span id="val-helpfulness">4.1</span> / 5</div>
+            </div>
+            <div>
+              <label>Spread</label>
+              <input type="range" id="spread-helpfulness" min="2" max="50" step="1" value="10">
+              <div class="slider-value"><span id="spread-val-helpfulness">medium</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-control metric-tone">
+          <div class="metric-label">Tone</div>
+          <div class="metric-sliders">
+            <div>
+              <label>True score</label>
+              <input type="range" id="metric-tone" min="1" max="5" step="0.1" value="4.3">
+              <div class="slider-value"><span id="val-tone">4.3</span> / 5</div>
+            </div>
+            <div>
+              <label>Spread</label>
+              <input type="range" id="spread-tone" min="2" max="50" step="1" value="10">
+              <div class="slider-value"><span id="spread-val-tone">medium</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-control metric-completeness">
+          <div class="metric-label">Completeness</div>
+          <div class="metric-sliders">
+            <div>
+              <label>True score</label>
+              <input type="range" id="metric-completeness" min="1" max="5" step="0.1" value="3.6">
+              <div class="slider-value"><span id="val-completeness">3.6</span> / 5</div>
+            </div>
+            <div>
+              <label>Spread</label>
+              <input type="range" id="spread-completeness" min="2" max="50" step="1" value="10">
+              <div class="slider-value"><span id="spread-val-completeness">medium</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <label>Sample size (n)</label>
+          <input type="number" id="sample-size" value="20" min="5" max="1000" step="1">
+        </div>
+
+        <button class="btn btn-primary" onclick="runEvaluation()">Run Evaluation</button>
+        <button class="btn btn-secondary" onclick="run100Evaluations()">Run 100 Evaluations</button>
+
+        <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+          <p><strong style="color:var(--accent-a);">Run Evaluation</strong> — Draws n random samples from the true score distribution and computes the average for each of the 4 metrics. You'll see scorecard bars, a histogram of sampled scores, and 95% confidence intervals. Each click re-randomizes — the scores jitter around the truth, and that jitter IS the lesson.</p>
+          <p style="margin-top:0.4rem;"><strong style="color:var(--text);">Run 100 Evaluations</strong> — Repeats the evaluation 100 times and plots the sampling distribution of the mean. Shows how the average itself is a random variable, with a bell-shaped spread around the true score. The CI overlay shows the 95% range across runs.</p>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 0.75rem; background: var(--surface-2); border-radius: 8px; border-left: 3px solid var(--accent-a);">
+          <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.5rem;">Analysis Options</div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-ci" checked>
+            <label style="margin:0" for="show-ci">Confidence intervals (95%)</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-beta" onchange="updateResults()">
+            <label style="margin:0" for="show-beta">Beta posteriors</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-bootstrap" onchange="updateResults()">
+            <label style="margin:0" for="show-bootstrap">Bootstrap distributions</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-closedform" onchange="updateResults()">
+            <label style="margin:0" for="show-closedform">Closed-form SE &amp; P(mean &gt; T)</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-dirichlet" onchange="updateResults()">
+            <label style="margin:0" for="show-dirichlet">Dirichlet P(mean &gt; T)</label>
+          </div>
+          <div style="margin-top:0.5rem;">
+            <label style="font-size:0.7rem;">Threshold T for P(mean &gt; T)</label>
+            <input type="number" id="mean-threshold" value="4" min="1" max="5" step="0.1"
+              style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:0.4rem 0.6rem; font-family:'DM Mono',monospace; font-size:0.82rem;"
+              onchange="updateResults()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div>
+      <div class="results" id="results">
+        <div class="empty-state">
+          <div>
+            <strong>Set true scores and sample size,</strong><br>
+            then hit <strong>Run Evaluation</strong><br>
+            <br>
+            <span style="font-size:0.75rem;">Click repeatedly to see how much the scorecard wobbles</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Explainer toggle
+    function toggleExplainer() {
+      document.getElementById('expToggle').classList.toggle('open');
+      document.getElementById('expBody').classList.toggle('open');
+    }
+
+    // State
+    let currentScores = null;
+    let currentSamples = null;
+    let historyEvaluations = [];
+    let charts = {};
+
+    // Beta distribution utilities
+    function getBetaParams(targetMean, concentration) {
+      // Map 1-5 to 0-1
+      const mu = (targetMean - 1) / 4;
+      // concentration controls spread: low (2) = very spread, high (50) = tight
+      concentration = concentration || 10;
+      const alpha = mu * concentration;
+      const beta = (1 - mu) * concentration;
+      return { alpha, beta };
+    }
+
+    // Sample from Gamma(shape, 1) using Marsaglia & Tsang's method
+    function sampleGamma(shape) {
+      if (shape < 1) {
+        // Boost: Gamma(a) = Gamma(a+1) * U^(1/a)
+        return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      }
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x, v;
+        do {
+          // Generate standard normal via Box-Muller
+          const u1 = Math.random();
+          const u2 = Math.random();
+          x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          v = 1 + c * x;
+        } while (v <= 0);
+        v = v * v * v;
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    }
+
+    // Sample from Beta(alpha, beta) via two Gamma samples
+    function sampleFromBeta(alpha, beta) {
+      const x = sampleGamma(alpha);
+      const y = sampleGamma(beta);
+      return x / (x + y);
+    }
+
+    function discretizeBeta(targetMean, count, concentration) {
+      // Generate count samples from beta distribution, discretize to 1-5 scale
+      const { alpha, beta } = getBetaParams(targetMean, concentration);
+      const samples = [];
+
+      for (let i = 0; i < count; i++) {
+        const u = sampleFromBeta(alpha, beta);
+        const score = 1 + u * 4;
+        // Discretize to nearest 0.5
+        const discretized = Math.round(score * 2) / 2;
+        samples.push(discretized);
+      }
+
+      return samples;
+    }
+
+    // Metric colors
+    const metricColors = {
+      'Correctness': '#2563eb',
+      'Helpfulness': '#ea580c',
+      'Tone': '#16a34a',
+      'Completeness': '#7c3aed'
+    };
+
+    const metricIds = ['Correctness', 'Helpfulness', 'Tone', 'Completeness'];
+    const metricInputIds = {
+      'Correctness': 'metric-correctness',
+      'Helpfulness': 'metric-helpfulness',
+      'Tone': 'metric-tone',
+      'Completeness': 'metric-completeness'
+    };
+
+    const metricValueIds = {
+      'Correctness': 'val-correctness',
+      'Helpfulness': 'val-helpfulness',
+      'Tone': 'val-tone',
+      'Completeness': 'val-completeness'
+    };
+
+    const spreadInputIds = {
+      'Correctness': 'spread-correctness',
+      'Helpfulness': 'spread-helpfulness',
+      'Tone': 'spread-tone',
+      'Completeness': 'spread-completeness'
+    };
+    const spreadValueIds = {
+      'Correctness': 'spread-val-correctness',
+      'Helpfulness': 'spread-val-helpfulness',
+      'Tone': 'spread-val-tone',
+      'Completeness': 'spread-val-completeness'
+    };
+
+    function spreadLabel(val) {
+      if (val <= 5) return 'very high';
+      if (val <= 10) return 'high';
+      if (val <= 20) return 'medium';
+      if (val <= 35) return 'low';
+      return 'very low';
+    }
+
+    // Update slider display values
+    metricIds.forEach(metric => {
+      const input = document.getElementById(metricInputIds[metric]);
+      input.addEventListener('input', (e) => {
+        document.getElementById(metricValueIds[metric]).textContent = parseFloat(e.target.value).toFixed(1);
+      });
+
+      const spreadInput = document.getElementById(spreadInputIds[metric]);
+      spreadInput.addEventListener('input', (e) => {
+        document.getElementById(spreadValueIds[metric]).textContent = spreadLabel(parseInt(e.target.value));
+      });
+    });
+
+    function getTrueScores() {
+      return {
+        'Correctness': parseFloat(document.getElementById('metric-correctness').value),
+        'Helpfulness': parseFloat(document.getElementById('metric-helpfulness').value),
+        'Tone': parseFloat(document.getElementById('metric-tone').value),
+        'Completeness': parseFloat(document.getElementById('metric-completeness').value)
+      };
+    }
+
+    function getConcentrations() {
+      return {
+        'Correctness': parseInt(document.getElementById('spread-correctness').value),
+        'Helpfulness': parseInt(document.getElementById('spread-helpfulness').value),
+        'Tone': parseInt(document.getElementById('spread-tone').value),
+        'Completeness': parseInt(document.getElementById('spread-completeness').value)
+      };
+    }
+
+    function getSampleSize() {
+      return parseInt(document.getElementById('sample-size').value);
+    }
+
+    function runEvaluation() {
+      const trueScores = getTrueScores();
+      const concentrations = getConcentrations();
+      const n = getSampleSize();
+
+      // Generate samples for each metric
+      const samples = {};
+      metricIds.forEach(metric => {
+        samples[metric] = discretizeBeta(trueScores[metric], n, concentrations[metric]);
+      });
+
+      currentSamples = samples;
+
+      // Calculate measured scores
+      currentScores = {};
+      metricIds.forEach(metric => {
+        const mean = samples[metric].reduce((a, b) => a + b, 0) / n;
+        currentScores[metric] = mean;
+      });
+
+      // Add to history
+      historyEvaluations.push({ scores: {...currentScores}, timestamp: Date.now() });
+      if (historyEvaluations.length > 100) historyEvaluations.shift();
+
+      updateResults();
+    }
+
+    function run100Evaluations() {
+      const trueScores = getTrueScores();
+      const concentrations = getConcentrations();
+      const n = getSampleSize();
+
+      historyEvaluations = [];
+
+      for (let i = 0; i < 100; i++) {
+        const samples = {};
+        metricIds.forEach(metric => {
+          samples[metric] = discretizeBeta(trueScores[metric], n, concentrations[metric]);
+        });
+
+        const scores = {};
+        metricIds.forEach(metric => {
+          scores[metric] = samples[metric].reduce((a, b) => a + b, 0) / n;
+        });
+
+        historyEvaluations.push({ scores, timestamp: Date.now() + i });
+      }
+
+      // Use the last evaluation as current (with samples for beta/bootstrap)
+      const lastSamples = {};
+      metricIds.forEach(metric => {
+        lastSamples[metric] = discretizeBeta(trueScores[metric], n, concentrations[metric]);
+      });
+      currentSamples = lastSamples;
+      currentScores = {};
+      metricIds.forEach(metric => {
+        currentScores[metric] = lastSamples[metric].reduce((a, b) => a + b, 0) / n;
+      });
+      updateResults();
+    }
+
+    function calculateCI(samples, confidence = 0.95) {
+      // Bootstrap CI of the mean (not percentiles of the raw data!)
+      const n = samples.length;
+      const bootMeans = [];
+      for (let i = 0; i < 2000; i++) {
+        let sum = 0;
+        for (let j = 0; j < n; j++) {
+          sum += samples[Math.floor(Math.random() * n)];
+        }
+        bootMeans.push(sum / n);
+      }
+      bootMeans.sort((a, b) => a - b);
+      const alpha = 1 - confidence;
+      const lower = bootMeans[Math.floor((alpha / 2) * bootMeans.length)];
+      const upper = bootMeans[Math.floor((1 - alpha / 2) * bootMeans.length)];
+      return { lower, upper };
+    }
+
+    function bootstrapResample(data, iterations = 5000) {
+      const means = [];
+      const n = data.length;
+
+      for (let i = 0; i < iterations; i++) {
+        const sample = [];
+        for (let j = 0; j < n; j++) {
+          sample.push(data[Math.floor(Math.random() * n)]);
+        }
+        means.push(sample.reduce((a, b) => a + b, 0) / n);
+      }
+
+      return means;
+    }
+
+    function buildHistogram(data, metric) {
+      if (!data || data.length === 0) return { bins: [], counts: [] };
+
+      const min = 0.5;
+      const max = 5.5;
+      const binWidth = 0.5;
+      const bins = [];
+      for (let i = min; i <= max; i += binWidth) {
+        bins.push(parseFloat((i + binWidth / 2).toFixed(1)));
+      }
+
+      const counts = new Array(bins.length).fill(0);
+      data.forEach(value => {
+        const binIdx = Math.floor((value - min) / binWidth);
+        if (binIdx >= 0 && binIdx < counts.length) {
+          counts[binIdx]++;
+        }
+      });
+
+      return { bins, counts };
+    }
+
+    // Normal CDF approximation (Abramowitz & Stegun)
+    function normalCDF(x) {
+      if (x < -8) return 0; if (x > 8) return 1;
+      const t = 1 / (1 + 0.2316419 * Math.abs(x));
+      const d = 0.3989422804014327 * Math.exp(-x*x/2);
+      const p = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.8212560 + t*1.3302744))));
+      return x > 0 ? 1 - p : p;
+    }
+
+    function updateResults() {
+      if (!currentScores) {
+        return;
+      }
+
+      const trueScores = getTrueScores();
+      const n = getSampleSize();
+      const showCI = document.getElementById('show-ci').checked;
+      const showBeta = document.getElementById('show-beta').checked;
+      const showBootstrap = document.getElementById('show-bootstrap').checked;
+
+      let html = '';
+
+      // Scorecard
+      const isMultiRun = historyEvaluations.length > 1;
+      if (isMultiRun) {
+        html += `<div class="insight-banner">
+          <strong>Scorecard below = one representative run</strong> (a fresh draw of n=${n}, separate from the 100 runs shown further down).
+          The 95% CI, Beta posterior, and Bootstrap panels all describe uncertainty from <em>this single run</em> &mdash; they&rsquo;re the single-sample methods you&rsquo;d use in practice when you can&rsquo;t afford to repeat the experiment 100 times.
+          Compare their width to the empirical spread of the 100-run histogram below: they should roughly agree.
+        </div>`;
+      } else {
+        html += `<div class="insight-banner">
+          <strong>This is what you&rsquo;d see in practice:</strong> a single evaluation run, a single set of numbers.
+          Click &ldquo;Run Evaluation&rdquo; again &mdash; the numbers change because you drew a different random sample. The system didn&rsquo;t change. The measurement did.
+        </div>`;
+      }
+
+      html += `<div class="scorecard">
+        <h3>Measured Scores (n=${n})${isMultiRun ? ' &mdash; single representative run' : ''}</h3>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.75rem;">
+          Each bar shows the average score from ${isMultiRun ? 'one fresh ' : 'your '}${n}-query sample${isMultiRun ? ' (not one of the 100 runs below &mdash; a separate draw)' : ''}. ${showCI ? 'The <strong>95% CI</strong> (confidence interval) shows the range where the true mean likely falls &mdash; if you repeated this experiment many times, 95% of the intervals would contain the true value.' : ''}
+        </p>`;
+
+      metricIds.forEach(metric => {
+        const measured = currentScores[metric];
+        const trueScore = trueScores[metric];
+        const pct = (measured / 5) * 100;
+
+        let ciHtml = '';
+        let ciBarHtml = '';
+        if (showCI && currentSamples && currentSamples[metric]) {
+          const ci = calculateCI(currentSamples[metric]);
+          const ciWidth = ci.upper - ci.lower;
+          ciHtml = `<span class="ci-range">95% CI: [${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]</span>`;
+          // Visual CI bar
+          const ciLeftPct = (ci.lower / 5) * 100;
+          const ciWidthPct = (ciWidth / 5) * 100;
+          ciBarHtml = `<div class="ci-bar" style="left:${ciLeftPct}%; width:${ciWidthPct}%;"></div>`;
+        }
+
+        // True score marker
+        const truePct = (trueScore / 5) * 100;
+
+        html += `
+          <div class="metric-bar metric-${metric.toLowerCase()}">
+            <div class="metric-bar-label">
+              <span class="metric-bar-label-name">${metric}</span>
+              <span class="metric-bar-value">${measured.toFixed(2)}</span>
+              ${ciHtml}
+            </div>
+            <div class="bar-container">
+              <div class="bar-fill" style="width: ${pct}%;"></div>
+              ${ciBarHtml}
+              <div class="true-marker" style="left:${truePct}%;" title="True score: ${trueScore.toFixed(1)}"></div>
+            </div>
+            <div class="bar-legend">
+              <span style="font-size:0.7rem; color:var(--text-dim);">
+                Measured: <strong style="color:var(--text);">${measured.toFixed(2)}</strong>
+                &nbsp;&middot;&nbsp; True: <strong style="color:var(--yellow);">${trueScore.toFixed(1)}</strong>
+                &nbsp;&middot;&nbsp; Error: <strong style="color:${Math.abs(measured - trueScore) > 0.3 ? 'var(--red)' : 'var(--green)'};">${(measured - trueScore) >= 0 ? '+' : ''}${(measured - trueScore).toFixed(2)}</strong>
+              </span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+
+      // Charts section
+      if (historyEvaluations.length > 1) {
+        html += `<div class="insight-banner" style="border-left-color: var(--yellow);">
+          <strong>100 parallel universes:</strong> each bar below is the result of one evaluation run with n=${n}.
+          The spread shows how much your scorecard would vary if you repeated the experiment.
+          ${n <= 50 ? 'At n=' + n + ', the spread is large &mdash; your single measurement could easily be far from the truth.' : 'At n=' + n + ', the spread is tighter, but still not negligible.'}
+          The dotted line is the true score (which in reality you don&rsquo;t know).
+        </div>`;
+
+        // Summary stats for 100 evaluations
+        html += `<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">`;
+
+        metricIds.forEach(metric => {
+          const means = historyEvaluations.map(e => e.scores[metric]);
+          const avg = means.reduce((a, b) => a + b, 0) / means.length;
+          const std = Math.sqrt(means.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / means.length);
+
+          html += `<div class="stat-card">
+            <div class="label">${metric}</div>
+            <div class="value">${avg.toFixed(2)}</div>
+            <div class="sub">σ=${std.toFixed(3)}</div>
+          </div>`;
+        });
+
+        html += `</div>`;
+
+        // Histograms of measured scores across 100 evaluations
+        html += `<div class="charts-grid">`;
+
+        metricIds.forEach(metric => {
+          const means = historyEvaluations.map(e => e.scores[metric]);
+          const trueScore = trueScores[metric];
+          const chartId = `hist-${metric.toLowerCase()}`;
+
+          html += `<div class="chart-card">
+            <h3>Sampling Distribution: ${metric}</h3>
+            <div class="chart-desc">Mean of 100 repeated evaluations (each with n=${n}). The dotted line shows the true score.</div>
+            <div class="chart-wrap">
+              <canvas id="${chartId}"></canvas>
+            </div>
+          </div>`;
+
+          // Schedule chart render
+          setTimeout(() => renderHistogramChart(chartId, means, trueScore), 0);
+        });
+
+        html += `</div>`;
+      }
+
+      // Beta posteriors
+      if (showBeta && currentSamples) {
+        const totalN = getSampleSize();
+        html += `<div class="insight-banner" style="border-left-color: var(--green);">
+          <strong>Beta posteriors (binarized view):</strong> we convert each 1&ndash;5 score to &ldquo;good&rdquo; (&ge;4) or &ldquo;not good&rdquo; (&lt;4).
+          With only ${totalN} samples, the posterior is wide &mdash; we&rsquo;re uncertain about the true &ldquo;good rate.&rdquo;
+          The peak of each curve is our best guess; the width is our uncertainty. Compare this to what you&rsquo;d see with n=500.
+          ${isMultiRun ? '<br><em>Computed from the single representative run shown in the scorecard above, not from the 100 runs.</em>' : ''}
+        </div>`;
+
+        html += `<div class="charts-grid">`;
+
+        metricIds.forEach(metric => {
+          const samples = currentSamples[metric];
+          const successes = samples.filter(s => s >= 4).length;
+          const failures = samples.length - successes;
+
+          const chartId = `beta-${metric.toLowerCase()}`;
+
+          html += `<div class="chart-card">
+            <h3>Beta Posterior: ${metric}</h3>
+            <div class="chart-desc">Probability of "good" (≥4) given ${successes} successes and ${failures} failures.</div>
+            <div class="chart-wrap">
+              <canvas id="${chartId}"></canvas>
+            </div>
+          </div>`;
+
+          setTimeout(() => renderBetaChart(chartId, successes, failures), 0);
+        });
+
+        html += `</div>`;
+      }
+
+      // Bootstrap distributions
+      if (showBootstrap && currentSamples) {
+        html += `<div class="insight-banner" style="border-left-color: var(--purple);">
+          <strong>Bootstrap distributions:</strong> we resample the raw 1&ndash;5 scores <em>with replacement</em> 5,000 times and compute the mean each time.
+          The resulting distribution shows how much the mean would vary if we could repeat the experiment.
+          Unlike the beta, this works on the raw scores (no binarization) and makes no distributional assumptions.
+          ${isMultiRun ? '<br><em>Resampled from the single representative run shown in the scorecard above, not from the 100 runs &mdash; this is the key trick: bootstrap approximates the 100-run spread using only one sample.</em>' : ''}
+        </div>`;
+
+        html += `<div class="charts-grid">`;
+
+        metricIds.forEach(metric => {
+          const samples = currentSamples[metric];
+          const bootstrapMeans = bootstrapResample(samples, 5000);
+
+          const chartId = `boot-${metric.toLowerCase()}`;
+
+          html += `<div class="chart-card">
+            <h3>Bootstrap Distribution: ${metric}</h3>
+            <div class="chart-desc">5000 bootstrap resamples from the measured data. Shows uncertainty about the true mean.</div>
+            <div class="chart-wrap">
+              <canvas id="${chartId}"></canvas>
+            </div>
+          </div>`;
+
+          setTimeout(() => renderBootstrapChart(chartId, bootstrapMeans), 0);
+        });
+
+        html += `</div>`;
+      }
+
+      // Closed-form SE & P(mean > T)
+      const showClosedForm = document.getElementById('show-closedform').checked;
+      const showDirichlet = document.getElementById('show-dirichlet').checked;
+      const meanThreshold = parseFloat(document.getElementById('mean-threshold').value) || 4;
+
+      if (showClosedForm && currentSamples) {
+        html += `<div class="insight-banner" style="border-left-color: var(--accent-b);">
+          <strong>Closed-form standard error:</strong> SE = s/&radic;n. Under the Central Limit Theorem, the sample mean is approximately
+          Normal(&mu;, SE&sup2;), so P(mean &gt; T) = 1 &minus; &Phi;((T &minus; x&#772;) / SE). No resampling, no simulation &mdash; pure formula.
+          ${isMultiRun ? '<br><em>Computed from the single representative run shown in the scorecard above.</em>' : ''}
+        </div>`;
+
+        html += `<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem;">`;
+
+        metricIds.forEach(metric => {
+          const samples = currentSamples[metric];
+          const xbar = samples.reduce((a,b) => a+b, 0) / samples.length;
+          const s = Math.sqrt(samples.reduce((a,b) => a + (b-xbar)*(b-xbar), 0) / (samples.length-1));
+          const se = s / Math.sqrt(samples.length);
+          const z = (meanThreshold - xbar) / se;
+          const pAbove = 1 - normalCDF(z);
+          const ciLo = xbar - 1.96*se;
+          const ciHi = xbar + 1.96*se;
+
+          html += '<div class="stat-card">' +
+            '<div class="label">' + metric + '</div>' +
+            '<div class="value" style="font-size:1.1rem;">' + xbar.toFixed(2) + '</div>' +
+            '<div class="sub">SE = ' + se.toFixed(3) + '</div>' +
+            '<div class="sub">95% CI: [' + ciLo.toFixed(2) + ', ' + ciHi.toFixed(2) + ']</div>' +
+            '<div class="sub" style="margin-top:0.3rem; color:var(--green); font-weight:600;">P(mean &gt; ' + meanThreshold + ') = ' + (pAbove*100).toFixed(1) + '%</div>' +
+            '</div>';
+        });
+
+        html += `</div>`;
+      }
+
+      if (showDirichlet && currentSamples) {
+        html += `<div class="insight-banner" style="border-left-color: #c026d3;">
+          <strong>Dirichlet posterior:</strong> scores are categorical (1&ndash;5). Prior: Dirichlet(1,1,1,1,1) &mdash; one pseudo-observation per rating.
+          Count how many samples got each rating, update to Dirichlet(&alpha;+n&#8321;, ..., &alpha;+n&#8325;).
+          Sample from the posterior, compute mean = &Sigma;i&middot;p&#7522; for each draw, and report P(mean &gt; T).
+          Fully Bayesian &mdash; gives a genuine belief, not just a confidence interval.
+          ${isMultiRun ? '<br><em>Computed from the single representative run.</em>' : ''}
+        </div>`;
+
+        html += `<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem;">`;
+
+        metricIds.forEach(metric => {
+          const samples = currentSamples[metric];
+          // Count ratings 1-5 (scores are discretized to 0.5 steps, so round to nearest int)
+          const counts = [0,0,0,0,0]; // indices 0-4 for ratings 1-5
+          samples.forEach(s => {
+            const r = Math.round(s);
+            const idx = Math.max(0, Math.min(4, r - 1));
+            counts[idx]++;
+          });
+          // Dirichlet posterior: alpha_i = 1 + count_i
+          const alphas = counts.map(c => c + 1);
+          // Monte Carlo: sample from Dirichlet, compute mean
+          const nMC = 50000;
+          let above = 0;
+          let sumMean = 0;
+          for (let i = 0; i < nMC; i++) {
+            // Sample from Dirichlet via Gamma
+            const gammas = alphas.map(a => sampleGamma(a));
+            const total = gammas.reduce((a,b) => a+b, 0);
+            const ps = gammas.map(g => g / total);
+            const mu = ps[0]*1 + ps[1]*2 + ps[2]*3 + ps[3]*4 + ps[4]*5;
+            sumMean += mu;
+            if (mu > meanThreshold) above++;
+          }
+          const pAbove = above / nMC;
+          const postMean = sumMean / nMC;
+
+          html += '<div class="stat-card">' +
+            '<div class="label">' + metric + '</div>' +
+            '<div class="value" style="font-size:1.1rem;">' + postMean.toFixed(2) + '</div>' +
+            '<div class="sub">counts: [' + counts.join(', ') + ']</div>' +
+            '<div class="sub">&alpha;: [' + alphas.join(', ') + ']</div>' +
+            '<div class="sub" style="margin-top:0.3rem; color:#c026d3; font-weight:600;">P(mean &gt; ' + meanThreshold + ') = ' + (pAbove*100).toFixed(1) + '%</div>' +
+            '</div>';
+        });
+
+        html += `</div>`;
+      }
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function renderHistogramChart(canvasId, means, trueScore) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+
+      const binWidth = 0.1;
+      const bins = [];
+      const counts = new Array(Math.ceil(5 / binWidth)).fill(0);
+
+      means.forEach(mean => {
+        const binIdx = Math.floor(mean / binWidth);
+        if (binIdx >= 0 && binIdx < counts.length) {
+          counts[binIdx]++;
+        }
+      });
+
+      for (let i = 0; i < counts.length; i++) {
+        bins.push(parseFloat((i * binWidth).toFixed(1)));
+      }
+
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const color = metricColors[Object.keys(metricColors).find(k => canvasId.includes(k.toLowerCase()))];
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bins.map(b => b.toFixed(1)),
+          datasets: [{
+            label: 'Frequency',
+            data: counts,
+            backgroundColor: color + '40',
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            annotation: {}
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              border: { display: false },
+              grid: { color: 'rgba(15,23,42,0.07)' },
+              ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#64748b' }
+            },
+            x: {
+              border: { display: false },
+              grid: { display: false },
+              ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#64748b' }
+            }
+          }
+        },
+        plugins: [{
+          id: 'trueValueLine',
+          afterDatasetsDraw(chart) {
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            // Map trueScore to the correct bin index position on the categorical x-axis
+            const binIdx = Math.floor(trueScore / 0.1);
+            const x = xScale.getPixelForValue(binIdx);
+            const yTop = yScale.getPixelForValue(yScale.max);
+            const yBottom = yScale.getPixelForValue(yScale.min);
+
+            chart.ctx.save();
+            chart.ctx.strokeStyle = '#64748b';
+            chart.ctx.lineWidth = 2;
+            chart.ctx.setLineDash([4, 4]);
+            chart.ctx.beginPath();
+            chart.ctx.moveTo(x, yTop);
+            chart.ctx.lineTo(x, yBottom);
+            chart.ctx.stroke();
+            chart.ctx.restore();
+          }
+        }]
+      });
+    }
+
+    function renderBetaChart(canvasId, successes, failures) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+
+      const alpha = successes + 1;
+      const beta = failures + 1;
+
+      const x = [];
+      const y = [];
+      for (let i = 0; i <= 100; i++) {
+        const p = i / 100;
+        x.push(p);
+        // Beta PDF approximation
+        const logPDF = (alpha - 1) * Math.log(p + 0.001) + (beta - 1) * Math.log(1 - p + 0.001);
+        y.push(Math.exp(logPDF));
+      }
+
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const metric = Object.keys(metricColors).find(k => canvasId.includes(k.toLowerCase()));
+      const color = metricColors[metric];
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: x.map(v => v.toFixed(2)),
+          datasets: [{
+            label: 'Beta Posterior',
+            data: y,
+            borderColor: color,
+            backgroundColor: color + '20',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(15,23,42,0.07)' }, ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#64748b' } },
+            x: { border: { display: false }, grid: { display: false }, ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#64748b' } }
+          }
+        }
+      });
+    }
+
+    function renderBootstrapChart(canvasId, bootstrapMeans) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+
+      const binWidth = 0.1;
+      const counts = new Array(Math.ceil(5 / binWidth)).fill(0);
+      const bins = [];
+
+      bootstrapMeans.forEach(mean => {
+        const binIdx = Math.floor(mean / binWidth);
+        if (binIdx >= 0 && binIdx < counts.length) {
+          counts[binIdx]++;
+        }
+      });
+
+      for (let i = 0; i < counts.length; i++) {
+        bins.push(parseFloat((i * binWidth).toFixed(1)));
+      }
+
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const metric = Object.keys(metricColors).find(k => canvasId.includes(k.toLowerCase()));
+      const color = metricColors[metric];
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bins.map(b => b.toFixed(1)),
+          datasets: [{
+            label: 'Bootstrap Frequency',
+            data: counts,
+            backgroundColor: color + '40',
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(15,23,42,0.07)' }, ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#64748b' } },
+            x: { border: { display: false }, grid: { display: false }, ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#64748b' } }
+          }
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

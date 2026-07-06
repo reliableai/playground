@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distribution Explorer — E[X] = 10</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 0.5rem; }
+  .subtitle { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+  .card { background: #f7f7f5; border-radius: 10px; padding: 14px; }
+  .card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; }
+  .card-title { font-size: 14px; font-weight: 500; }
+  label.slider-label { font-size: 12px; color: #888; }
+  .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-val { font-size: 13px; font-weight: 500; min-width: 28px; }
+  .info { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .toggles { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13px; }
+  .toggles label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .chart-wrap { position: relative; width: 100%; height: 380px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 12px; color: #aaa; }
+</style>
+</head>
+<body>
+<h1>Three distributions, one mean</h1>
+<p class="subtitle">All three have E[X] = 10 — adjust the parameters to explore how different they can be.</p>
+
+<div class="controls">
+  <div class="card">
+    <div class="card-header"><span class="dot" style="background:#534AB7;"></span><span class="card-title">Normal</span></div>
+    <label class="slider-label">σ (spread)</label>
+    <div class="slider-row">
+      <input type="range" min="0.5" max="8" step="0.5" value="2" id="sigma" />
+      <span class="slider-val" id="sigma-out">2</span>
+    </div>
+    <div class="info">Var = <span id="var-normal">4</span></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="dot" style="background:#D85A30;"></span><span class="card-title">Exponential</span></div>
+    <div style="font-size:12px; color:#888; margin-top:16px;">λ = 0.1 (fixed)</div>
+    <div class="info">Var = 100</div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="dot" style="background:#1D9E75;"></span><span class="card-title">Bimodal</span></div>
+    <label class="slider-label">Peak gap</label>
+    <div class="slider-row">
+      <input type="range" min="2" max="16" step="1" value="12" id="gap" />
+      <span class="slider-val" id="gap-out">12</span>
+    </div>
+    <div class="info">Peaks at <span id="peaks-label">4 &amp; 16</span></div>
+  </div>
+</div>
+
+<div class="toggles">
+  <span style="color:#888;">Show:</span>
+  <label><input type="checkbox" id="tog-normal" checked /> Normal</label>
+  <label><input type="checkbox" id="tog-exp" checked /> Exponential</label>
+  <label><input type="checkbox" id="tog-bimodal" checked /> Bimodal</label>
+</div>
+
+<div class="chart-wrap">
+  <canvas id="distChart"></canvas>
+</div>
+<div class="footer">All three distributions have E[X] = 10</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function() {
+  const xs = [];
+  for (let i = -2; i <= 35; i += 0.25) xs.push(i);
+
+  function normalPDF(x, mu, sigma) {
+    return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((x - mu) / sigma) ** 2);
+  }
+  function expPDF(x, lam) {
+    return x < 0 ? 0 : lam * Math.exp(-lam * x);
+  }
+
+  const sigmaEl = document.getElementById('sigma');
+  const sigmaOut = document.getElementById('sigma-out');
+  const varNormal = document.getElementById('var-normal');
+  const gapEl = document.getElementById('gap');
+  const gapOut = document.getElementById('gap-out');
+  const peaksLabel = document.getElementById('peaks-label');
+  const togN = document.getElementById('tog-normal');
+  const togE = document.getElementById('tog-exp');
+  const togB = document.getElementById('tog-bimodal');
+
+  const chart = new Chart(document.getElementById('distChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Normal', data: [], showLine: true, pointRadius: 0, borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.08)', fill: true, borderWidth: 2.5, tension: 0.4 },
+        { label: 'Exponential', data: [], showLine: true, pointRadius: 0, borderColor: '#D85A30', backgroundColor: 'rgba(216,90,48,0.08)', fill: true, borderWidth: 2.5, tension: 0.4 },
+        { label: 'Bimodal', data: [], showLine: true, pointRadius: 0, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', fill: true, borderWidth: 2.5, tension: 0.4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 200 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { type: 'linear', min: -2, max: 35, title: { display: true, text: 'x', font: { size: 13 } }, grid: { color: 'rgba(128,128,128,0.1)' } },
+        y: { min: 0, max: 0.25, title: { display: true, text: 'f(x)', font: { size: 13 } }, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { callback: v => v.toFixed(2) } }
+      }
+    },
+    plugins: [{
+      afterDraw(ch) {
+        const ctx = ch.ctx, xS = ch.scales.x, yS = ch.scales.y;
+        const px = xS.getPixelForValue(10);
+        ctx.save();
+        ctx.beginPath(); ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = '#E24B4A'; ctx.lineWidth = 2;
+        ctx.moveTo(px, yS.top); ctx.lineTo(px, yS.bottom); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#E24B4A'; ctx.font = '500 13px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('E[X] = 10', px + 6, yS.top + 16);
+        ctx.restore();
+      }
+    }]
+  });
+
+  function update() {
+    const sigma = parseFloat(sigmaEl.value);
+    const gap = parseInt(gapEl.value);
+    const mu1 = 10 - gap / 2, mu2 = 10 + gap / 2;
+
+    sigmaOut.textContent = sigma;
+    varNormal.textContent = Math.round(sigma * sigma * 10) / 10;
+    gapOut.textContent = gap;
+    peaksLabel.textContent = Math.round(mu1) + ' & ' + Math.round(mu2);
+
+    chart.data.datasets[0].data = togN.checked ? xs.map(x => ({ x, y: normalPDF(x, 10, sigma) })) : [];
+    chart.data.datasets[1].data = togE.checked ? xs.map(x => ({ x, y: expPDF(x, 0.1) })) : [];
+    chart.data.datasets[2].data = togB.checked ? xs.map(x => ({ x, y: 0.5 * normalPDF(x, mu1, 1.5) + 0.5 * normalPDF(x, mu2, 1.5) })) : [];
+
+    let maxY = 0.05;
+    chart.data.datasets.forEach(ds => ds.data.forEach(p => { if (p.y > maxY) maxY = p.y; }));
+    chart.options.scales.y.max = Math.ceil(maxY * 20) / 20 + 0.02;
+    chart.update();
+  }
+
+  sigmaEl.addEventListener('input', update);
+  gapEl.addEventListener('input', update);
+  togN.addEventListener('change', update);
+  togE.addEventListener('change', update);
+  togB.addEventListener('change', update);
+  update();
+})();
+</script>
+</body>
+</html>

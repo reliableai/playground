@@ -1,0 +1,120 @@
+{
+  "name": "powered",
+  "hypothesis": {
+    "question": "Should we ship System B (new triage agent)?",
+    "metric": "auto-resolution rate",
+    "direction": "B > A",
+    "claim": "System B has a higher auto-resolution rate than System A (B > A)."
+  },
+  "plan": {
+    "target_margin": 0.04,
+    "n_needed_for_margin": 601,
+    "n_per_arm": 800,
+    "actual_margin_at_n": 0.03464823227814083,
+    "min_effect": 0.0
+  },
+  "experiment": {
+    "true_a": 0.62,
+    "true_b": 0.7,
+    "true_lift": 0.07999999999999996,
+    "n_per_arm": 800,
+    "seed": 0
+  },
+  "result": {
+    "name": "powered",
+    "n_per_arm": 800,
+    "seed": 0,
+    "arm_a": {
+      "successes": 482,
+      "n": 800,
+      "rate": 0.6025
+    },
+    "arm_b": {
+      "successes": 559,
+      "n": 800,
+      "rate": 0.69875
+    },
+    "observed_lift": 0.09624999999999995,
+    "true_lift": 0.07999999999999996
+  },
+  "report": {
+    "question": "Should we ship System B (new triage agent)?",
+    "hypothesis": "System B has a higher auto-resolution rate than System A (B > A).",
+    "metric": "auto-resolution rate",
+    "decision_rule": "Ship B only if the 95% lower bound of the lift in auto-resolution rate is above +0.000 (pre-registered).",
+    "min_effect": 0.0,
+    "sample": {
+      "n_per_arm": 800,
+      "arms": [
+        "A",
+        "B"
+      ]
+    },
+    "arm_rates": {
+      "A": {
+        "successes": 482,
+        "n": 800,
+        "rate": 0.6025,
+        "ci": [
+          0.5681753604338945,
+          0.6358449341116977
+        ]
+      },
+      "B": {
+        "successes": 559,
+        "n": 800,
+        "rate": 0.69875,
+        "ci": [
+          0.666068713020561,
+          0.7295316142080869
+        ]
+      }
+    },
+    "point_estimate": 0.09624999999999995,
+    "interval": [
+      0.04976492191708177,
+      0.14273507808291813
+    ],
+    "provenance": {
+      "model": "openai/gpt-4o-mini",
+      "config": "systems A vs B, n=800/arm",
+      "seed": 0,
+      "date": "2026-05-31"
+    },
+    "decision": "ship",
+    "decision_rationale": "Lower bound of the lift CI (+0.050) is above the minimum effect (+0.000); the whole interval favors B."
+  },
+  "checklist": {
+    "checks": {
+      "decision_rule_preregistered": {
+        "ok": true,
+        "note": "Is there a pre-registered decision rule (set before seeing data)?"
+      },
+      "sample_size_justified": {
+        "ok": true,
+        "note": "Is the sample size stated (n per arm)?"
+      },
+      "interval_reported": {
+        "ok": true,
+        "note": "Is the interval reported, not just the point estimate?"
+      },
+      "provenance_complete": {
+        "ok": false,
+        "note": "Is provenance complete (model, config, seed, date)?"
+      },
+      "metric_tied_to_decision": {
+        "ok": true,
+        "note": "Is the metric in the decision rule the one tied to the decision?"
+      }
+    },
+    "passed": 4,
+    "total": 5
+  },
+  "critique": {
+    "verdict": "needs_work",
+    "issues": [
+      "Provenance is incomplete \u2014 record model, config, seed, and date.",
+      "Result is inconclusive \u2014 the interval crosses the threshold; do not ship on the point estimate."
+    ]
+  }
+}

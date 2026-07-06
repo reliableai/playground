@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulate Any Event — equally likely outcomes</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --border: #e2e8f0;
+      --text: #0f172a; --text-dim: #64748b;
+      --accent-a: #2563eb; --accent-a-dim: rgba(37,99,235,0.12);
+      --green: #16a34a; --red: #dc2626; --yellow: #ca8a04; --purple: #7c3aed;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif;
+      min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+
+    .explainer { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      margin: 0 1.5rem 1.5rem; overflow: hidden; }
+    .explainer-toggle { width: 100%; background: none; border: none; color: var(--text);
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 600; padding: 1rem 1.25rem;
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .explainer-toggle:hover { background: var(--surface-2); }
+    .explainer-toggle .arrow { transition: transform 0.25s; font-size: 0.8rem; color: var(--text-dim); }
+    .explainer-toggle.open .arrow { transform: rotate(180deg); }
+    .explainer-body { display: none; padding: 0 1.25rem 1.25rem; line-height: 1.7; font-size: 0.85rem; color: var(--text-dim); }
+    .explainer-body.open { display: block; }
+    .explainer-body strong { color: var(--text); }
+
+    .layout { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(0, 1.7fr); gap: 1.5rem; padding: 0 1.5rem; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);
+      margin-bottom: 0.9rem; font-family: 'DM Mono', monospace; }
+    label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.25rem;
+      font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+    select, input[type="number"] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.5rem 0.7rem; font-family: 'DM Mono', monospace; font-size: 0.88rem; margin-bottom: 0.8rem; outline: none; }
+    select:focus, input:focus { border-color: var(--accent-a); }
+    input[type="number"]:disabled { opacity: .55; background: var(--surface-2); cursor: not-allowed; }
+
+    .scenario-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .tab-btn { flex: 1 1 auto; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.3rem; font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--accent-a); border-color: var(--accent-a); color: #fff; }
+    .scn-btn { flex: 1 1 auto; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.3rem; font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+    .scn-btn.active { background: var(--accent-a); border-color: var(--accent-a); color: #fff; }
+
+    .btn { width: 100%; padding: 0.7rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 0.3rem;
+      background: linear-gradient(135deg, var(--accent-a), #6366f1); color: #fff; transition: all 0.15s; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; text-align: center; }
+    .stat-card .label { font-family: 'DM Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.3rem; }
+    .stat-card .value { font-size: 1.4rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .stat-card .value.emp { color: var(--accent-a); }
+    .stat-card .value.tru { color: var(--green); }
+    .stat-card .sub { font-size: 0.68rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 0.2rem; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem 1.25rem; margin-bottom: 1rem; }
+    .card h3 { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .card .desc { font-size: 0.76rem; color: var(--text-dim); margin-bottom: 0.8rem; line-height: 1.5; }
+
+    /* outcomes visuals */
+    .dice-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; max-width: 320px; }
+    .dice-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px;
+      background: var(--surface-2); border: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--text-dim); }
+    .dice-cell.fav { background: var(--accent-a-dim); border-color: var(--accent-a); color: var(--accent-a); font-weight: 600; }
+    .roulette-strip { display: flex; flex-wrap: wrap; gap: 2px; }
+    .pocket { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px;
+      font-family: 'DM Mono', monospace; font-size: 0.6rem; font-weight: 600; color: #fff; opacity: 0.45; }
+    .pocket.red { background: var(--red); } .pocket.black { background: #1a1f2e; } .pocket.green { background: var(--green); }
+    .pocket.fav { opacity: 1; outline: 2px solid var(--accent-a); outline-offset: 1px; }
+
+    .chart-wrap { position: relative; height: 260px; }
+    .sample { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--text); margin-top: 0.6rem; }
+    .sample .big { font-size: 1.3rem; }
+    .note { font-size: 0.72rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Simulate Any Event</h1>
+  <p class="subtitle">Draw randomly from equally likely outcomes — estimate any probability just by counting.</p>
+
+  <div class="explainer">
+    <button class="explainer-toggle" onclick="toggleExp()" id="expT"><span>Why this works — no formula needed</span><span class="arrow">&#9660;</span></button>
+    <div class="explainer-body" id="expB">
+      <p>The two sides of a coin, roulette pockets, the faces of a die, the cards in a deck — each is a set of <strong>equally likely outcomes</strong>. Once you can draw one at random, you can estimate the probability of <em>any</em> event: run the draw many times and count the fraction where the event happened. That fraction settles toward the true probability as you draw more (the law of large numbers).</p>
+      <p>You don't need the analytic formula. For the simple cases the true answer is just <strong>(favorable outcomes) / (total outcomes)</strong> — shown here so you can watch the simulation close in on it. For messy events (a poker of aces, the number of spins until the first black), the formula gets ugly fast, but the <strong>simulation works exactly the same way</strong>.</p>
+      <p>The <strong>Ratings</strong> tab goes two steps further: the outcomes are <em>not</em> equally likely (scores 1–5 follow a fixed distribution), and three of its events are about a <strong>whole experiment</strong> — a statistic of 10,000 ratings. Run 1,000 such experiments and those events come out (almost) always true or (almost) never true: statistics of large samples are near-certainties, even when each single draw stays uncertain.</p>
+    </div>
+  </div>
+
+  <div style="padding:0 1.5rem;">
+    <div class="panel">
+      <h2>Pick a demo</h2>
+      <div class="scenario-row" style="margin-bottom:0;">
+        <button class="tab-btn active" data-tab="simulate">🎲 Simulate any event — compute a probability, no experiment needed</button>
+        <button class="tab-btn" data-tab="ratings">⭐ A ratings distribution — belief, or certainty</button>
+        <button class="tab-btn" data-tab="estimate">📐 One sample — theory and tools to the rescue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout" id="std-layout">
+    <div>
+      <div class="panel">
+        <div id="draw-picker">
+          <h2>Pick a draw</h2>
+          <div class="scenario-row">
+            <button class="scn-btn active" data-scn="coins">🪙 Two coins</button>
+            <button class="scn-btn" data-scn="dice">🎲 Two dice</button>
+            <button class="scn-btn" data-scn="roulette">🟢 Roulette</button>
+            <button class="scn-btn" data-scn="poker">🂡 Poker</button>
+          </div>
+        </div>
+        <h2>Pick an event</h2>
+        <label>Event of interest</label>
+        <select id="event"></select>
+        <div id="param-wrap"></div>
+        <h2 style="margin-top:1rem;">Simulate</h2>
+        <div id="nruns-wrap" style="display:none;">
+          <label>Runs per experiment (N)</label>
+          <input type="number" id="nruns" value="10000" min="1" max="100000" step="1">
+        </div>
+        <label id="ndraws-label">Draws per run</label>
+        <input type="number" id="ndraws" value="10000" min="1" max="500000" step="100">
+        <button class="btn" id="runbtn" onclick="run()">Draw &amp; count</button>
+        <p class="note" id="totals-note">No draws yet.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label" id="st-n-label">Draws so far</div><div class="value" id="st-n">0</div></div>
+        <div class="stat-card"><div class="label">Event happened</div><div class="value" id="st-fav">0</div></div>
+        <div class="stat-card"><div class="label">Empirical P</div><div class="value emp" id="st-emp">—</div><div class="sub" id="st-emp-odds"></div></div>
+        <div class="stat-card"><div class="label">True P</div><div class="value tru" id="st-tru">—</div><div class="sub" id="st-tru-odds"></div></div>
+      </div>
+
+      <div class="card">
+        <h3 id="oc-title">Equally likely outcomes</h3>
+        <div class="desc" id="oc-desc"></div>
+        <div id="outcomes"></div>
+        <div class="sample" id="sample"></div>
+      </div>
+
+      <div class="card">
+        <h3>Empirical P converging to the truth</h3>
+        <div class="desc">Each point is the fraction of draws (so far) where the event happened — after 1 draw, 2, 3, 4, 6, … up to all of them. After a handful of draws the fraction swings wildly; after thousands it pins down the dashed line, the true probability. That is the law of large numbers. (x-axis is logarithmic so you can see both ends.)</div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout" id="est-layout" style="display:none;">
+    <div>
+      <div class="panel">
+        <h2>Run your experiment</h2>
+        <label>Sample size (ratings you collect)</label>
+        <input type="number" id="est-n" value="100" min="10" max="100000" step="10">
+        <button class="btn" onclick="estDraw()">Draw a fresh sample</button>
+        <p class="note">Now the roles flip: the actual distribution is <em>hidden</em>. All you have is this one sample — exactly your situation after a real experiment. Draw again to watch the estimates move.</p>
+      </div>
+      <div class="panel">
+        <h2>Theory and tools come to help</h2>
+        <p class="note" style="margin-top:0;">Each claim below gets the tool that fits it: a <strong>Beta posterior</strong> for a proportion, the <strong>closed-form normal</strong> for the mean, the <strong>bootstrap</strong> for the median. If you have 150-ish+ samples, bootstrapping solves everything.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>Your sample</h3>
+        <div class="desc" id="est-sample-desc"></div>
+        <div id="est-sample-chart"></div>
+        <p class="note">Blue solid bars: your sample. <span style="color:#ea580c;">Orange dashed bars</span>: the <strong>actual distribution</strong> — hidden in real life, shown here for checking (p₅ = 28%, true mean 3.92, true median 4). The first two claims below are actually false — barely, so at n = 100 they are genuine maybes; the median claim is actually true, decisively. Under each score: sample% · actual%.</p>
+      </div>
+      <div class="card">
+        <h3>P (At least 30% of ratings are 5) &nbsp;·&nbsp; <span style="color:var(--accent-a);">Beta calculator</span></h3>
+        <div style="font-size:1.5rem; font-weight:700; font-family:'DM Mono',monospace;" id="est-beta">—</div>
+        <div class="desc" id="est-beta-desc"></div>
+        <a class="note" id="est-beta-link" href="../accuracy_estimator/index.html" target="_blank" rel="noopener" style="color:var(--accent-a);">Open the Beta calculator with this sample ↗</a>
+      </div>
+      <div class="card">
+        <h3>P (Mean rating &gt; 4) &nbsp;·&nbsp; <span style="color:var(--accent-a);">Closed form</span></h3>
+        <div style="font-size:1.5rem; font-weight:700; font-family:'DM Mono',monospace;" id="est-mean">—</div>
+        <div class="desc" id="est-mean-desc"></div>
+        <p class="note" id="est-mean-true"></p>
+      </div>
+      <div class="card">
+        <h3>P (Median rating &gt; 3.9) &nbsp;·&nbsp; <span style="color:var(--accent-a);">Bootstrapping</span></h3>
+        <div style="font-size:1.5rem; font-weight:700; font-family:'DM Mono',monospace;" id="est-boot">—</div>
+        <div class="desc" id="est-boot-desc"></div>
+        <a class="note" id="est-boot-link" href="../bootstrap_calculator/index.html" target="_blank" rel="noopener" style="color:var(--accent-a);">Open the bootstrap calculator with this sample ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleExp(){ document.getElementById('expT').classList.toggle('open'); document.getElementById('expB').classList.toggle('open'); }
+    const ri = n => Math.floor(Math.random()*n);
+
+    // ---- Roulette colours (European single-zero) ----
+    const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+    const colour = n => n===0 ? 'green' : (RED.has(n) ? 'red' : 'black');
+
+    // ---- Ratings distribution (the "actual distribution": counts 6,20,50,140,84 out of 300 → μ=3.92, σ=0.94, median 4) ----
+    const RATE_C=[6,20,50,140,84], RATE_TOT=300;
+    const rating=()=>{ const r=ri(RATE_TOT); let c=0; for(let k=0;k<5;k++){ c+=RATE_C[k]; if(r<c) return k+1; } };
+    function getRuns(){ // N — runs per experiment (ratings tab)
+      const el=document.getElementById('nruns'), raw=parseInt(el.value);
+      const v=Math.max(1, Math.min(100000, isNaN(raw)?10000:raw));
+      if(!isNaN(raw) && raw!==v) el.value=v;
+      return v;
+    }
+    const ratingExpN=(N)=>{ // one experiment: N runs → first run, sum, median, counts of 1s and 5s
+      const c=[0,0,0,0,0]; let first=0, sum=0;
+      for(let i=0;i<N;i++){ const r=rating(); if(i===0) first=r; sum+=r; c[r-1]++; }
+      return {first, sum, med:medFromCounts(c,N), c1:c[0], c5:c[4], n:N};
+    };
+    const phi=z=>{ // standard normal CDF (Abramowitz–Stegun)
+      const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2);
+      const p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+      return z>0?1-p:p;
+    };
+
+    // ---- exact binomial tails (true P for the ratings-tab experiment events) ----
+    const LFACT=[0];
+    function logFact(n){ while(LFACT.length<=n) LFACT.push(LFACT[LFACT.length-1]+Math.log(LFACT.length)); return LFACT[n]; }
+    function binomPMF(N,p,i){ return Math.exp(logFact(N)-logFact(i)-logFact(N-i)+i*Math.log(p)+(N-i)*Math.log(1-p)); }
+    function binomGE(N,p,k){ // P(X ≥ k), X ~ Binomial(N,p)
+      if(k<=0) return 1; if(k>N) return 0;
+      const mode=N*p;
+      if(k>mode){ let s=0; for(let i=k;i<=N;i++){ const t=binomPMF(N,p,i); s+=t; if(t<1e-18 && i>mode+40) break; } return Math.min(1,s); }
+      let s=0; for(let i=0;i<k;i++) s+=binomPMF(N,p,i);
+      return Math.max(0,1-s);
+    }
+    function binomLE(N,p,k){ return 1-binomGE(N,p,k+1); }
+    function truePMeanGt(thr,N){ // P(mean of N runs > thr) — exact DP for small N, CLT closed form beyond
+      const p=RATE_C.map(c=>c/RATE_TOT);
+      const kMin=Math.floor(thr*N)+1; // sum > thr·N ⟺ sum ≥ kMin
+      if(N<=300){
+        let arr=[1]; // arr[j] = P(sum = N + j) built by convolving one run at a time
+        for(let i=0;i<N;i++){
+          const next=new Array(arr.length+4).fill(0);
+          for(let s=0;s<arr.length;s++){ const v=arr[s]; if(v===0) continue;
+            for(let k=0;k<5;k++) next[s+k]+=v*p[k];
+          }
+          arr=next;
+        }
+        let s=0; for(let j=Math.max(0,kMin-N); j<arr.length; j++) s+=arr[j];
+        return Math.min(1,Math.max(0,s));
+      }
+      const mu=p.reduce((a,pk,k)=>a+pk*(k+1),0);
+      const sd=Math.sqrt(p.reduce((a,pk,k)=>a+pk*Math.pow((k+1)-mu,2),0));
+      return 1-phi((kMin-0.5-mu*N)/(sd*Math.sqrt(N))); // continuity-corrected
+    }
+    function truePMedGt4(N){
+      const p5=RATE_C[4]/RATE_TOT;
+      if(N%2===1) return binomGE(N,p5,(N+1)/2);
+      // even N: median > 4 ⟺ c5 ≥ N/2+1, or c5 = N/2 with at least one 4 among the rest
+      const h=N/2, p123=(RATE_C[0]+RATE_C[1]+RATE_C[2])/RATE_TOT;
+      const pc5h=binomPMF(N,p5,h);
+      const pc5hNo4=Math.exp(logFact(N)-logFact(h)-logFact(N-h)+h*Math.log(p5)+(N-h)*Math.log(p123));
+      return binomGE(N,p5,h+1)+pc5h-pc5hNo4;
+    }
+
+    // ---- Beta CDF (regularized incomplete beta, Numerical Recipes) ----
+    function gammaln(x){
+      const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+      let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp);
+      let ser=1.000000000190015;
+      for(let j=0;j<6;j++) ser+=c[j]/++y;
+      return -tmp+Math.log(2.5066282746310005*ser/x);
+    }
+    function betacf(a,b,x){
+      const MAXIT=200, EPS=3e-12, FPMIN=1e-300, qab=a+b, qap=a+1, qam=a-1;
+      let c=1, d=1-qab*x/qap;
+      if(Math.abs(d)<FPMIN) d=FPMIN;
+      d=1/d; let h=d;
+      for(let m=1;m<=MAXIT;m++){
+        const m2=2*m;
+        let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+        d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+        c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+        d=1/d; h*=d*c;
+        aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+        d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+        c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+        d=1/d; const del=d*c; h*=del;
+        if(Math.abs(del-1)<EPS) break;
+      }
+      return h;
+    }
+    function betaCDF(x,a,b){
+      if(x<=0) return 0; if(x>=1) return 1;
+      const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+      return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+    }
+
+    // ---- Estimate-from-one-sample tab ----
+    let estC=null, estN=0;
+    function medFromCounts(c,n){
+      const h1=Math.floor((n+1)/2), h2=Math.ceil((n+1)/2);
+      let cum=0,v1=0,v2=0;
+      for(let k=0;k<5;k++){ cum+=c[k]; if(!v1&&cum>=h1)v1=k+1; if(!v2&&cum>=h2){v2=k+1;break;} }
+      return (v1+v2)/2;
+    }
+    function estDraw(){
+      const n=Math.max(10, Math.min(100000, parseInt(document.getElementById('est-n').value)||100));
+      document.getElementById('est-n').value=n;
+      const c=[0,0,0,0,0]; for(let i=0;i<n;i++) c[rating()-1]++;
+      estC=c; estN=n; estRender();
+    }
+    function estRender(){
+      const c=estC, n=estN, fmt=p=>(p*100).toFixed(p<0.0005&&p>0?4:2)+'%';
+      // sample stats
+      const mean = c.reduce((s,ck,k)=>s+ck*(k+1),0)/n;
+      const sd = Math.sqrt(c.reduce((s,ck,k)=>s+ck*Math.pow((k+1)-mean,2),0)/(n-1));
+      const med = medFromCounts(c,n);
+      // sample bars (solid) next to the actual-distribution bars (dashed), both as percentages.
+      // Fixed scale (0–40% = full height): the dashed truth bars never move — only the sample dances.
+      const SCALE=0.55, px=p=>Math.min(100, Math.max(1, Math.round(p/SCALE*100)));
+      let h='<div style="display:flex; align-items:flex-end; gap:10px; height:160px; max-width:420px;">';
+      for(let k=0;k<5;k++){
+        const sPct=c[k]/n, tPct=RATE_C[k]/RATE_TOT;
+        h+='<div style="flex:1; text-align:center; font-family:\'DM Mono\',monospace; font-size:0.68rem; color:var(--text-dim);">'
+          +'<div style="display:flex; align-items:flex-end; justify-content:center; gap:2px; height:105px;">'
+            +'<div style="width:45%; height:'+px(sPct)+'px; background:var(--accent-a-dim); border:1px solid var(--accent-a); border-radius:3px 3px 0 0;"></div>'
+            +'<div style="width:45%; height:'+px(tPct)+'px; background:rgba(234,88,12,0.10); border:1px dashed #ea580c; border-radius:3px 3px 0 0;"></div>'
+          +'</div>'
+          +(k+1)+'<br>'+(sPct*100).toFixed(0)+'% · '+(tPct*100).toFixed(0)+'%</div>';
+      }
+      document.getElementById('est-sample-chart').innerHTML=h+'</div>';
+      document.getElementById('est-sample-desc').textContent =
+        'n = '+n.toLocaleString()+' ratings · mean '+mean.toFixed(2)+' · median '+med+' · '+c[4]+' fives ('+fmt(c[4]/n)+')';
+      // 1 · Beta posterior for the proportion of 5s
+      const a=1+c[4], b=1+(n-c[4]);
+      const pBeta = 1-betaCDF(0.30, a, b);
+      document.getElementById('est-beta').textContent = fmt(pBeta);
+      document.getElementById('est-beta-desc').textContent =
+        c[4]+' of '+n+' ratings are a 5 → posterior Beta(1+'+c[4]+', 1+'+(n-c[4])+'); this is the belief that the true share of 5s is ≥ 30%.';
+      document.getElementById('est-beta-link').href = '../accuracy_estimator/index.html?a='+c[4]+'&b='+(n-c[4])+'&T=0.3';
+      document.getElementById('est-boot-link').href = '../bootstrap_calculator/index.html?counts='+c.join(',')+'&q=median&T=3.9';
+      // 2 · Closed form for the mean
+      const se = sd/Math.sqrt(n);
+      const pMean = se>0 ? 1-phi((4-mean)/se) : (mean>4?1:0);
+      document.getElementById('est-mean').textContent = fmt(pMean);
+      document.getElementById('est-mean-desc').textContent =
+        'x̄ = '+mean.toFixed(3)+', s = '+sd.toFixed(3)+', SE = s/√n = '+se.toFixed(4)+' → P = 1 − Φ((4 − x̄)/SE). No simulation needed.';
+      const muT=RATE_C.reduce((s2,ck,k)=>s2+ck*(k+1),0)/RATE_TOT;
+      const sdT=Math.sqrt(RATE_C.reduce((s2,ck,k)=>s2+ck*Math.pow((k+1)-muT,2),0)/RATE_TOT);
+      document.getElementById('est-mean-true').textContent =
+        'Hidden truth for checking: μ = '+muT.toFixed(2)+', σ = '+sdT.toFixed(2)+' — the mean of '+n.toLocaleString()
+        +' runs wobbles about ±'+(sdT/Math.sqrt(n)).toFixed(3)+' around '+muT.toFixed(2)+'. With μ this close to 4, your n decides whether the claim is resolvable.';
+      // 3 · Bootstrap for the median
+      const B=2000, cum=[]; let acc=0;
+      for(let k=0;k<5;k++){ acc+=c[k]; cum.push(acc); }
+      let hits=0;
+      for(let bI=0;bI<B;bI++){
+        const bc=[0,0,0,0,0];
+        for(let i=0;i<n;i++){ const r=ri(n); let k=0; while(r>=cum[k]) k++; bc[k]++; }
+        if(medFromCounts(bc,n)>3.9) hits++;
+      }
+      document.getElementById('est-boot').textContent = fmt(hits/B);
+      document.getElementById('est-boot-desc').textContent =
+        B.toLocaleString()+' bootstrap resamples of your sample; '+hits+' of them had median > 3.9. No formula for the median needed — resampling does the work.';
+    }
+
+    // ---- Scenario definitions ----
+    // each event: { label, param?, draw():outcome, hit(outcome,p):bool, trueP(p):number }
+    const SCEN = {
+      coins: {
+        title: 'The 4 equally likely (toss-1, toss-2) outcomes',
+        desc: () => 'Toss a fair coin twice → 4 equally likely ordered outcomes: HH, HT, TH, TT. Highlighted outcomes make the event true; true P = highlighted ÷ 4.',
+        events: {
+          'oneH': { label: 'At least one heads', draw:()=>[ri(2),ri(2)], hit:o=>o[0]===0||o[1]===0, fav:()=>3 },
+          'twoT': { label: 'Two tails',          draw:()=>[ri(2),ri(2)], hit:o=>o[0]===1&&o[1]===1, fav:()=>1 },
+          'same': { label: 'Both tosses equal',  draw:()=>[ri(2),ri(2)], hit:o=>o[0]===o[1],        fav:()=>2 },
+        },
+        total: 4,
+      },
+      dice: {
+        title: 'The 36 equally likely (die-1, die-2) outcomes',
+        desc: () => 'Two fair dice → 36 equally likely pairs. Highlighted cells make the event true; true P = highlighted ÷ 36.',
+        events: {
+          'sum':     { label: 'Sum equals…', param:{id:'t',label:'target sum',min:2,max:12,val:10},
+                       draw:()=>[1+ri(6),1+ri(6)], hit:(o,p)=>o[0]+o[1]===p.t,
+                       fav:p=>{let c=0;for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)if(a+b===p.t)c++;return c;} },
+          'doubles': { label: 'Doubles (both equal)', draw:()=>[1+ri(6),1+ri(6)], hit:o=>o[0]===o[1], fav:()=>6 },
+          'least6':  { label: 'At least one six', draw:()=>[1+ri(6),1+ri(6)], hit:o=>o[0]===6||o[1]===6, fav:()=>11 },
+        },
+        total: 36,
+      },
+      roulette: {
+        title: 'The 37 equally likely pockets (0–36)',
+        desc: () => 'European wheel → 37 equally likely pockets. Highlighted pockets make the event true.',
+        events: {
+          'black':  { label: 'Lands on black', draw:()=>ri(37), hit:o=>colour(o)==='black', fav:()=>18 },
+          'red':    { label: 'Lands on red',   draw:()=>ri(37), hit:o=>colour(o)==='red',   fav:()=>18 },
+          'number': { label: 'Lands on number…', param:{id:'n',label:'the number',min:0,max:36,val:17},
+                      draw:()=>ri(37), hit:(o,p)=>o===p.n, fav:()=>1 },
+          'firstblack': { label: 'First black on spin… (count spins)', param:{id:'k',label:'spin number K',min:1,max:20,val:3},
+                      seq:true,
+                      draw:()=>{ let s=0; while(true){ s++; if(colour(ri(37))==='black') return s; } },
+                      hit:(o,p)=>o===p.k,
+                      trueP:p=>Math.pow(19/37,p.k-1)*(18/37) },
+        },
+        total: 37,
+      },
+      poker: {
+        title: 'A 5-card hand from 52 cards',
+        desc: () => 'Every 5-card hand is equally likely — there are C(52,5) = 2,598,960 of them. True P = favorable hands ÷ 2,598,960.',
+        events: {
+          'fouraces': { label: 'Four aces ("a poker of aces")', favCount:48 },
+          'fourkind': { label: 'Four of a kind (any rank)',     favCount:624 },
+          'flush':    { label: 'Flush (all five same suit)',     favCount:5148 },
+          'pair':     { label: 'At least a pair',                favCount:1281072 },
+        },
+        total: 2598960,
+        deal:()=>{ // 5 distinct cards 0..51; card = rank*4 + suit ; ace rank = 12
+          const idx=[]; while(idx.length<5){ const c=ri(52); if(!idx.includes(c)) idx.push(c); }
+          return idx;
+        },
+      },
+      ratings: {
+        title: 'Ratings 1–5 — a fixed "actual" distribution',
+        desc: () => 'Scores are not equally likely: P(1)=2%, P(2)=6.7%, P(3)=16.7%, P(4)=46.7%, P(5)=28%. An experiment = N runs from this distribution. We repeat the experiment M times and count in how many of the M the event holds. Per-run events stay uncertain at any N; whole-experiment statistics become near-certain as N grows — try N = 1, 10, 10,000.',
+        events: {
+          'next4':  { label: 'Next run scores a 4 — a per-run event', perRun:true,
+                      draw:()=>ratingExpN(getRuns()), hit:o=>o.first===4, trueP:()=>RATE_C[3]/RATE_TOT },
+          'meangt38': { label: 'Mean of the N runs > 3.8',
+                      draw:()=>ratingExpN(getRuns()), hit:o=>o.sum*10>38*o.n, trueP:()=>truePMeanGt(3.8, getRuns()) },
+          'medgt4': { label: 'Median of the N runs > 4',
+                      draw:()=>ratingExpN(getRuns()), hit:o=>o.med>4, trueP:()=>truePMedGt4(getRuns()) },
+          'few1s':  { label: 'No more than 10% of runs score 1',
+                      draw:()=>ratingExpN(getRuns()), hit:o=>o.c1<=Math.floor(0.10*o.n),
+                      trueP:()=>binomLE(getRuns(), RATE_C[0]/RATE_TOT, Math.floor(0.10*getRuns())) },
+          'many5s': { label: 'At least 20% of runs score 5',
+                      draw:()=>ratingExpN(getRuns()), hit:o=>o.c5>=Math.ceil(0.20*o.n),
+                      trueP:()=>binomGE(getRuns(), RATE_C[4]/RATE_TOT, Math.ceil(0.20*getRuns())) },
+        },
+        total: RATE_TOT,
+      },
+    };
+    const POKER_HIT = {
+      fouraces: h => h.filter(c=>Math.floor(c/4)===12).length===4,
+      fourkind: h => { const r={}; h.forEach(c=>r[Math.floor(c/4)]=(r[Math.floor(c/4)]||0)+1); return Object.values(r).some(v=>v===4); },
+      flush:    h => h.every(c=>(c%4)===(h[0]%4)),
+      pair:     h => { const r={}; for(const c of h){const k=Math.floor(c/4); if(r[k]) return true; r[k]=1;} return false; },
+    };
+    const RNAMES=['2','3','4','5','6','7','8','9','10','J','Q','K','A'], SNAMES=['♣','♦','♥','♠'];
+    const cardName = c => RNAMES[Math.floor(c/4)] + SNAMES[c%4];
+
+    // ---- state ----
+    let scn='coins', evKey, params={}, n=0, fav=0, chart=null, series=[];
+
+    function currentEvent(){ return SCEN[scn].events[evKey]; }
+
+    function trueP(){
+      const s=SCEN[scn], e=currentEvent();
+      if(scn==='poker') return e.favCount / s.total;
+      if(e.trueP) return e.trueP(params);
+      if(e.fav)   return e.fav(params) / s.total;
+      return null;
+    }
+
+    // ---- one draw → did the event happen? + remember a sample ----
+    let lastSample='';
+    function oneDraw(){
+      const s=SCEN[scn], e=currentEvent();
+      if(scn==='poker'){ const h=s.deal(); lastSample=h.map(cardName).join('  '); return POKER_HIT[evKey](h); }
+      const o=e.draw();
+      if(scn==='ratings'){ lastSample = 'experiment of '+o.n.toLocaleString()+' runs → median '+o.med
+        +' · '+(o.c1/o.n*100).toFixed(1)+'% ones · '+(o.c5/o.n*100).toFixed(1)+'% fives · first run scored '+o.first; }
+      else if(scn==='coins'){ lastSample='🪙 '+o.map(x=>x===0?'H':'T').join(' '); }
+      else if(scn==='dice'){ lastSample='🎲 '+o[0]+' + '+o[1]+' = '+(o[0]+o[1]); }
+      else if(scn==='roulette'){ lastSample = e.seq ? ('spun '+o+' time'+(o>1?'s':'')+' to first black') : (o+' ('+colour(o)+')'); }
+      return e.hit(o, params);
+    }
+
+    function fmtP(p){ return p==null ? '—' : (p*100).toFixed(p<0.01?3:2)+'%'; }
+    function odds(p){ if(p==null||p<=0) return ''; return '≈ 1 in '+ (1/p>=100 ? Math.round(1/p).toLocaleString() : (1/p).toFixed(1)); }
+
+    let nextRec=1; // log-spaced checkpoints (1, 2, 3, 4, 6, 8, 11, …) so the early wobble is visible
+    function run(){
+      let N=Math.max(1, parseInt(document.getElementById('ndraws').value)||0);
+      if(scn==='ratings'){ // cap M×N at ~50M runs per click so the tab stays responsive
+        const maxM=Math.max(1, Math.floor(50000000/getRuns()));
+        if(N>maxM){ N=maxM; document.getElementById('ndraws').value=N; }
+      }
+      n=0; fav=0; series=[]; nextRec=1; lastSample=''; // every click starts a fresh simulation
+      for(let i=0;i<N;i++){ if(oneDraw()) fav++; n++; if(n>=nextRec){ series.push({x:n, y:fav/n}); nextRec=Math.max(nextRec+1, Math.ceil(nextRec*1.3)); } }
+      if(series.length===0 || series[series.length-1].x!==n) series.push({x:n, y:fav/n});
+      render();
+    }
+    function reset(){ n=0; fav=0; series=[]; nextRec=1; lastSample=''; render(); }
+
+    function render(){
+      document.getElementById('st-n').textContent = n.toLocaleString();
+      document.getElementById('st-fav').textContent = fav.toLocaleString();
+      const emp = n>0 ? fav/n : null, tp = trueP();
+      document.getElementById('st-emp').textContent = n>0 ? fmtP(emp) : '—';
+      document.getElementById('st-emp-odds').textContent = n>0 ? odds(emp) : '';
+      document.getElementById('st-tru').textContent = fmtP(tp);
+      document.getElementById('st-tru-odds').textContent = odds(tp);
+      document.getElementById('st-n-label').textContent = scn==='ratings' ? 'Experiments so far' : 'Draws so far';
+      document.getElementById('totals-note').textContent = n>0
+        ? (scn==='ratings'
+            ? (n.toLocaleString()+' experiments of '+getRuns().toLocaleString()+' run'+(getRuns()>1?'s':'')+' each · event held in '+fav.toLocaleString()+' of them')
+            : (n.toLocaleString()+' draws · event happened '+fav.toLocaleString()+' times'))
+        : (scn==='ratings' ? 'No experiments yet.' : 'No draws yet.');
+      document.getElementById('sample').innerHTML = lastSample ? ('<span class="note">last draw:</span> '+lastSample) : '';
+      renderOutcomes();
+      renderChart(tp);
+    }
+
+    function renderOutcomes(){
+      const s=SCEN[scn], e=currentEvent(), box=document.getElementById('outcomes');
+      document.getElementById('oc-title').textContent = s.title;
+      document.getElementById('oc-desc').textContent = (typeof s.desc==='function'? s.desc():s.desc);
+      if(scn==='coins'){
+        const names={'0,0':'HH','0,1':'HT','1,0':'TH','1,1':'TT'};
+        let h='<div class="dice-grid" style="grid-template-columns:repeat(4,1fr); max-width:260px;">';
+        for(const [key,name] of Object.entries(names)){
+          const o=key.split(',').map(Number), f=e.hit(o, params);
+          h+='<div class="dice-cell'+(f?' fav':'')+'">'+name+'</div>';
+        }
+        box.innerHTML=h+'</div>';
+      } else if(scn==='dice'){
+        let h='<div class="dice-grid">';
+        for(let a=1;a<=6;a++) for(let b=1;b<=6;b++){
+          const f = e.hit ? e.hit([a,b], params) : false;
+          h+='<div class="dice-cell'+(f?' fav':'')+'">'+a+','+b+'</div>';
+        }
+        box.innerHTML=h+'</div>';
+      } else if(scn==='ratings'){
+        const hi={next4:3, few1s:0, many5s:4}[evKey];
+        let h='<div style="display:flex; align-items:flex-end; gap:8px; height:150px; max-width:380px;">';
+        for(let k=0;k<5;k++){
+          const hl = hi===k;
+          h+='<div style="flex:1; text-align:center; font-family:\'DM Mono\',monospace; font-size:0.7rem; color:var(--text-dim);">'
+            +'<div style="height:'+Math.round(RATE_C[k]/95*105)+'px; background:'+(hl?'var(--accent-a)':'var(--surface-2)')+'; border:1px solid '+(hl?'var(--accent-a)':'var(--border)')+'; border-radius:4px 4px 0 0;"></div>'
+            +(k+1)+'<br>'+(RATE_C[k]/RATE_TOT*100).toFixed(1)+'%</div>';
+        }
+        const muT=RATE_C.reduce((a,c,k)=>a+c*(k+1),0)/RATE_TOT;
+        let cumT=0, medT=0; for(let k=0;k<5;k++){ cumT+=RATE_C[k]; if(cumT*2>=RATE_TOT){ medT=k+1; break; } }
+        box.innerHTML=h+'</div><p class="note">The fixed distribution every rating is drawn from — true mean '+muT.toFixed(2)+', true median '+medT
+          +(hi!=null?'. The highlighted score is the one the event tests':'')+'.</p>';
+      } else if(scn==='roulette'){
+        if(e.seq){ box.innerHTML='<p class="note">This is a <em>sequence</em> event — each draw spins until the first black and counts the spins. No single-pocket highlight; watch the simulation match the formula on the right.</p>'; return; }
+        let h='<div class="roulette-strip">';
+        for(let i=0;i<=36;i++){ const f=e.hit(i,params); h+='<div class="pocket '+colour(i)+(f?' fav':'')+'">'+i+'</div>'; }
+        box.innerHTML=h+'</div>';
+      } else {
+        box.innerHTML='<p class="note">'+ (e.favCount).toLocaleString() +' of the 2,598,960 possible hands satisfy this event.</p>';
+      }
+    }
+
+    function renderChart(tp){
+      const ctx=document.getElementById('chart');
+      if(chart) chart.destroy();
+      const data = series.map(p=>({x:p.x, y:p.y*100}));
+      const maxX = Math.max(n,10);
+      chart=new Chart(ctx,{ type:'line',
+        data:{ datasets:[
+          { label:'empirical P', data, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.10)',
+            borderWidth:2, fill:true, tension:0.2, pointRadius:3, pointBackgroundColor:'#2563eb' },
+          ...(tp!=null ? [{ label:'true P', data:[{x:1,y:tp*100},{x:maxX,y:tp*100}], borderColor:'#16a34a',
+            borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false }] : [])
+        ]},
+        options:{ responsive:true, maintainAspectRatio:false, parsing:false,
+          plugins:{ legend:{ labels:{ font:{family:"'DM Mono', monospace", size:11}, color:'#64748b' } } },
+          scales:{
+            y:{ beginAtZero:true, grid:{color:'rgba(15,23,42,0.07)'}, border:{display:false},
+                ticks:{ font:{family:"'DM Mono', monospace",size:11}, color:'#64748b', callback:v=>v+'%' },
+                title:{display:true,text:'P(event)',color:'#64748b',font:{family:"'DM Mono', monospace",size:10}} },
+            x:{ type:'logarithmic', min:1, max:maxX, grid:{display:false}, border:{display:false},
+                ticks:{ font:{family:"'DM Mono', monospace",size:10}, color:'#64748b',
+                        callback:v=>Number.isInteger(Math.log10(v)) ? Number(v).toLocaleString() : '' },
+                title:{display:true,text:(scn==='ratings'?'experiments':'draws')+' (log scale)',color:'#64748b',font:{family:"'DM Mono', monospace",size:10}} }
+          }
+        }
+      });
+    }
+
+    // ---- UI wiring ----
+    function buildEventOptions(){
+      const sel=document.getElementById('event'); sel.innerHTML='';
+      for(const [k,e] of Object.entries(SCEN[scn].events)){
+        const o=document.createElement('option'); o.value=k; o.textContent=e.label; sel.appendChild(o);
+      }
+      evKey=Object.keys(SCEN[scn].events)[0]; sel.value=evKey;
+      buildParams(); syncRuns();
+    }
+    let lastRuns=10000;
+    function syncRuns(){ // per-run events: an experiment IS one run — lock N to 1
+      const el=document.getElementById('nruns');
+      if(scn==='ratings' && currentEvent().perRun){
+        if(!el.disabled) lastRuns=getRuns();
+        el.value=1; el.disabled=true;
+      } else if(el.disabled){
+        el.value=lastRuns; el.disabled=false;
+      }
+    }
+    function buildParams(){
+      const wrap=document.getElementById('param-wrap'); wrap.innerHTML='';
+      const e=currentEvent(); params={};
+      if(e.param){ const p=e.param; params[p.id]=p.val;
+        wrap.innerHTML='<label>'+p.label+'</label><input type="number" id="param-'+p.id+'" value="'+p.val+'" min="'+p.min+'" max="'+p.max+'" step="1">';
+        document.getElementById('param-'+p.id).addEventListener('input', ev=>{
+          let v=parseInt(ev.target.value); if(isNaN(v)) return;
+          v=Math.max(p.min,Math.min(p.max,v)); params[p.id]=v; reset();
+        });
+      }
+    }
+    let simScn='coins'; // last draw picked inside the "simulate any event" demo
+    function activateTab(t, sub){
+      document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
+      document.getElementById('std-layout').style.display = t==='estimate' ? 'none' : 'grid';
+      document.getElementById('est-layout').style.display = t==='estimate' ? 'grid' : 'none';
+      document.getElementById('draw-picker').style.display = t==='simulate' ? '' : 'none';
+      if(t==='estimate'){ if(!estC) estDraw(); return; }
+      if(sub) simScn=sub;
+      document.querySelectorAll('.scn-btn').forEach(x=>x.classList.toggle('active', x.dataset.scn===simScn));
+      scn = t==='ratings' ? 'ratings' : simScn;
+      const isR = scn==='ratings';
+      document.getElementById('nruns-wrap').style.display = isR ? '' : 'none';
+      document.getElementById('ndraws-label').textContent = isR ? 'Number of experiments (M)' : 'Draws per run';
+      document.getElementById('runbtn').textContent = isR ? 'Run the experiments' : 'Draw & count';
+      document.getElementById('ndraws').value = (isR ? 1000 : 10000);
+      buildEventOptions(); reset();
+    }
+    // Each demo has its own URL: #simulate (or #coins/#dice/#roulette/#poker), #ratings, #estimate
+    const HASH_TABS={simulate:1, ratings:1, estimate:1}, HASH_SUBS={coins:1, dice:1, roulette:1, poker:1};
+    function applyHash(){
+      const h=(location.hash||'').replace('#','').toLowerCase();
+      if(HASH_TABS[h]) activateTab(h);
+      else if(HASH_SUBS[h]) activateTab('simulate', h);
+      else activateTab('simulate');
+    }
+    document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+      activateTab(b.dataset.tab);
+      history.replaceState(null,'','#'+b.dataset.tab);
+    }));
+    document.querySelectorAll('.scn-btn').forEach(b=>b.addEventListener('click',()=>{
+      activateTab('simulate', b.dataset.scn);
+      history.replaceState(null,'','#'+b.dataset.scn);
+    }));
+    document.getElementById('event').addEventListener('change', ev=>{ evKey=ev.target.value; buildParams(); syncRuns(); reset(); });
+    document.getElementById('nruns').addEventListener('input', ()=>{ if(scn==='ratings') reset(); }); // changing N invalidates the tally
+    window.addEventListener('hashchange', applyHash);
+
+    applyHash();
+  </script>
+</body>
+</html>

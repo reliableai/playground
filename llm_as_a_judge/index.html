@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM as a Judge — judge noise &amp; bias (L3 lab)</title>
+  <link rel="stylesheet" href="../course.css">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    :root{
+      --true:  #0f766e;   /* the truth we are trying to measure */
+      --meas:  #b45309;   /* what the judge measured */
+      --bias:  #7c3aed;   /* bias = systematic */
+      --noise: #2563eb;   /* noise = random */
+      --good:  #15803d;
+      --bad:   #b91c1c;
+      --grid:  #e5e7eb;
+      --muted: #64748b;
+    }
+    .panel{ background:#fff; border:1px solid var(--grid); border-radius:12px; padding:1.15rem 1.3rem; margin:1rem 0; }
+    .panel h3{ margin:.1rem 0 .6rem; font-size:1.05rem; }
+
+    /* concept cards: bias vs noise */
+    .concept{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
+    @media (max-width:680px){ .concept{ grid-template-columns:1fr; } }
+    .concept .card{ border:1px solid var(--grid); border-radius:10px; padding:1rem 1.1rem; background:#fff; }
+    .concept .card .tag{ display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      padding:.18rem .5rem; border-radius:999px; color:#fff; margin-bottom:.5rem; }
+    .concept .card.b .tag{ background:var(--bias); }
+    .concept .card.n .tag{ background:var(--noise); }
+    .concept .card.gt .tag{ background:var(--true); }
+    .concept .card.nogt .tag{ background:var(--meas); }
+    .concept .card p{ margin:.4rem 0; font-size:.92rem; }
+    .concept .card .forwhom{ font-size:.82rem; color:var(--muted); margin:.5rem 0 0; }
+
+    /* tab bar for the two judge types */
+    .tabbar{ display:flex; gap:.4rem; border-bottom:2px solid var(--grid); margin:1.6rem 0 0; flex-wrap:wrap; }
+    .tabbar button{ font:inherit; font-weight:600; font-size:1rem; border:none; background:none; cursor:pointer;
+      padding:.7rem 1.1rem; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-2px; text-align:left; }
+    .tabbar button .sub{ display:block; font-size:.74rem; font-weight:500; color:var(--muted); }
+    .tabbar button.active{ color:#111; border-bottom-color:#111; }
+    .tabpane{ display:none; }
+    .tabpane.active{ display:block; }
+
+    /* controls */
+    .dials{ display:grid; grid-template-columns:1fr 1fr; gap:1.4rem 2rem; align-items:start; }
+    @media (max-width:680px){ .dials{ grid-template-columns:1fr; } }
+    .dial label{ display:flex; justify-content:space-between; font-weight:600; font-size:.85rem; margin-bottom:.35rem; }
+    .dial .val{ font-variant-numeric:tabular-nums; color:var(--muted); font-weight:600; }
+    .dial input[type=range]{ width:100%; }
+    .rangewrap{ position:relative; }
+    .rangewrap input[type=range]{ position:relative; z-index:1; }
+    .rangewrap .zerotick{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:4px; height:42px; background:#475569; box-shadow:0 0 0 2px #fff; border-radius:2px; pointer-events:none; z-index:2; }
+    .dial .ends{ display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-top:.1rem; }
+    .dial.bias label span.name{ color:var(--bias); }
+    .dial.noise label span.name{ color:var(--noise); }
+    .btnrow{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1.1rem; }
+    .btn{ font:inherit; font-weight:600; border-radius:8px; padding:.55rem 1.1rem; cursor:pointer; border:1px solid #111; }
+    a.btn{ text-decoration:none; display:inline-block; }
+    .btn.primary{ background:#111; color:#fff; }
+    .btn.ghost{ background:#fff; color:#111; }
+    .btn:active{ transform:translateY(1px); }
+    .playtoc{ display:flex; gap:.5rem; flex-wrap:wrap; margin:1rem 0 .2rem; }
+    .playtoc button{ font:inherit; font-weight:600; border:1px solid var(--grid); background:#fff; color:#111;
+      border-radius:8px; padding:.45rem .85rem; cursor:pointer; }
+    .playtoc button:hover{ border-color:#111; }
+    .playgrid{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media (max-width:780px){ .playgrid{ grid-template-columns:1fr; } }
+    .prompt-example{ background:#f8fafc; border:1px solid var(--grid); border-radius:8px; padding:.8rem .9rem;
+      font-size:.78rem; line-height:1.45; overflow:auto; white-space:pre-wrap; margin:.5rem 0 0; }
+
+    /* readouts */
+    .readouts{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1rem 0; }
+    @media (max-width:680px){ .readouts{ grid-template-columns:1fr; } }
+    .ro{ border:1px solid var(--grid); border-radius:10px; padding:.9rem 1rem; background:#fff; }
+    .ro .k{ font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+    .ro .v{ font-size:2.2rem; font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums; }
+    .ro .v small{ font-size:1rem; font-weight:600; color:var(--muted); }
+    .ro.t .v{ color:var(--true); }
+    .ro.m .v{ color:var(--meas); }
+    .ro.g .v{ color:var(--bias); }
+    .ro .sub{ font-size:.78rem; color:var(--muted); margin-top:.15rem; }
+
+    canvas{ width:100%; max-width:100%; display:block; }
+    .cilabel{ font-size:.9rem; margin:.6rem 0 0; }
+    .cov{ font-weight:700; }
+    .cov.ok{ color:var(--good); }
+    .cov.miss{ color:var(--bad); }
+
+    /* items / example tables */
+    table.items{ width:100%; border-collapse:collapse; font-size:.85rem; margin:.6rem 0 0; }
+    table.items th, table.items td{ padding:.35rem .55rem; border-bottom:1px solid var(--grid); text-align:left; vertical-align:middle; }
+    table.items th{ font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    .truth{ font-size:.85rem; color:var(--muted); white-space:nowrap; }
+    .bar{ position:relative; height:.62rem; width:120px; background:#eef2f7; border-radius:999px; overflow:hidden; display:inline-block; vertical-align:middle; }
+    .bar > i{ position:absolute; left:0; top:0; bottom:0; border-radius:999px; }
+    .bar.truebar > i{ background:#94a3b8; }
+    .bar.scorebar > i{ background:var(--meas); }
+    .scoreval{ font-variant-numeric:tabular-nums; font-weight:600; margin-left:.4rem; }
+    .legend{ display:flex; gap:1.2rem; flex-wrap:wrap; font-size:.8rem; color:var(--muted); margin:.6rem 0 0; }
+    .sw{ display:inline-block; width:.8rem; height:.8rem; border-radius:2px; vertical-align:-1px; margin-right:.3rem; }
+
+    /* classification labels + verdict marks */
+    .lab{ display:inline-block; padding:.1rem .5rem; border-radius:6px; font-size:.78rem; font-weight:700; background:#eef2f7; color:#334155; white-space:nowrap; }
+    .mark{ font-weight:800; }
+    .mark.ok{ color:var(--good); }
+    .mark.bad{ color:var(--bad); }
+    tr.changed td{ background:#fff7ed; }
+    .flip{ font-size:.72rem; color:var(--meas); font-weight:700; margin-left:.3rem; }
+
+    /* gen-AI classifier demo (moved from the L1 lab) */
+    .dsrow{ display:flex; gap:.5rem; margin:.2rem 0 .8rem; flex-wrap:wrap; }
+    .dsrow button{ font:inherit; font-weight:600; border:1px solid var(--grid); background:#fff;
+      border-radius:8px; padding:.4rem .9rem; cursor:pointer; color:var(--muted); }
+    .dsrow button.on{ border-color:#111; color:#111; }
+    .genai-controls{ display:flex; gap:.9rem; align-items:center; flex-wrap:wrap; margin:.4rem 0 .9rem; }
+    .genai-controls label{ font-size:.85rem; font-weight:600; }
+    .genai-controls input{ width:5.5rem; font:inherit; padding:.3rem .4rem; border:1px solid var(--grid); border-radius:6px; margin-left:.4rem; }
+    .gnote{ font-size:.8rem; color:var(--muted); }
+    .genai-grid{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:start; }
+    @media (max-width:680px){ .genai-grid{ grid-template-columns:1fr; } }
+    .gacc{ font-size:2rem; font-weight:800; color:var(--meas); font-variant-numeric:tabular-nums; }
+    .gacc small{ font-size:.95rem; font-weight:600; color:var(--muted); }
+    table.pcm{ border-collapse:collapse; font-size:.82rem; margin-top:.4rem; }
+    table.pcm th, table.pcm td{ padding:.25rem .55rem; border-bottom:1px solid var(--grid); text-align:left; }
+    table.pcm th{ font-size:.68rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    table.pcm td.num, table.pcm th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+    table.cmx{ border-collapse:collapse; font-size:.78rem; }
+    table.cmx th, table.cmx td{ border:1px solid var(--grid); padding:.25rem .5rem; text-align:center; font-variant-numeric:tabular-nums; }
+    table.cmx th{ color:var(--muted); font-weight:600; }
+    table.cmx td.diag{ background:#ecfdf5; font-weight:700; }
+    pre.gprompt{ background:#f8fafc; border:1px solid var(--grid); border-radius:8px; padding:.7rem .8rem;
+      font-size:.78rem; line-height:1.45; overflow:auto; white-space:pre-wrap; margin:.5rem 0 0; }
+    details.gp summary{ cursor:pointer; font-weight:600; font-size:.9rem; margin:.2rem 0; }
+
+    /* mini reliability diagram */
+    .relwrap{ display:grid; grid-template-columns:340px 1fr; gap:1.2rem; align-items:center; }
+    @media (max-width:680px){ .relwrap{ grid-template-columns:1fr; } }
+    .ece{ font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; }
+
+    /* scorecard case browser (real lawsuit data) */
+    .sccard .scmeta{ font-size:.82rem; color:var(--muted); margin:0 0 .7rem; }
+    .sccard .scmeta b{ color:#111; }
+    .scgrid{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media (max-width:680px){ .scgrid{ grid-template-columns:1fr; } }
+    .scbox{ border:1px solid var(--grid); border-radius:10px; padding:.7rem .85rem; background:#fff; }
+    .scbox h4{ margin:0 0 .35rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; }
+    .scbox.ai h4{ color:var(--meas); }
+    .scbox.ref h4{ color:var(--true); }
+    .scbox p{ margin:0; font-size:.86rem; line-height:1.5; }
+    .scscores{ display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem; margin:1rem 0 .2rem; }
+    @media (max-width:680px){ .scscores{ grid-template-columns:repeat(2,1fr); } }
+    .scscore{ border:1px solid var(--grid); border-radius:10px; padding:.6rem .7rem; text-align:center; }
+    .scscore .lbl{ font-size:.64rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); font-weight:700; }
+    .scscore .num{ font-size:1.7rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; }
+    .scscore .num small{ font-size:.78rem; font-weight:600; color:var(--muted); }
+    .scscore.overall{ background:#f8fafc; border-color:#cbd5e1; }
+    .scscore.overall .num{ color:var(--meas); }
+    .scrat{ font-size:.85rem; font-style:italic; color:#334155; margin:.8rem 0 0; }
+
+    /* per-dimension sample-mean bars */
+    .smrow{ display:grid; grid-template-columns:9rem 1fr 6.5rem; gap:.6rem; align-items:center; margin:.5rem 0; font-size:.86rem; }
+    .smrow .smlbl{ font-weight:600; }
+    .smbar{ position:relative; height:1.05rem; background:#eef2f7; border-radius:6px; }
+    .smbar > i{ position:absolute; left:0; top:0; bottom:0; background:var(--meas); border-radius:6px; }
+    .smbar > .full{ position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--true); }
+    .smval{ font-variant-numeric:tabular-nums; text-align:right; color:var(--muted); }
+    .smval b{ color:var(--meas); }
+  </style>
+</head>
+<body>
+<main>
+  <a class="nav-back" href="../index.html">← All playgrounds</a>
+
+  <div class="hero">
+    <h1>LLM as a Judge</h1>
+    <p class="subtitle">L3 lab · an LLM can <em>be</em> the thing that judges your AI's answers — classifying them or scoring them. In L1 the judge was perfect; a real judge has two defects, <strong>bias</strong> and <strong>noise</strong>.</p>
+    <p class="hero-meta">Uncertainty dimension: judge noise &amp; bias.</p>
+  </div>
+
+  <div class="tabbar" role="tablist">
+    <button id="tabbtn-classifier" class="active" data-tab="classifier" role="tab">The LLM judge, classifying<span class="sub">the simple case — straight from L1</span></button>
+    <button id="tabbtn-scorecard" data-tab="scorecard" role="tab">Scorecard judge<span class="sub">real cases · prompts · sample noise</span></button>
+    <button id="tabbtn-biasnoise" data-tab="biasnoise" role="tab">The judge's bias &amp; noise<span class="sub">sample · mean error vs RMSE</span></button>
+    <button id="tabbtn-compounds" data-tab="compounds" role="tab">Uncertainty compounds<span class="sub">sampling noise + judge noise + bias · bootstrap</span></button>
+    <button id="tabbtn-bootstrapmeans" data-tab="bootstrapmeans" role="tab">Bootstrapping the means<span class="sub">resample → interval for the mean</span></button>
+    <button id="tabbtn-takeaways" data-tab="takeaways" role="tab">Judge playbook<span class="sub">measure · build · tools</span></button>
+  </div>
+
+  <!-- ===================== CLASSIFIER TAB (the simple LLM judge, from L1) ===================== -->
+  <div class="tabpane active" id="tab-classifier">
+
+    <section class="lab-section">
+      <h2>An LLM as a classifier</h2>
+      <p>
+        An LLM can <strong>classify</strong>, exactly like the trained models in L1 — read a piece of text and emit one
+        label (<code>POSITIVE</code> / <code>NEGATIVE</code>, or one of several categories). No training: a prompt with
+        the allowed classes and a few labelled examples. This demo moved here from the L1 lab — same datasets, real
+        precomputed LLM predictions; spin freely, no API calls.
+      </p>
+      <p>Because we hold the true labels, we can measure the LLM exactly like L1 measured the trained model: accuracy,
+         per-class precision/recall, the confusion matrix. And the confusion matrix shows the <em>direction</em> of the
+         misses — the <span style="color:var(--bias);font-weight:700">bias</span> — visible only because we have
+         ground truth.</p>
+
+      <div class="panel" id="genaiPanel" style="padding-top:.7rem">
+        <h3>Gen-AI classifier on the L1 datasets</h3>
+        <div class="dsrow" id="gdsrow"></div>
+        <details class="gp">
+          <summary>How the LLM is prompted (few-shot)</summary>
+          <pre class="gprompt" id="gprompt"></pre>
+        </details>
+        <div class="genai-controls">
+          <label>Test-set size <input type="number" id="gsize" min="10" value="100"></label>
+          <button class="btn primary" id="gspin">🎲 Spin the wheel</button>
+          <span class="gnote" id="gnote"></span>
+        </div>
+        <div class="genai-grid">
+          <div id="gmetrics"></div>
+          <div id="gcm"></div>
+        </div>
+        <h4 style="margin:1.1rem 0 .3rem">Browse this draw's examples</h4>
+        <div class="dsrow" id="gshowrow">
+          <button data-show="miss" class="on">✗ classified wrong</button>
+          <button data-show="ok">✓ classified correctly</button>
+        </div>
+        <table class="items">
+          <thead><tr><th>Text</th><th>True label</th><th>LLM's label</th></tr></thead>
+          <tbody id="gmiss"></tbody>
+        </table>
+        <p class="note" id="gmissnote" style="margin:.6rem 0 0"></p>
+      </div>
+
+      <div class="takeaway">
+        <strong>Spin a few times.</strong> The accuracy wobbles — that's L1's sampling noise, still here. But watch
+        the confusion matrix: the same off-diagonal cells stay heavy draw after draw.
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== SCORECARD TAB (real lawsuit data) ===================== -->
+  <div class="tabpane" id="tab-scorecard">
+
+    <section class="lab-section">
+      <h2>The judge gives a number — a scorecard</h2>
+      <p>Gen-AI answers are rarely just right or wrong. So a scoring judge rates quality on a scale, usually across several
+         dimensions — a <strong>scorecard</strong>. Here an AI summarizes a real court case, and a second LLM scores that
+         summary against an expert reference on three dimensions (1–5):</p>
+
+      <div class="panel" style="padding-top:.7rem">
+        <h3>Accuracy · Completeness · Fluency → Overall</h3>
+        <table class="items">
+          <thead><tr><th>Dimension</th><th>What it asks the judge</th><th class="num">Example</th></tr></thead>
+          <tbody>
+            <tr><td><b>Accuracy</b></td><td>are the stated facts correct — no invented or contradicted claims?</td><td class="num">3</td></tr>
+            <tr><td><b>Completeness</b></td><td>does it capture the parties, the claims, the outcome?</td><td class="num">4</td></tr>
+            <tr><td><b>Fluency</b></td><td>is it clear, well-formed, professional prose?</td><td class="num">2</td></tr>
+            <tr><td><b>Overall</b></td><td><em>computed</em>, not judged: 0.45·A + 0.45·C + 0.10·F, rounded to the nearest ½</td><td class="num"><b>3.5</b></td></tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin:.7rem 0 0"><strong>Overall is a fixed rule, not a fourth judgment.</strong>
+           0.45·3 + 0.45·4 + 0.10·2 = 3.35 → <b>3.5</b>. Substance (accuracy, completeness) dominates; fluency barely moves
+           it — for a capable model fluency is near-constant anyway. This is the example from slide 11 of the deck.</p>
+      </div>
+    </section>
+
+    <section class="lab-section">
+      <h2>The two prompts</h2>
+      <p>One LLM call summarizes the case; a second scores that summary against the expert reference. Both are plain prompts
+         — no fine-tuning. These are the actual Jinja templates the build script runs.</p>
+      <details class="gp" open>
+        <summary>1 · Summarizer prompt</summary>
+        <pre class="gprompt" id="sumPrompt"></pre>
+      </details>
+      <details class="gp">
+        <summary>2 · Judge prompt (reference-based scorecard)</summary>
+        <pre class="gprompt" id="judgePrompt"></pre>
+      </details>
+      <p class="note" style="margin:.7rem 0 0">Honest caveats baked into this dataset: <b>Overall</b> is computed (above),
+         <b>Fluency</b> is ≈ 5 for nearly every case (a capable model writes clean prose), and the summarizer and the judge
+         are the <em>same</em> model (<code id="scModel">gpt-5.5</code>) — a setup prone to <strong>self-preference</strong>.</p>
+    </section>
+
+    <section class="lab-section">
+      <h2>Browse the scored cases</h2>
+      <p>Real output from Multi-LexSum, each case under 20k words so the summarizer reads the whole record — no truncation.
+         We keep the <strong><span id="scN">100</span> most distinctive</strong> of 143 scored civil-rights cases — those
+         whose accuracy/completeness sit furthest from the average — and browse them <strong>most distinctive first</strong>,
+         so you start with the telling ones instead of a run of 4/5s. For each case: the AI summary, the expert reference it
+         was scored against, and the judge's scorecard.</p>
+      <div class="panel">
+        <div class="btnrow" style="margin:0 0 .9rem">
+          <button class="btn ghost" id="scPrev">← Prev</button>
+          <button class="btn ghost" id="scNext">Next →</button>
+          <button class="btn primary" id="scRand">🎲 Random</button>
+          <button class="btn ghost" id="scLow">Jump to a low scorer</button>
+          <span class="gnote" id="scPos"></span>
+        </div>
+        <div class="sccard" id="scCard"></div>
+      </div>
+    </section>
+
+    <section class="lab-section">
+      <h2>One number — but which cases? Sample noise</h2>
+      <p>You cannot score all the population. You score a <strong>sample</strong> and report its mean. Draw a
+         different sample and the mean moves — that is <span style="color:var(--noise);font-weight:700">sample noise</span>,
+         exactly L1's, now on a 1–5 score. The thin <span style="color:var(--true);font-weight:700">teal line</span> marks
+         the full-set mean (all 100); the amber bar is this draw's mean, per dimension.</p>
+      <div class="panel">
+        <div class="dials" style="grid-template-columns:1fr auto">
+          <div class="dial">
+            <label>Sample size <span class="val" id="scSizeVal">15</span> <span style="font-weight:500;color:var(--muted)">of <span id="scOf">100</span></span></label>
+            <input type="range" id="scSize" min="5" max="100" step="1" value="15">
+            <div class="ends"><span>5</span><span>100</span></div>
+          </div>
+          <div class="dial" style="display:flex;align-items:flex-end">
+            <div class="btnrow" style="margin:0"><button class="btn primary" id="scSpin">🎲 Spin the sample</button></div>
+          </div>
+        </div>
+        <div id="scSample" style="margin-top:1.1rem"></div>
+        <p class="note" id="scSampleNote" style="margin:.8rem 0 0"></p>
+        <p class="note" id="scMulti" style="margin:.5rem 0 0"></p>
+      </div>
+      <div class="takeaway">
+        <strong>Small sample → big wobble.</strong> At n = 5 the per-dimension mean jumps around between spins; push the
+        slider toward 100 and it settles onto the full-set line. This is only the <em>sampling</em> piece — the judge here
+        is fixed and honest. The next tab adds the judge's own bias and noise on top.
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== BIAS & NOISE TAB (synthetic pool, whole population) ===================== -->
+  <div class="tabpane" id="tab-biasnoise">
+
+    <section class="lab-section">
+      <h2>The judge's two defects: bias and noise</h2>
+      <p>The scorecard came from one real judge. To see <em>how</em> a judge can be wrong, switch to a frozen pool of
+         answers whose <strong>true</strong> quality we get to peek at (you never can in real life; the pool's true mean is
+         <strong>3.8 / 5</strong>). Draw a <strong>sample</strong>, let the judge score it, and read the per-answer error two
+         ways: the <strong style="color:var(--bias)">mean error</strong> (the systematic part — the bias) and the
+         <strong style="color:var(--meas)">RMSE</strong> (the typical total miss — bias <em>and</em> noise). The bars below
+         focus on the gap between them: that gap is the <span style="color:var(--noise)">noise</span>.</p>
+
+      <div class="panel">
+        <h3>Judge dials</h3>
+        <div class="dials">
+          <div class="dial bias">
+            <label><span class="name">Bias</span> <span class="val" id="bnBiasVal">0.0</span></label>
+            <div class="rangewrap"><input type="range" id="bnBias" min="-1.5" max="1.5" step="0.1" value="0"><span class="zerotick" title="0 = unbiased"></span></div>
+            <div class="ends"><span>← harsher (rates good answers low)</span><span>more generous (rates weak high) →</span></div>
+          </div>
+          <div class="dial noise">
+            <label><span class="name">Noise</span> <span class="val" id="bnNoiseVal">0.0</span></label>
+            <input type="range" id="bnNoise" min="0" max="1.5" step="0.1" value="0">
+            <div class="ends"><span>perfectly consistent</span><span>very inconsistent</span></div>
+          </div>
+          <div class="dial">
+            <label>Test-set size <span class="val" id="bnNVal">40</span></label>
+            <input type="range" id="bnN" min="10" max="200" step="1" value="40">
+            <div class="ends"><span>10</span><span>200</span></div>
+          </div>
+          <div class="dial" style="display:flex;align-items:flex-end">
+            <div class="btnrow" style="margin:0">
+              <button class="btn primary" id="bnRejudge">Re-draw &amp; re-judge ↻</button>
+              <button class="btn ghost" id="bnReset">Reset dials</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dsrow" id="bnScaleRow" style="margin:.2rem 0 .15rem">
+        <button data-scale="raw" class="on">1–5 scores</button>
+        <button data-scale="linear">Linear 0–100</button>
+        <button data-scale="squared">Squared 0–100</button>
+      </div>
+      <p class="note" style="margin:0 0 .6rem">Same judge outputs; only the reporting scale changes. (RMSE below stays on the 1–5 rating scale, where the dials live.)</p>
+
+      <div class="readouts">
+        <div class="ro t"><div class="k">True mean score</div><div class="v" id="bnTrueV">3.80<small>/5</small></div><div class="sub">fixed — what we want to know</div></div>
+        <div class="ro m"><div class="k">Measured (all answers)</div><div class="v" id="bnMeasV">–</div><div class="sub">judge's mean over the whole pool</div></div>
+        <div class="ro g"><div class="k">Gap = measured − true</div><div class="v" id="bnGapV">–</div><div class="sub" id="bnGapSub">the bias you'd never see</div></div>
+      </div>
+
+      <div class="panel" style="margin-top:.6rem">
+        <h3 style="margin:.1rem 0 .7rem">RMSE — how bias and noise combine <span style="font-weight:400;color:#64748b;font-size:.85rem">(on the 1–5 rating scale, where the dials live)</span></h3>
+        <div style="display:flex;gap:1.1rem 1.6rem;flex-wrap:wrap;align-items:center">
+          <div style="flex:0 0 auto;text-align:center">
+            <canvas id="bnBars" width="260" height="220" style="width:260px;max-width:100%"></canvas>
+            <div class="note" style="margin:.15rem 0 0;font-size:.72rem">Both bars on the 1–5 rating scale — the gap between them is what noise adds.</div>
+          </div>
+          <div style="flex:1;min-width:16rem">
+            <p style="margin:.1rem 0 .45rem;font-size:1.05rem">
+              <strong style="color:var(--meas)">predicted RMSE</strong> = √(<span style="color:var(--bias)">bias</span>² +
+              <span style="color:var(--noise)">noise</span>²) = <strong id="bnRmseEq">–</strong></p>
+            <p style="margin:0 0 .6rem">measured RMSE over the sample:
+              <strong id="bnRmseV">–</strong></p>
+            <p class="note" style="margin:0">Bias and noise add <em>in quadrature</em>: RMSE² = mean&nbsp;error² + noise².
+              So the <strong style="color:var(--meas)">RMSE</strong> bar is never shorter than the
+              <strong style="color:var(--bias)">|mean error|</strong> bar — the extra height is the
+              <span style="color:var(--noise);font-weight:700">noise</span>. Slide
+              <span style="color:var(--bias);font-weight:700">bias</span> → both bars rise together; raise
+              <span style="color:var(--noise);font-weight:700">noise</span> → only RMSE grows (noise averages out of the
+              mean error). The <em>measured</em> RMSE can differ from the <em>predicted</em> √(bias²+noise²) because it's one
+              finite re-roll and ratings clamp at 1–5.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <strong>Try this:</strong> set noise to 0 and slide <span style="color:var(--bias)">bias</span> — the measured score
+        slides off 3.8 and <em>stays</em> there however many times you re-judge. Now set bias to 0 and raise
+        <span style="color:var(--noise)">noise</span>, then hit <em>Re-judge</em> a few times — because we average over the
+        <em>whole</em> pool, the number stays close to 3.8 (but <span style="color:var(--noise)">RMSE</span> climbs). At high
+        noise it drifts down a little, because ratings clamp at 5 and a top-heavy pool loses the upward jitter.
+        <strong>Noise mostly averages out of the mean; bias does not — and RMSE sees both.</strong>
+      </div>
+    </section>
+
+    <section class="lab-section">
+      <h2>What the judge did to each answer</h2>
+      <p>A sample of the pool. The grey bar is each answer's <em>true</em> quality; the amber bar is the
+         <em>judge's</em> rating. Bias slides every amber bar the same way; noise jitters each one independently — which is
+         why noise mostly cancels in the mean (except where ratings clamp at the 1–5 edges) while bias accumulates.</p>
+      <div class="panel" style="padding-top:.6rem">
+        <table class="items">
+          <thead><tr><th>Question</th><th>AI answer</th><th>True quality</th><th>Judge's score</th></tr></thead>
+          <tbody id="bnItems"></tbody>
+        </table>
+        <div class="legend">
+          <span><span class="sw" style="background:#94a3b8"></span>true quality</span>
+          <span><span class="sw" style="background:var(--meas)"></span>judge's rating (bias + noise applied)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== COMPOUNDS TAB (sampling noise + judge noise, bootstrap) ===================== -->
+  <div class="tabpane" id="tab-compounds">
+
+    <section class="lab-section">
+      <h2>Three sources compound: sampling noise, judge noise, and bias</h2>
+      <p>Now make it realistic. A real judge returns an <strong>integer 1–5 score</strong>, and three things move the number
+         you finally report: the judge is <strong>noisy</strong> (it sometimes flips a score up or down); the judge may be
+         <strong>biased</strong> (it systematically bumps a fraction of scores in one direction); and you only score a finite
+         <strong>sample</strong>. The three charts below pull these apart — the <strong>scores</strong> the judge handed out,
+         the per-answer <strong>error</strong> (its offset from zero is the bias, its width is the noise), and the
+         <strong>bootstrap</strong> interval for the mean (where the true average really sits). Watch how bias shifts the error
+         chart off zero — and how the 1–5 ceiling quietly trims it.</p>
+
+      <div class="panel">
+        <h3>Judge dials</h3>
+        <div class="dials">
+          <div class="dial bias">
+            <label><span class="name">Bias</span> <span class="val" id="cmpBiasVal">0%</span></label>
+            <div class="rangewrap"><input type="range" id="cmpBias" min="-1" max="1" step="0.05" value="0"><span class="zerotick" title="0 = unbiased"></span></div>
+            <div class="ends"><span>← harsher (−1)</span><span>more generous (+1) →</span></div>
+          </div>
+          <div class="dial noise">
+            <label><span class="name">Noise</span> <span class="val" id="cmpNoiseVal">0.0</span></label>
+            <input type="range" id="cmpNoise" min="0" max="1" step="0.2" value="0">
+            <div class="ends"><span>perfectly consistent</span><span>very inconsistent</span></div>
+          </div>
+          <div class="dial">
+            <label>Test-set size <span class="val" id="cmpNVal">200</span></label>
+            <input type="range" id="cmpN" min="10" max="200" step="1" value="200">
+            <div class="ends"><span>10</span><span>200</span></div>
+          </div>
+          <div class="dial" style="display:flex;align-items:flex-end">
+            <div class="btnrow" style="margin:0">
+              <button class="btn primary" id="cmpRejudge">Re-draw &amp; re-judge ↻</button>
+              <button class="btn ghost" id="cmpReset">Reset to zero uncertainty</button>
+            </div>
+          </div>
+        </div>
+        <p class="note" style="margin:.5rem 0 0">Bias is a <em>probability</em>: at +0.30 the judge bumps 30% of scores up by one
+           point. Noise fires random ±1 nudges on each score — the higher you dial, the more of them
+           land, so the scores scramble fast. Both cap at the 1–5 edges.</p>
+      </div>
+
+      <div class="dsrow" id="cmpScaleRow" style="margin:.2rem 0 .15rem">
+        <button data-scale="raw" class="on">1–5 scores</button>
+        <button data-scale="linear">Linear 0–100</button>
+        <button data-scale="squared">Squared 0–100</button>
+      </div>
+      <p class="note" style="margin:0 0 .6rem">Same judge outputs; only the reporting scale changes.</p>
+
+      <div class="readouts">
+        <div class="ro t"><div class="k">True mean</div><div class="v" id="cmpTrueV">3.80<small>/5</small></div><div class="sub">fixed — what we want to know</div></div>
+        <div class="ro m"><div class="k">Measured (this draw)</div><div class="v" id="cmpMeasV">–</div><div class="sub">noisy judge on a finite sample</div></div>
+        <div class="ro g"><div class="k">Gap = measured − true</div><div class="v" id="cmpGapV">–</div><div class="sub" id="cmpGapSub">the bias you actually get</div></div>
+      </div>
+
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:stretch">
+        <div class="panel" style="flex:1 1 340px;min-width:320px">
+          <h3 style="margin:.1rem 0 .6rem">1 · Distribution of the scores
+            <span style="font-weight:400;color:#64748b;font-size:.85rem">— the integer 1–5 scores the judge handed out</span></h3>
+          <div class="legend" id="cmpScoreKey"></div>
+          <canvas id="cmpScoreHist" width="900" height="300"></canvas>
+          <p class="cilabel" id="cmpScoreNote">–</p>
+        </div>
+
+        <div class="panel" style="flex:1 1 340px;min-width:320px">
+          <h3 style="margin:.1rem 0 .6rem">2 · Error on this reporting scale
+            <span style="font-weight:400;color:#64748b;font-size:.85rem">— map(score) − map(true) per answer; the error itself changes when the scale does</span></h3>
+          <div class="legend" id="cmpErrKey"></div>
+          <canvas id="cmpErrHist" width="900" height="300"></canvas>
+          <p class="cilabel" id="cmpErrNote">–</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin:.1rem 0 .6rem">3 · Bootstrap distribution of the mean
+          <span style="font-weight:400;color:#64748b;font-size:.85rem">— resample the observed scores thousands of times; where could the true mean be?</span></h3>
+        <div class="legend" id="cmpBootKey"></div>
+        <canvas id="cmpHist" width="900" height="300"></canvas>
+        <p class="cilabel" id="cmpCi">–</p>
+        <p class="cilabel" id="cmpCov">–</p>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ===================== BOOTSTRAPPING THE MEANS TAB (compounds, chart 3 only) ===================== -->
+  <div class="tabpane" id="tab-bootstrapmeans">
+
+    <section class="lab-section">
+      <h2>Bootstrapping the means</h2>
+      <p>Same noisy, biased judge on a finite <strong>sample</strong> — but here we focus on one question: given the scores
+         you observed, <strong>where could the true mean be?</strong> Resample those scores with replacement thousands of
+         times, take the mean each time, and read the spread. Turn up <strong>noise</strong> or shrink the <strong>test
+         set</strong> and the interval widens; slide <strong>bias</strong> and the whole interval slides off the truth — and
+         the bootstrap can't see it.</p>
+
+      <div class="panel">
+        <h3>Judge dials</h3>
+        <div class="dials">
+          <div class="dial bias">
+            <label><span class="name">Bias</span> <span class="val" id="bmBiasVal">0%</span></label>
+            <div class="rangewrap"><input type="range" id="bmBias" min="-1" max="1" step="0.05" value="0"><span class="zerotick" title="0 = unbiased"></span></div>
+            <div class="ends"><span>← harsher (−1)</span><span>more generous (+1) →</span></div>
+          </div>
+          <div class="dial noise">
+            <label><span class="name">Noise</span> <span class="val" id="bmNoiseVal">0.0</span></label>
+            <input type="range" id="bmNoise" min="0" max="1" step="0.2" value="0">
+            <div class="ends"><span>perfectly consistent</span><span>very inconsistent</span></div>
+          </div>
+          <div class="dial">
+            <label>Test-set size <span class="val" id="bmNVal">200</span></label>
+            <input type="range" id="bmN" min="10" max="200" step="1" value="200">
+            <div class="ends"><span>10</span><span>200</span></div>
+          </div>
+          <div class="dial" style="display:flex;align-items:flex-end">
+            <div class="btnrow" style="margin:0">
+              <button class="btn primary" id="bmRejudge">Re-draw &amp; re-judge ↻</button>
+              <button class="btn ghost" id="bmReset">Reset to zero uncertainty</button>
+            </div>
+          </div>
+        </div>
+        <p class="note" style="margin:.5rem 0 0">Bias is a <em>probability</em>: at +0.30 the judge bumps 30% of scores up by one
+           point. Noise fires random ±1 nudges on each score — the higher you dial, the more of them
+           land, so the scores scramble fast. Both cap at the 1–5 edges.</p>
+      </div>
+
+      <div class="dsrow" id="bmScaleRow" style="margin:.2rem 0 .15rem">
+        <button data-scale="raw" class="on">1–5 scores</button>
+        <button data-scale="linear">Linear 0–100</button>
+        <button data-scale="squared">Squared 0–100</button>
+      </div>
+      <p class="note" style="margin:0 0 .6rem">Same judge outputs; only the reporting scale changes.</p>
+
+      <div class="readouts">
+        <div class="ro t"><div class="k">True mean</div><div class="v" id="bmTrueV">3.80<small>/5</small></div><div class="sub">fixed — what we want to know</div></div>
+        <div class="ro m"><div class="k">Measured (this draw)</div><div class="v" id="bmMeasV">–</div><div class="sub">noisy judge on a finite sample</div></div>
+        <div class="ro g"><div class="k">Gap = measured − true</div><div class="v" id="bmGapV">–</div><div class="sub" id="bmGapSub">the bias you actually get</div></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin:.1rem 0 .6rem">Bootstrap distribution of the mean
+          <span style="font-weight:400;color:#64748b;font-size:.85rem">— resample the observed scores thousands of times; where could the true mean be?</span></h3>
+        <div class="legend" id="bmBootKey"></div>
+        <canvas id="bmHist" width="900" height="300"></canvas>
+        <p class="cilabel" id="bmCi">–</p>
+        <p class="cilabel" id="bmProb">–</p>
+        <p class="cilabel" id="bmCov">–</p>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ===================== TAKEAWAYS TAB ===================== -->
+  <div class="tabpane" id="tab-takeaways">
+
+    <section class="lab-section" id="judge-playbook">
+      <h2>Judge playbook</h2>
+      <p>
+        The simulator showed the failure modes. In a real eval, use a small trusted slice to
+        <strong>measure the judge</strong>, then improve the rubric and measure again. This is the practical loop:
+        audit → revise → re-audit → report the remaining uncertainty.
+      </p>
+      <div class="playtoc" aria-label="Judge playbook sections">
+        <button type="button" data-jump="measure-judge">Measure a judge</button>
+        <button type="button" data-jump="build-judge">Build a better judge</button>
+        <button type="button" data-jump="judge-example">Worked example</button>
+        <button type="button" data-jump="repo-tools">Use this repo</button>
+        <button type="button" data-jump="l2-takeaway">L3 takeaway</button>
+      </div>
+    </section>
+
+    <section class="lab-section" id="measure-judge">
+      <h2>Measure a judge</h2>
+      <p>Before trusting a judge on the full test set, audit it on examples where you have a trusted reference: human labels,
+         gold answers, or an expert score. Keep this slice separate from the final eval if you use it to tune the rubric.</p>
+      <div class="panel">
+        <h3>A minimal judge audit</h3>
+        <table class="pcm" style="width:100%">
+          <thead><tr><th>Check</th><th>How to measure it</th><th>What it tells you</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Trusted slice</strong></td><td>Label or score 50-200 representative examples with humans or references.</td><td>The yardstick. Without it, bias is invisible.</td></tr>
+            <tr><td><strong>Bias</strong></td><td>For scores: mean(judge - trusted). For labels: confusion matrix by true class.</td><td>Whether the judge is systematically generous, harsh, or tilted toward a label.</td></tr>
+            <tr><td><strong>Noise</strong></td><td>Re-run the same inputs K times; record score std, label flip rate, or within-1 agreement.</td><td>How much the judge wobbles when nothing else changed.</td></tr>
+            <tr><td><strong>Agreement</strong></td><td>Labels: accuracy, F1, Cohen's kappa. Scores: MAE, correlation, within +/-1 point.</td><td>Whether the judge tracks the trusted scorer closely enough for the decision.</td></tr>
+            <tr><td><strong>Segments</strong></td><td>Repeat the above by class, length, language, difficulty, model source, and safety-critical cases.</td><td>Where a good aggregate hides a bad judge.</td></tr>
+            <tr><td><strong>Calibration</strong></td><td>Fit a simple correction on part of the trusted slice, then test it on a held-out part.</td><td>Whether raw judge scores can be mapped onto the trusted scale.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Calibration does not make the judge objective. It tells you how the judge lines up with a trusted slice,
+        and where it still fails.</p>
+    </section>
+
+    <section class="lab-section" id="build-judge">
+      <h2>Build a better judge</h2>
+      <p>A good judge is a measurement instrument. Treat the rubric, prompt, examples, output schema, and model choice as
+         versioned parts of that instrument.</p>
+      <div class="playgrid">
+        <div class="panel">
+          <h3>Rubric design</h3>
+          <table class="pcm" style="width:100%">
+            <tbody>
+              <tr><td><strong>Define the construct</strong></td><td>Name what quality means for this task; do not mix unrelated goals in one score.</td></tr>
+              <tr><td><strong>Anchor the scale</strong></td><td>Say what 1, 3, and 5 mean; include short examples at each level.</td></tr>
+              <tr><td><strong>Separate dimensions</strong></td><td>Score correctness, completeness, safety, and fluency separately when they can disagree.</td></tr>
+              <tr><td><strong>Say what not to reward</strong></td><td>For example: do not reward length, confidence, formatting, or model identity.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Prompt and workflow</h3>
+          <table class="pcm" style="width:100%">
+            <tbody>
+              <tr><td><strong>Use structured output</strong></td><td>Return JSON: score, evidence, failure mode, confidence, and optional abstain.</td></tr>
+              <tr><td><strong>Require evidence</strong></td><td>Ask for the criterion or short quote that justifies the score.</td></tr>
+              <tr><td><strong>Blind the judge</strong></td><td>Hide model identity; randomize A/B order for comparisons.</td></tr>
+              <tr><td><strong>Version and re-audit</strong></td><td>Every prompt/model/rubric change creates a new judge that needs a new calibration check.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="lab-section" id="judge-example">
+      <h2>Worked example</h2>
+      <p>Suppose you judge support replies on a 1-5 scale. You build a trusted slice of 120 replies scored by humans, then
+         run the LLM judge on the same replies.</p>
+      <div class="panel">
+        <h3>Audit readout</h3>
+        <table class="pcm" style="width:100%">
+          <thead><tr><th>Readout</th><th class="num">Result</th><th>Decision</th></tr></thead>
+          <tbody>
+            <tr><td>Human mean</td><td class="num">3.8</td><td>The target scale.</td></tr>
+            <tr><td>Raw judge mean</td><td class="num">4.2</td><td>Bias = +0.4 points; the judge is generous.</td></tr>
+            <tr><td>Mean absolute error</td><td class="num">0.6</td><td>Typical miss is a little over half a point.</td></tr>
+            <tr><td>Within +/-1 point</td><td class="num">88%</td><td>Acceptable for aggregate tracking, weak for per-item decisions.</td></tr>
+            <tr><td>Rerun std</td><td class="num">0.25</td><td>Noise is smaller than bias; fix the rubric first.</td></tr>
+            <tr><td>Length correlation</td><td class="num">+0.35</td><td>Verbosity bias: long replies get rewarded.</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Next move: add "do not reward length," add anchor examples for terse but correct replies, then re-audit
+          on a held-out trusted slice. If needed, report both raw and calibrated scores, for example
+          <code>calibrated = 0.82 * raw + 0.37</code>.</p>
+      </div>
+      <div class="panel">
+        <h3>Example rubric skeleton</h3>
+        <pre class="prompt-example">You are judging whether a support reply resolves the customer's need.
+
+Score 1-5:
+1 = wrong, unsafe, or unrelated
+3 = partially helpful but incomplete
+5 = fully resolves the issue, accurate, concise
+
+Do not reward length. Reward only correctness, completeness, and usefulness.
+If the answer lacks enough information, say so.
+
+Return JSON:
+{
+  "score": 1-5,
+  "evidence": "short criterion or quote used",
+  "failure_mode": "none|wrong|incomplete|unsafe|unclear",
+  "confidence": "low|medium|high"
+}</pre>
+      </div>
+    </section>
+
+    <section class="lab-section" id="repo-tools">
+      <h2>Use this repo</h2>
+      <p><strong>The code path.</strong> The lab notebook reproduces these numbers on real LLM judges — three rubrics over
+         the same answers, re-run variance at <code>temperature&gt;0</code>, and the bootstrap on your own scored answers.</p>
+      <div class="btnrow">
+        <a class="btn primary" href="https://github.com/reliableai/ai-ready-engineer-eval/blob/main/playground/llm_as_a_judge/notebook.ipynb" target="_blank" rel="noopener">Open the notebook ↗</a>
+        <a class="btn ghost" href="https://github.com/reliableai/ai-ready-engineer-eval/tree/main/playground/llm_as_a_judge" target="_blank" rel="noopener">Lab folder &amp; README ↗</a>
+      </div>
+      <p style="margin-top:1rem"><strong>Prompts.</strong> The <code>prompts/</code> folder contains strict, lenient, and 1-5
+         score rubrics you can compare and modify.</p>
+      <p style="margin-top:1rem"><strong>Bootstrap calculator.</strong> Paste your own scores (0-100) and it reports the
+         95% credible interval for the true mean and the chance it clears 80 / 90 / 95 / 99 — the same bootstrap as chart 3,
+         on your data.</p>
+      <div class="btnrow">
+        <a class="btn ghost" href="../bootstrap_calculator/index.html" target="_blank" rel="noopener">Open the bootstrap calculator ↗</a>
+      </div>
+      <p style="margin-top:1.2rem"><strong>The lesson.</strong> This lab belongs to Lesson 7 — the full lesson page has the
+         video, what we cover, and the skills you unlock.</p>
+      <div class="btnrow">
+        <a class="btn ghost" href="https://reliableai.github.io/ai-ready-engineer-eval/lesson_3/judge.html">Lesson 7 page</a>
+        <a class="btn ghost" href="https://reliableai.github.io/ai-ready-engineer-eval/index.html">Course home</a>
+      </div>
+      <p style="margin-top:1.2rem"><strong>Next judge audit.</strong> Lesson 6 picks this thread back up: verbosity bias,
+         position bias, and judge-vs-human calibration.</p>
+    </section>
+
+    <section class="lab-section" id="l2-takeaway">
+      <h2>The L3 takeaway</h2>
+      <ol>
+        <li><strong>Bias and noise are different defects.</strong> Noise is random and mostly averages out; bias is
+          systematic and persists. (One catch from the compounds tab: on a bounded, top-heavy scale like 1–5, heavy noise
+          hitting the ceiling can itself add a small downward bias.) Telling them apart is the first move.</li>
+        <li><strong>Both widen your real uncertainty — differently.</strong> Noise widens the interval you can measure.
+          Bias adds an offset your interval can't even see, so the truth may lie outside a confident-looking CI.</li>
+        <li><strong>They call for different fixes.</strong> Reduce <em>noise</em> by averaging repeats, lowering temperature,
+          and writing a crisper rubric. Reduce <em>bias</em> only by auditing the judge against trusted labels — calibrating
+          a "judge of judges" (the thread we pick up in L6).</li>
+        <li><strong>Label or number, the same two defects apply.</strong> And with no ground truth you can only see
+          <em>noise</em> (re-run consistency) — measuring <em>bias</em> always needs a trusted slice to calibrate against.</li>
+      </ol>
+    </section>
+
+  </div>
+</main>
+
+<!-- real LLM predictions from the L1 lab bundle (built there by build_predictions.py);
+     timestamped so regenerated predictions always load (no stale browser cache) -->
+<script>document.write('<scr' + 'ipt src="../basic_classification_and_noise/predictions/data.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- real lawsuit scorecards (built by build_lawsuit_scorecards.py --bundle); bundled as JS so the lab works offline (file://) -->
+<script>document.write('<scr' + 'ipt src="lawsuits/data.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<script>
+// ===========================================================================
+// Tab switching. Hash-routable: #classifier / #scorecard / #biasnoise / #compounds / #bootstrapmeans / #takeaways.
+// ===========================================================================
+const TABS = ["classifier","scorecard","biasnoise","compounds","bootstrapmeans","takeaways"];   // (old "classify" labels/calibration tab removed)
+function showTab(name){
+  if(!TABS.includes(name)) name = "classifier";
+  TABS.forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("active", t===name);
+    document.getElementById("tabbtn-"+t).classList.toggle("active", t===name);
+  });
+  // (re)render now that the pane (and any canvas) is visible and has a width
+  if(name==="scorecard") renderSampleNoise();
+  if(name==="biasnoise") renderPop();
+  if(name==="compounds")  renderBoot();
+  if(name==="bootstrapmeans") renderBM();
+  if(history.replaceState) history.replaceState(null,"","#"+name);
+}
+document.querySelectorAll(".tabbar button").forEach(b=>
+  b.addEventListener("click", ()=>showTab(b.dataset.tab)));
+document.querySelectorAll("[data-jump]").forEach(b=>
+  b.addEventListener("click", ()=>{
+    const target = document.getElementById(b.dataset.jump);
+    if(target) target.scrollIntoView({ behavior:"smooth", block:"start" });
+  }));
+
+// ===========================================================================
+// CLASSIFIER tab: the gen-AI classifier demo (moved from the L1 lab).
+// Real precomputed LLM predictions from ../basic_classification_and_noise/
+// predictions/data.js: items have {text, truth:[..], llm:[..]}.
+// ===========================================================================
+const L1DATA = window.L1_PREDICTIONS || {};
+const GEN_ORDER = ["bitext","rotten_tomatoes"];
+const GEN_TITLE = {bitext:"Bitext — support tickets (5 classes)",
+                   rotten_tomatoes:"Rotten Tomatoes — sentiment (binary)"};
+const escH = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const pctG = x => isNaN(x) ? "—" : (100*x).toFixed(1)+"%";
+const labOf = it => it.truth[0]||"∅";
+const llmOf = it => it.llm[0]||"∅";
+
+let gds = GEN_ORDER.find(k=>L1DATA[k]);
+let gIdx = [];
+let gShow = "miss";   // browse filter: "miss" | "ok"
+
+function gSample(n, size){
+  const idx=[...Array(n).keys()];
+  for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  return idx.slice(0, Math.min(size,n));
+}
+
+function gEval(sample, labels){
+  let correct=0; const cm={}; labels.forEach(a=>{ cm[a]={}; });
+  sample.forEach(it=>{ const t=labOf(it), p=llmOf(it); if(t===p)correct++; cm[t]=cm[t]||{}; cm[t][p]=(cm[t][p]||0)+1; });
+  const per=labels.map(l=>{
+    let TP=0,FP=0,FN=0,sup=0;
+    sample.forEach(it=>{ const t=labOf(it), p=llmOf(it); if(t===l)sup++;
+      if(p===l&&t===l)TP++; else if(p===l)FP++; else if(t===l)FN++; });
+    return {l, sup, prec:(TP+FP)?TP/(TP+FP):NaN, rec:(TP+FN)?TP/(TP+FN):NaN};
+  });
+  return {n:sample.length, correct, acc:correct/sample.length, cm, per};
+}
+
+function gCmTable(cm, labels){
+  const abbr = s => s.length>10 ? s.slice(0,9)+"…" : s;
+  // ∅ = the judge gave no/empty answer (it.llm is []). Show it as an extra column/row when it
+  // occurs, so those misses appear in the matrix instead of silently dropping out of it.
+  const cols = labels.slice(), rows = labels.slice();
+  if(labels.some(a=>cm[a]&&cm[a]["∅"])) cols.push("∅");
+  if(cm["∅"]) rows.push("∅");
+  const head = "<tr><th>actual ＼ pred</th>"+cols.map(l=>`<th title="${escH(l)}">${escH(abbr(l))}</th>`).join("")+"</tr>";
+  const body = rows.map(a=>{
+    const tds = cols.map(p=>{ const v=(cm[a]&&cm[a][p])||0; return `<td${a===p?' class="diag"':''}>${v||""}</td>`; }).join("");
+    return `<tr><th title="${escH(a)}">${escH(abbr(a))}</th>${tds}</tr>`;
+  }).join("");
+  const note = cols.includes("∅") ? `<p class="note" style="margin:.3rem 0 0">∅ = the judge returned no label.</p>` : "";
+  return `<h4 style="margin:.1rem 0 .3rem">Confusion matrix</h4><table class="cmx">${head}${body}</table>${note}`;
+}
+
+function gPromptText(d){
+  const shots=d.items.slice(0,3).map(it=>`INPUT: ${it.text}\nCLASS: ${labOf(it)}`).join("\n\n");
+  return `You are a text classifier. Read the input and reply with EXACTLY ONE class.
+
+Allowed classes: ${d.labels.join(", ")}.
+Rule: pick one class from the list — never invent a new one.
+
+Here are some labelled examples:
+${shots}
+
+Now classify this input. Reply with only the class name:
+INPUT: {{ the text to classify }}
+CLASS:`;
+}
+
+function renderGen(){
+  const panel=document.getElementById("genaiPanel");
+  if(!gds){
+    panel.innerHTML = `<h3>Gen-AI classifier on the L1 datasets</h3>
+      <p class="note" style="color:var(--bad);font-weight:600">Could not load the prediction bundle
+      (../basic_classification_and_noise/predictions/data.js). The demo needs the L1 lab's precomputed
+      LLM predictions — rebuild them with build_predictions.py in that folder.</p>`;
+    return;
+  }
+  const d=L1DATA[gds];
+  // dataset toggle
+  document.getElementById("gdsrow").innerHTML = GEN_ORDER.map(k=>
+    `<button data-ds="${k}" class="${k===gds?"on":""}" ${L1DATA[k]?"":"disabled"}>${GEN_TITLE[k]}</button>`).join("");
+  document.querySelectorAll("#gdsrow button").forEach(b=>
+    b.onclick=()=>{ gds=b.dataset.ds; gIdx=[]; renderGen(); });
+  document.getElementById("gprompt").textContent = gPromptText(d);
+
+  const size=Math.max(10, Math.min(d.n, parseInt(document.getElementById("gsize").value)||100));
+  if(gIdx.length!==size) gIdx=gSample(d.n, size);
+  const sample=gIdx.map(i=>d.items[i]);
+  const m=gEval(sample, d.labels);
+  document.getElementById("gnote").innerHTML = `sampled <b>${m.n}</b> of ${d.n} cases`;
+
+  const perRows=m.per.map(r=>
+    `<tr><td>${escH(r.l)}</td><td class="num">${r.sup}</td><td class="num">${pctG(r.prec)}</td><td class="num">${pctG(r.rec)}</td></tr>`).join("");
+  document.getElementById("gmetrics").innerHTML = `
+    <div class="gacc">${pctG(m.acc)} <small>accuracy (${m.correct}/${m.n})</small></div>
+    <table class="pcm">
+      <tr><th>Class</th><th class="num">n</th><th class="num">Precision</th><th class="num">Recall</th></tr>
+      ${perRows}
+    </table>`;
+  document.getElementById("gcm").innerHTML = gCmTable(m.cm, d.labels);
+
+  // browse this draw: the misses (with the dominant confusion) or the correct ones
+  const misses=sample.filter(it=>labOf(it)!==llmOf(it));
+  const correct=sample.filter(it=>labOf(it)===llmOf(it));
+  const rows = gShow==="miss" ? misses : correct;
+  document.getElementById("gmiss").innerHTML = rows.slice(0,6).map(it=>{
+    const ok=labOf(it)===llmOf(it);
+    return `<tr>
+      <td>${escH(it.text)}</td>
+      <td><span class="lab">${escH(labOf(it))}</span></td>
+      <td><span class="lab">${escH(llmOf(it))}</span> <span class="mark ${ok?"ok":"bad"}">${ok?"✓":"✗"}</span></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="3" class="note">${gShow==="miss"
+    ? "no misses in this draw — spin again" : "no correct classifications in this draw — spin again"}</td></tr>`;
+  if(gShow==="miss"){
+    let leanNote="";
+    if(misses.length){
+      const pairs={};
+      misses.forEach(it=>{ const k=`${labOf(it)} → ${llmOf(it)}`; pairs[k]=(pairs[k]||0)+1; });
+      const top=Object.entries(pairs).sort((a,b)=>b[1]-a[1])[0];
+      leanNote = ` Most common confusion: <b>true ${escH(top[0])}</b> (${top[1]}×) — a lean you can only see because we hold the truth.`;
+    }
+    document.getElementById("gmissnote").innerHTML =
+      `<b>${misses.length}</b> misses in this draw of ${m.n}${misses.length>6?" (showing 6)":""}.${leanNote}`;
+  } else {
+    document.getElementById("gmissnote").innerHTML =
+      `<b>${correct.length}</b> classified correctly in this draw of ${m.n}${correct.length>6?" (showing 6)":""}.`;
+  }
+}
+document.getElementById("gspin").addEventListener("click", ()=>{ gIdx=[]; renderGen(); });
+document.getElementById("gsize").addEventListener("change", ()=>{ gIdx=[]; renderGen(); });
+document.querySelectorAll("#gshowrow button").forEach(b=>
+  b.addEventListener("click", ()=>{ gShow=b.dataset.show;
+    document.querySelectorAll("#gshowrow button").forEach(x=>x.classList.toggle("on", x===b));
+    renderGen(); }));
+renderGen();
+
+// ===========================================================================
+// SCORE simulator: the frozen-pool bias/noise model, on the 1-5 scorecard scale.
+// Each answer has a KNOWN true quality q in [1,5].
+// A judge rates it:  rating = clamp(q + bias + noise*z, 1, 5),  z ~ N(0,1).
+//   - bias  shifts every rating the same way  -> systematic offset
+//   - noise adds independent per-rating jitter -> random spread
+// True mean score of the pool = mean(q) = 3.8 / 5, by construction.
+// ===========================================================================
+const clamp15 = x => x<1?1 : x>5?5 : x;
+const Q = { great:4.4, good:4.1, weak:2.8, bad:2.2 };
+const POOL = [
+  ["What is the capital of France?","Paris","great"],
+  ["What is the capital of France?","Paris, the City of Light","good"],
+  ["What does CPU stand for?","Central Processing Unit","great"],
+  ["What does CPU stand for?","It stands for the Central Processing Unit.","good"],
+  ["Speed of light in vacuum?","299,792,458 m/s","great"],
+  ["Speed of light in vacuum?","approximately 300,000 km/s","good"],
+  ["Chemical formula for water?","H2O","great"],
+  ["Chemical formula for water?","H₂O — two hydrogens and an oxygen","good"],
+  ["Who wrote Hamlet?","William Shakespeare","great"],
+  ["Who wrote Hamlet?","Shakespeare wrote it","good"],
+  ["Largest planet in the Solar System?","Jupiter","great"],
+  ["Largest planet in the Solar System?","That would be Jupiter, the gas giant.","good"],
+  ["Year WWII ended?","1945","great"],
+  ["Year WWII ended?","It ended in 1945.","good"],
+  ["How many continents are there?","Seven","great"],
+  ["How many continents are there?","There are 7 continents on Earth.","good"],
+  ["Square root of 144?","12","great"],
+  ["Author of 'Pride and Prejudice'?","Jane Austen","great"],
+  ["Symbol for gold on the periodic table?","Au","great"],
+  ["Capital of Japan?","Tokyo","great"],
+  ["Boiling point of water at sea level?","100°C","great"],
+  ["Number of sides on a hexagon?","Six","great"],
+  ["Currency of the United Kingdom?","Pound sterling","great"],
+  ["Planet known as the Red Planet?","Mars","great"],
+  ["Fastest land animal?","The cheetah","great"],
+  ["Who painted the Mona Lisa?","Leonardo da Vinci","great"],
+  ["Capital of Australia?","Canberra","great"],
+  ["Gas plants absorb for photosynthesis?","Carbon dioxide","great"],
+  // wrong but plausible — a generous judge rates these too high
+  ["What is the capital of France?","Marseille, a major French city","weak"],
+  ["Speed of light in vacuum?","about 150,000 km/s","weak"],
+  ["Who wrote Hamlet?","Christopher Marlowe","weak"],
+  ["Largest planet in the Solar System?","Saturn","weak"],
+  ["Year WWII ended?","1946","weak"],
+  ["Square root of 144?","14","weak"],
+  ["Capital of Australia?","Sydney","weak"],
+  ["Symbol for gold on the periodic table?","Ag","weak"],
+  // clearly wrong
+  ["What does CPU stand for?","Central Pizza Unit","bad"],
+  ["Chemical formula for water?","CO2","bad"],
+  ["Capital of Japan?","Berlin","bad"],
+  ["Fastest land animal?","The garden snail","bad"],
+];
+// counts: 20 great + 8 good + 8 weak + 4 bad = 40
+//   mean = (20*4.4 + 8*4.1 + 8*2.8 + 4*2.2)/40 = 152/40 = 3.8 exactly
+const ITEMS = POOL.map(r=>({q:r[0], a:r[1], type:r[2], quality:Q[r[2]]}));
+const TRUE_MEAN = ITEMS.reduce((s,it)=>s+it.quality,0)/ITEMS.length; // 3.8
+
+function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function rating(quality, bias, sd){ return clamp15(quality + bias + (sd>0? sd*gauss():0)); }
+
+const fmt  = x => x.toFixed(1);                      // a 1..5 score
+const fmt2 = x => x.toFixed(2);                      // a small points value (gap, RMSE, CI width)
+const wbar = v => ((v-1)/4*100).toFixed(0);         // 1..5 -> 0..100% bar width
+const mean = a => a.reduce((s,x)=>s+x,0)/a.length;
+const std  = a => { const m=mean(a); return Math.sqrt(mean(a.map(x=>(x-m)**2))); };
+const $ = id => document.getElementById(id);
+function drawTestSet(n){ const a=[]; for(let k=0;k<n;k++) a.push(Math.floor(Math.random()*ITEMS.length)); return a; }
+
+// ---------------------------------------------------------------------------
+// BIAS & NOISE tab: score the WHOLE pool (no sampling). Noise averages out over
+// all 40 answers; bias shifts the mean and stays. Re-judge just re-rolls noise.
+// ---------------------------------------------------------------------------
+const bn = { bias:$("bnBias"), noise:$("bnNoise"), n:$("bnN"),
+  biasVal:$("bnBiasVal"), noiseVal:$("bnNoiseVal"), nVal:$("bnNVal"),
+  trueV:$("bnTrueV"), measV:$("bnMeasV"), gapV:$("bnGapV"), gapSub:$("bnGapSub"),
+  rmseV:$("bnRmseV"), rmseEq:$("bnRmseEq"), bars:$("bnBars"), items:$("bnItems") };
+let bnScale = "raw";
+let bnRatings = null, bnTrues = null;     // last rolled sample (1-5) + its true qualities; scale switch re-maps, no re-roll
+let bnIdx = [];                           // sampled indices into ITEMS (with replacement)
+const bnSample = n => { const a=[]; for(let k=0;k<n;k++) a.push(Math.floor(Math.random()*ITEMS.length)); return a; };
+
+// Two-bar comparison on the 1-5 rating scale: RMSE (total typical miss) vs |mean error| (systematic part).
+// RMSE >= |mean error| always; the height gap is the noise contribution.
+function drawRmseBars(cv, rmse, meAbs){
+  const ctx=cv.getContext("2d");
+  const cssW=cv.clientWidth||260, cssH=220, dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+  const padT=26, padB=30, H=cssH-padT-padB, baseY=padT+H, W=cssW, YMAX=2.5;   // 2.5 rating pts covers the dial range
+  const draw=(cx,val,color,label)=>{
+    const h=Math.min(1,val/YMAX)*H, bw=W*0.24;
+    ctx.fillStyle=color; ctx.fillRect(cx-bw/2, baseY-h, bw, h);
+    ctx.fillStyle="#1e293b"; ctx.font="bold 14px system-ui,sans-serif"; ctx.textAlign="center"; ctx.fillText(val.toFixed(2), cx, baseY-h-7);
+    ctx.fillStyle="#64748b"; ctx.font="12px system-ui,sans-serif"; ctx.fillText(label, cx, baseY+18);
+  };
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(W*0.06,baseY); ctx.lineTo(W*0.94,baseY); ctx.stroke();
+  draw(W*0.32, rmse, "#b45309", "RMSE");
+  draw(W*0.68, meAbs, "#7c3aed", "|mean error|");
+}
+
+// Draw a sample of n answers, roll the judge over them, then render the active scale.
+function renderPop(){
+  const bias=parseFloat(bn.bias.value), sd=parseFloat(bn.noise.value), n=parseInt(bn.n.value);
+  bn.biasVal.textContent=(bias>0?"+":"")+fmt(bias);
+  bn.noiseVal.textContent=fmt(sd);
+  bn.nVal.textContent=n;
+  if(bnIdx.length!==n) bnIdx=bnSample(n);
+  bnTrues=bnIdx.map(i=>ITEMS[i].quality);
+  bnRatings=bnIdx.map(i=>rating(ITEMS[i].quality,bias,sd));
+  bnRender();
+}
+
+// RENDER on the active reporting scale (no re-roll). Readouts + per-item bars rescale by
+// mapping each answer then averaging; the RMSE/quadrature panel stays on the 1-5 rating scale.
+function bnRender(){
+  if(!bnRatings) return;
+  const sc=SCALES[bnScale], f=x=>x.toFixed(sc.dec), g=x=>(x>=0?"+":"")+x.toFixed(sc.gapDec), r=bnRatings, tq=bnTrues;
+  const trueMean=mean(ITEMS.map(it=>sc.map(it.quality))), measured=mean(r.map(sc.map)), gap=measured-trueMean;
+  bn.trueV.innerHTML=f(trueMean)+`<small>${sc.unit}</small>`;
+  bn.measV.innerHTML=f(measured)+`<small>${sc.unit}</small>`;
+  bn.gapV.textContent=g(gap)+" pts";
+  const tol=bnScale==="raw"?0.03:0.5;
+  bn.gapSub.textContent=Math.abs(gap)<tol?"≈ on target":(gap>0?"judge over-rates":"judge under-rates");
+  // RMSE + mean error on the 1-5 rating scale, per answer vs its OWN true quality (the focus of this tab).
+  // RMSE² = mean error² + variance, so RMSE ≥ |mean error| — the height gap between the bars is the noise.
+  const bias=parseFloat(bn.bias.value), sd=parseFloat(bn.noise.value);
+  const errs=r.map((rv,i)=>rv-tq[i]);
+  const meanErr=mean(errs), rmse=Math.sqrt(mean(errs.map(e=>e*e))), predicted=Math.hypot(bias,sd);
+  bn.rmseV.innerHTML=fmt2(rmse)+"<small> pts</small>";
+  bn.rmseEq.textContent=`√(${fmt2(Math.abs(bias))}² + ${fmt2(sd)}²) = ${fmt2(predicted)} pts`;
+  drawRmseBars(bn.bars, rmse, Math.abs(meanErr));
+  // per-item bars on the active scale (the sample), fill = mapped value as a fraction of the scale's span
+  const pct=v=>(Math.max(0,Math.min(1, bnScale==="raw" ? (v-1)/4 : sc.map(v)/100))*100).toFixed(0);
+  bn.items.innerHTML=bnIdx.slice(0,14).map((idx,k)=>{
+    const it=ITEMS[idx], rv=r[k];
+    return `<tr><td>${it.q}</td><td>${it.a}</td>
+      <td><span class="bar truebar"><i style="width:${pct(it.quality)}%"></i></span></td>
+      <td><span class="bar scorebar"><i style="width:${pct(rv)}%"></i></span><span class="scoreval">${f(sc.map(rv))}</span></td></tr>`;
+  }).join("");
+}
+bn.bias.addEventListener("input", renderPop);
+bn.noise.addEventListener("input", renderPop);
+bn.n.addEventListener("input", renderPop);                                        // resamples when the size changes
+$("bnRejudge").addEventListener("click", ()=>{ bnIdx=bnSample(parseInt(bn.n.value)); renderPop(); });
+$("bnReset").addEventListener("click", ()=>{ bn.bias.value=0; bn.noise.value=0; bn.n.value=40; bnIdx=bnSample(40); renderPop(); });
+$("bnScaleRow").querySelectorAll("button").forEach(b=> b.addEventListener("click", ()=>{
+  bnScale=b.dataset.scale;
+  $("bnScaleRow").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  bnRender();                                          // re-map the same ratings; no re-roll
+}));
+
+// ---------------------------------------------------------------------------
+// COMPOUNDS tab: finite sample + noisy judge. The bootstrap interval reflects
+// BOTH sampling noise and judge noise compounded; bias shifts it invisibly.
+// ---------------------------------------------------------------------------
+const cmp = { bias:$("cmpBias"), noise:$("cmpNoise"), n:$("cmpN"),
+  biasVal:$("cmpBiasVal"), noiseVal:$("cmpNoiseVal"), nVal:$("cmpNVal"),
+  trueV:$("cmpTrueV"), measV:$("cmpMeasV"), gapV:$("cmpGapV"), gapSub:$("cmpGapSub"),
+  scoreHist:$("cmpScoreHist"), scoreNote:$("cmpScoreNote"), scoreKey:$("cmpScoreKey"),
+  errHist:$("cmpErrHist"), errNote:$("cmpErrNote"), errKey:$("cmpErrKey"),
+  hist:$("cmpHist"), ci:$("cmpCi"), cov:$("cmpCov"), bootKey:$("cmpBootKey") };
+
+// DISCRETE judge model (this tab only — the bias/noise tab stays continuous). A real judge returns
+// an INTEGER 1-5 score. Pool of 40 answers with integer TRUE scores; 4 is the mode, fives below fours.
+// Mean is exactly 3.8: 10x5 + 18x4 + 8x3 + 2x2 + 2x1 = 152/40.
+const CMP_POOL = [].concat(Array(10).fill(5), Array(18).fill(4), Array(8).fill(3), Array(2).fill(2), Array(2).fill(1));
+const CMP_TRUE = CMP_POOL.reduce((a,b)=>a+b,0)/CMP_POOL.length;       // 3.8
+
+// THREE REPORTING SCALES. The judge's per-answer 1-5 score is identical on every tab; only the
+// reporting FUNCTION changes. Every number (true, measured, gap, bootstrap, error) is computed by
+// mapping each answer THEN averaging — never by transforming the 1-5 mean (that is the whole point).
+const SCALES = {
+  raw:     { label:"1-5",     map:s=>s,                unit:"/5",   lo:0.5, hi:5.5, sBin:1,  sTicks:[1,2,3,4,5],
+             eLo:-3.5, eHi:3.5, eBin:1,  eTicks:[-3,-2,-1,0,1,2,3], dec:2, gapDec:2 },
+  linear:  { label:"Linear",  map:s=>(s-1)/4*100,      unit:"/100", lo:0, hi:100, sBin:10, sTicks:[0,25,50,75,100],
+             eLo:-100, eHi:100, eBin:10, eTicks:[-100,-50,0,50,100], dec:0, gapDec:1 },
+  squared: { label:"Squared", map:s=>((s-1)/4)**2*100, unit:"/100", lo:0, hi:100, sBin:10, sTicks:[0,25,50,75,100],
+             eLo:-100, eHi:100, eBin:10, eTicks:[-100,-50,0,50,100], dec:0, gapDec:1 },
+};
+for(const k in SCALES) SCALES[k].trueMean = mean(CMP_POOL.map(SCALES[k].map));   // true pool under each scale
+let cmpScale = "raw";
+
+// Bias = PROBABILITY of a systematic +/-1 bump (slider -1..1; sign picks direction). Then clamp to 1..5.
+function cmpRate(t, bias, noise){
+  // Noise = probability each of up to 4 +/-1 nudges fires. Dialing up scrambles fast. Zero-mean before clamp.
+  let s = t;
+  for(let k=0;k<4;k++) if(Math.random()<noise) s += (Math.random()<0.5 ? -1 : 1);
+  if(bias!==0 && Math.random() < Math.abs(bias)) s += (bias>0 ? 1 : -1);
+  return s<1 ? 1 : s>5 ? 5 : s;                                       // integer score, 1..5
+}
+function cmpSample(n){ const a=[]; for(let k=0;k<n;k++) a.push(Math.floor(Math.random()*CMP_POOL.length)); return a; }
+
+let cmpIdx = cmpSample(200);
+let cmpBaseline = true;     // narrative starts at zero uncertainty (whole pool, perfect judge)
+let cmpData = null;         // raw 1-5 sample + 3 bootstrap stat sets; render maps it per scale (no re-roll)
+
+// ROLL the judge: draw the sample, bootstrap ONCE, mapping each resampled score on all three scales
+// per replicate (so switching tabs never re-rolls). Then render the active scale.
+function renderBoot(){
+  const bias=parseFloat(cmp.bias.value), sd=parseFloat(cmp.noise.value), n=parseInt(cmp.n.value);
+  cmp.biasVal.textContent=(bias>0?"+":"")+Math.round(bias*100)+"%";
+  cmp.noiseVal.textContent=fmt(sd);
+  if(cmpBaseline){
+    cmp.nVal.textContent="all";
+    cmpData={ scores:CMP_POOL.slice(), trues:CMP_POOL.slice(), baseline:true,
+      stats:{ raw:[SCALES.raw.trueMean], linear:[SCALES.linear.trueMean], squared:[SCALES.squared.trueMean] } };
+    cmpRenderScale();
+    return;
+  }
+  cmp.nVal.textContent=n;
+  if(cmpIdx.length!==n) cmpIdx=cmpSample(n);
+  const trues=cmpIdx.map(i=>CMP_POOL[i]);
+  const scores=cmpIdx.map(i=>cmpRate(CMP_POOL[i], bias, sd));
+  // Standard bootstrap: resample the OBSERVED scores with replacement (do NOT re-judge), so the
+  // distribution is centered on this draw's mean — the sample-mean line sits in the middle. Judge
+  // noise still widens it, because a noisier judge produced a wider spread of those observed scores.
+  const B=2000, sR=new Float64Array(B), sL=new Float64Array(B), sS=new Float64Array(B);
+  for(let b=0;b<B;b++){ let r=0,l=0,q=0;
+    for(let k=0;k<n;k++){ const sc=scores[Math.floor(Math.random()*n)];
+      r+=sc; l+=SCALES.linear.map(sc); q+=SCALES.squared.map(sc); }
+    sR[b]=r/n; sL[b]=l/n; sS[b]=q/n; }
+  const srt=a=>Array.from(a).sort((x,y)=>x-y);
+  cmpData={ scores, trues, baseline:false, stats:{ raw:srt(sR), linear:srt(sL), squared:srt(sS) } };
+  cmpRenderScale();
+}
+
+// RENDER the active scale from stored raw data — no randomness, so switching scale or resizing
+// never re-rolls the judge. Maps each answer, then averages.
+function cmpRenderScale(){
+  if(!cmpData) return;
+  const sc=SCALES[cmpScale], f=x=>x.toFixed(sc.dec), g=x=>(x>=0?"+":"")+x.toFixed(sc.gapDec);
+  const mScores=cmpData.scores.map(sc.map), mTrues=cmpData.trues.map(sc.map);
+  const trueMean=sc.trueMean, measured=mean(mScores), gap=measured-trueMean;
+  const errs=mScores.map((v,i)=>v-mTrues[i]);
+  const meanErr=cmpData.baseline?0:mean(errs);
+  const bias=parseFloat(cmp.bias.value);
+  // readout cards (all three on the active scale)
+  cmp.trueV.innerHTML=f(trueMean)+`<small>${sc.unit}</small>`;
+  cmp.measV.innerHTML=f(measured)+`<small>${sc.unit}</small>`;
+  cmp.gapV.textContent=g(gap)+" pts";
+  const tol=cmpScale==="raw"?0.03:0.5;
+  cmp.gapSub.textContent=(cmpData.baseline||Math.abs(gap)<tol)?"≈ on target":(gap>0?"judge over-rates":"judge under-rates");
+  // per-chart legend keys (under each title) — swatch colour matches the dashed line in the chart
+  const sw=(c,t)=>`<span><span class="sw" style="background:${c}"></span>${t}</span>`;
+  cmp.scoreKey.innerHTML=sw("#6366f1","count of answers")+sw("#0f766e","true mean "+f(trueMean))+sw("#b45309","sample mean "+f(measured));
+  cmp.errKey.innerHTML  =sw("#0891b2","count of answers")+sw("#0f766e","zero error")+sw("#7c3aed","mean error "+g(meanErr));
+  cmp.bootKey.innerHTML =sw("#2563eb","bootstrap spread")+sw("#0f766e","true mean "+f(trueMean))+sw("#b45309","sample mean "+f(measured));
+  // chart 1 - score distribution on this scale
+  drawBars(cmp.scoreHist, mScores, { lo:sc.lo, hi:sc.hi, binW:sc.sBin, ticks:sc.sTicks, fmtTick:sc.dec, bar:"rgba(99,102,241,0.42)",
+    lines:[ {x:trueMean, color:"#0f766e", w:2.5, label:"true mean "+f(trueMean), side:"left", dy:12},
+            {x:measured, color:"#b45309", w:2, label:"sample mean "+f(measured), side:"right", dy:30} ] });
+  // chart 2 - error on this reporting scale
+  drawBars(cmp.errHist, errs, { lo:sc.eLo, hi:sc.eHi, binW:sc.eBin, ticks:sc.eTicks, fmtTick:0, signed:true, bar:"rgba(8,145,178,0.45)",
+    lines:[ {x:0, color:"#0f766e", w:2.5, label:"zero error", side:"left", dy:12},
+            {x:meanErr, color:"#7c3aed", w:2, label:"mean error "+g(meanErr), side:"right", dy:30} ] });
+  // chart 3 - bootstrap of the mean (this scale's stored replicate means)
+  const stats=cmpData.stats[cmpScale];
+  const lo=stats[Math.floor(0.025*stats.length)], hi=stats[Math.floor(0.975*stats.length)];
+  drawHist(cmp.hist, stats, measured, lo, hi, sc, trueMean);
+  cmp.ci.innerHTML=`95% bootstrap interval: <strong>[${f(lo)}, ${f(hi)}]</strong> &nbsp;&middot;&nbsp; width ${f(hi-lo)}`;
+  if(cmpData.baseline){
+    cmp.cov.innerHTML=`<span class="cov ok">✓ zero uncertainty.</span> Whole population, perfect noiseless judge — exactly the truth on every scale. Turn a dial to introduce uncertainty.`;
+  } else {
+    const covers=(trueMean>=lo && trueMean<=hi);
+    cmp.cov.innerHTML=covers
+      ? `<span class="cov ok">✓ the interval contains the true ${f(trueMean)}.</span> Your uncertainty is honest here.`
+      : `<span class="cov miss">✗ the interval misses the true ${f(trueMean)}.</span> The judge's bias put a confident interval around the wrong answer — the bootstrap can't tell.`;
+  }
+  cmp.scoreNote.innerHTML = cmpData.baseline
+    ? `the whole population — ${CMP_POOL.length} answers · true mean <strong>${f(trueMean)}${sc.unit}</strong>.`
+    : `${cmpData.scores.length} scores · mean <strong>${f(measured)}${sc.unit}</strong>. Individual scores scatter; their average (chart 3) is pinned far tighter.`;
+  if(cmpScale==="raw"){
+    cmp.errNote.innerHTML=`Error = score − true score, per answer. Offset from 0 = the net bias actually applied; width = noise.`
+      + (Math.abs(bias)>0.001 ? ` You dialed ${(bias>0?"+":"")+Math.round(bias*100)}%, trimmed by the 1–5 ceiling.`
+         : (meanErr<-0.02 ? ` Bias is off, yet noise drags it down — the ceiling clips upward jitter on a top-heavy pool.` : ``));
+  } else if(cmpScale==="linear"){
+    cmp.errNote.innerHTML=`Error = <code>map(score) − map(true)</code> on the linear scale — just the 1–5 error × 25. Same shape as the 1–5 tab, only the axis stretches.`;
+  } else {
+    cmp.errNote.innerHTML=`Error = <code>map(score) − map(true)</code> on the squared scale. The map is nonlinear, so the SAME ±1 score error is worth ~6 pts near the bottom (2↔1) but ~44 pts near the top (5↔4): the reporting function reshapes the errors, not just the labels.`;
+  }
+}
+
+cmp.bias.addEventListener("input", ()=>{ cmpBaseline=false; renderBoot(); });
+cmp.noise.addEventListener("input", ()=>{ cmpBaseline=false; renderBoot(); });
+cmp.n.addEventListener("input", ()=>{ cmpBaseline=false; cmpIdx=cmpSample(parseInt(cmp.n.value)); renderBoot(); });
+$("cmpRejudge").addEventListener("click", ()=>{ cmpBaseline=false; cmpIdx=cmpSample(parseInt(cmp.n.value)); renderBoot(); });
+$("cmpReset").addEventListener("click", ()=>{ cmpBaseline=true; cmp.bias.value=0; cmp.noise.value=0; cmp.n.value=200; cmpIdx=cmpSample(200); renderBoot(); });
+$("cmpScaleRow").querySelectorAll("button").forEach(b=> b.addEventListener("click", ()=>{
+  cmpScale=b.dataset.scale;
+  $("cmpScaleRow").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  cmpRenderScale();                                     // re-map the SAME judge outputs; no re-roll
+}));
+
+// ---------------------------------------------------------------------------
+// "Bootstrapping the means" tab — same model/dials as compounds, but renders ONLY chart 3
+// (the bootstrap distribution of the mean). Reuses CMP_POOL / SCALES / cmpRate / cmpSample / drawHist.
+// ---------------------------------------------------------------------------
+const bm = { bias:$("bmBias"), noise:$("bmNoise"), n:$("bmN"),
+  biasVal:$("bmBiasVal"), noiseVal:$("bmNoiseVal"), nVal:$("bmNVal"),
+  trueV:$("bmTrueV"), measV:$("bmMeasV"), gapV:$("bmGapV"), gapSub:$("bmGapSub"),
+  hist:$("bmHist"), ci:$("bmCi"), prob:$("bmProb"), cov:$("bmCov"), bootKey:$("bmBootKey") };
+let bmScale = "raw";
+let bmIdx = cmpSample(200);
+let bmBaseline = true;
+let bmData = null;
+
+function renderBM(){
+  const bias=parseFloat(bm.bias.value), sd=parseFloat(bm.noise.value), n=parseInt(bm.n.value);
+  bm.biasVal.textContent=(bias>0?"+":"")+Math.round(bias*100)+"%";
+  bm.noiseVal.textContent=fmt(sd);
+  if(bmBaseline){
+    bm.nVal.textContent="all";
+    bmData={ scores:CMP_POOL.slice(), baseline:true,
+      stats:{ raw:[SCALES.raw.trueMean], linear:[SCALES.linear.trueMean], squared:[SCALES.squared.trueMean] } };
+    bmRenderScale();
+    return;
+  }
+  bm.nVal.textContent=n;
+  if(bmIdx.length!==n) bmIdx=cmpSample(n);
+  const scores=bmIdx.map(i=>cmpRate(CMP_POOL[i], bias, sd));
+  const B=2000, sR=new Float64Array(B), sL=new Float64Array(B), sS=new Float64Array(B);
+  for(let b=0;b<B;b++){ let r=0,l=0,q=0;
+    for(let k=0;k<n;k++){ const sc=scores[Math.floor(Math.random()*n)];
+      r+=sc; l+=SCALES.linear.map(sc); q+=SCALES.squared.map(sc); }
+    sR[b]=r/n; sL[b]=l/n; sS[b]=q/n; }
+  const srt=a=>Array.from(a).sort((x,y)=>x-y);
+  bmData={ scores, baseline:false, stats:{ raw:srt(sR), linear:srt(sL), squared:srt(sS) } };
+  bmRenderScale();
+}
+
+function bmRenderScale(){
+  if(!bmData) return;
+  const sc=SCALES[bmScale], f=x=>x.toFixed(sc.dec), g=x=>(x>=0?"+":"")+x.toFixed(sc.gapDec);
+  const mScores=bmData.scores.map(sc.map);
+  const trueMean=sc.trueMean, measured=mean(mScores), gap=measured-trueMean;
+  bm.trueV.innerHTML=f(trueMean)+`<small>${sc.unit}</small>`;
+  bm.measV.innerHTML=f(measured)+`<small>${sc.unit}</small>`;
+  bm.gapV.textContent=g(gap)+" pts";
+  const tol=bmScale==="raw"?0.03:0.5;
+  bm.gapSub.textContent=(bmData.baseline||Math.abs(gap)<tol)?"≈ on target":(gap>0?"judge over-rates":"judge under-rates");
+  const sw=(c,t)=>`<span><span class="sw" style="background:${c}"></span>${t}</span>`;
+  bm.bootKey.innerHTML=sw("#2563eb","bootstrap spread")+sw("#0f766e","true mean "+f(trueMean))+sw("#b45309","sample mean "+f(measured));
+  const stats=bmData.stats[bmScale];
+  const lo=stats[Math.floor(0.025*stats.length)], hi=stats[Math.floor(0.975*stats.length)];
+  drawHist(bm.hist, stats, measured, lo, hi, sc, trueMean);
+  bm.ci.innerHTML=`95% bootstrap interval: <strong>[${f(lo)}, ${f(hi)}]</strong> &nbsp;&middot;&nbsp; width ${f(hi-lo)}`;
+  const tf=x=>(+x.toFixed(2)).toString(), pf=p=> p>=0.995?">99%": p<=0.005?"<1%": Math.round(p*100)+"%";
+  bm.prob.innerHTML = [3,4,4.5].map(t=>{ const v=sc.map(t), p=stats.filter(x=>x>v).length/stats.length;
+    return `P(true mean &gt; ${tf(v)}) = <strong>${pf(p)}</strong>`; }).join(" &nbsp;&middot;&nbsp; ");
+  if(bmData.baseline){
+    bm.cov.innerHTML=`<span class="cov ok">✓ zero uncertainty.</span> Whole population, perfect noiseless judge — exactly the truth on every scale. Turn a dial to introduce uncertainty.`;
+  } else {
+    const covers=(trueMean>=lo && trueMean<=hi);
+    bm.cov.innerHTML=covers
+      ? `<span class="cov ok">✓ the interval contains the true ${f(trueMean)}.</span> Your uncertainty is honest here.`
+      : `<span class="cov miss">✗ the interval misses the true ${f(trueMean)}.</span> The judge's bias put a confident interval around the wrong answer — the bootstrap can't tell.`;
+  }
+}
+
+bm.bias.addEventListener("input", ()=>{ bmBaseline=false; renderBM(); });
+bm.noise.addEventListener("input", ()=>{ bmBaseline=false; renderBM(); });
+bm.n.addEventListener("input", ()=>{ bmBaseline=false; bmIdx=cmpSample(parseInt(bm.n.value)); renderBM(); });
+$("bmRejudge").addEventListener("click", ()=>{ bmBaseline=false; bmIdx=cmpSample(parseInt(bm.n.value)); renderBM(); });
+$("bmReset").addEventListener("click", ()=>{ bmBaseline=true; bm.bias.value=0; bm.noise.value=0; bm.n.value=200; bmIdx=cmpSample(200); renderBM(); });
+$("bmScaleRow").querySelectorAll("button").forEach(b=> b.addEventListener("click", ()=>{
+  bmScale=b.dataset.scale;
+  $("bmScaleRow").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  bmRenderScale();                                     // re-map the SAME judge outputs; no re-roll
+}));
+
+// Bootstrap histogram (chart 3): 60 fine bins over the active scale's domain, CI band shaded.
+function drawHist(cv, sorted, measured, lo, hi, sc, trueMean){
+  const ctx=cv.getContext("2d");
+  const cssW=cv.clientWidth||900, cssH=300, dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+  const padL=44, padR=16, padT=14, padB=34, W=cssW-padL-padR, H=cssH-padT-padB;
+  const LO=sc.lo, HI=sc.hi, xs=v=> padL + (v-LO)/(HI-LO)*W;
+  const BINS=60, counts=new Array(BINS).fill(0);
+  for(const v of sorted){ let b=Math.floor((v-LO)/(HI-LO)*BINS); if(b<0)b=0; if(b>=BINS)b=BINS-1; counts[b]++; }
+  const maxC=Math.max(1,...counts), bw=W/BINS;
+  ctx.fillStyle="rgba(37,99,235,0.10)"; ctx.fillRect(xs(lo), padT, Math.max(1,xs(hi)-xs(lo)), H);
+  ctx.fillStyle="rgba(37,99,235,0.45)";
+  for(let b=0;b<BINS;b++){ if(!counts[b]) continue; const h=counts[b]/maxC*(H-12); ctx.fillRect(padL+b*bw+0.5, padT+H-h, Math.max(0.5,bw-1), h); }
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,padT+H); ctx.lineTo(padL+W,padT+H); ctx.stroke();
+  ctx.fillStyle="#64748b"; ctx.font="12px system-ui,sans-serif"; ctx.textAlign="center";
+  for(const t of sc.sTicks) ctx.fillText(t.toFixed(sc.dec), xs(t), padT+H+18);
+  vline(ctx, xs(trueMean), padT, H, "#0f766e", 2.5, "true mean", "left", 12);
+  vline(ctx, xs(measured), padT, H, "#b45309", 2, "sample mean "+measured.toFixed(sc.dec), "right", 30);
+}
+// Generic binned bar chart for chart 1 (scores) and chart 2 (errors), with up to two reference lines.
+// Values past the top edge fold into the last bucket (so 100 lands in [90,100]). Counts shown when bins are few.
+function drawBars(cv, values, o){
+  const ctx=cv.getContext("2d");
+  const cssW=cv.clientWidth||900, cssH=300, dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+  const padL=44, padR=16, padT=14, padB=34, W=cssW-padL-padR, H=cssH-padT-padB;
+  const xs=v=> padL + (v-o.lo)/(o.hi-o.lo)*W;
+  const nb=Math.round((o.hi-o.lo)/o.binW), counts=new Array(nb).fill(0);
+  for(const v of values){ let b=Math.floor((v-o.lo)/o.binW); if(b<0)b=0; if(b>=nb)b=nb-1; counts[b]++; }
+  const maxC=Math.max(1,...counts), bwpx=W/nb, Hbar=H-24, showCount=nb<=10;   // small headroom for the count label (labels moved to the legend key)
+  for(let b=0;b<nb;b++){ if(!counts[b]) continue; const h=counts[b]/maxC*Hbar, x0=padL+b*bwpx;
+    ctx.fillStyle=o.bar; ctx.fillRect(x0+bwpx*0.12, padT+H-h, bwpx*0.76, h);
+    if(showCount){ ctx.fillStyle="#1e293b"; ctx.font="bold 13px system-ui,sans-serif"; ctx.textAlign="center"; ctx.fillText(String(counts[b]), x0+bwpx*0.5, padT+H-h-6); } }
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,padT+H); ctx.lineTo(padL+W,padT+H); ctx.stroke();
+  ctx.fillStyle="#64748b"; ctx.font="12px system-ui,sans-serif"; ctx.textAlign="center";
+  for(const t of o.ticks){ const sgn=o.signed&&t>0?"+":""; ctx.fillText(sgn+t.toFixed(o.fmtTick||0), xs(t), padT+H+18); }
+  for(const L of o.lines) vline(ctx, xs(L.x), padT, H, L.color, L.w, L.label, L.side, L.dy);
+}
+function vline(ctx,x,top,H,color,w,label,side,labelDy){
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,top+H); ctx.stroke(); ctx.setLineDash([]);
+  // line only — the label + value now live in the legend key under the chart title (label/side/labelDy unused, kept for callers)
+}
+
+// Predicted-RMSE diagram as deterministic inline SVG (no canvas/DPR/clientWidth gremlins).
+// Three explicit states so the default (bias=0) doesn't look like a broken triangle:
+//   both 0 → "perfect judge"; bias 0 → noise-only line; noise 0 → bias-only line; else → triangle.
+// Fit-to-frame: the longer leg is always LEG px, so it's legible at any magnitude (values in labels).
+const TRI_C = { bias:"#7c3aed", noise:"#2563eb", rmse:"#b45309", good:"#15803d", mut:"#64748b" };
+function triSVG(bias, sd, predicted){
+  const W=260, H=200, C=TRI_C;
+  const open=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;height:auto;overflow:visible" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">`;
+  const T=(x,y,s,fill,sz,anchor="middle",weight="bold",rot=null)=>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${sz}" font-weight="${weight}" text-anchor="${anchor}"`
+    + (rot!=null?` transform="rotate(-90 ${x} ${y})"`:``) + `>${s}</text>`;
+  const L=(x1,y1,x2,y2,col,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const ab=Math.abs(bias);
+  if(predicted < 0.05)                                 // perfect judge
+    return open + T(W/2,H/2-4,"Perfect judge",C.good,16) + T(W/2,H/2+18,"no bias, no noise → RMSE 0",C.mut,13,"middle","normal") + "</svg>";
+  if(ab < 0.05){                                       // noise only → clean vertical line
+    const x=122, y0=40, y1=150, my=(y0+y1)/2;
+    return open + L(x,y0,x,y1,C.noise,4) + T(x-12,my,"noise "+fmt(sd),C.noise,12,"middle","bold",true)
+      + T(x+12,my,"RMSE "+fmt2(predicted),C.rmse,12,"start")
+      + T(W/2,176,"bias is 0  →  predicted RMSE = noise",C.mut,12,"middle","normal") + "</svg>";
+  }
+  if(sd < 0.05){                                       // bias only → clean horizontal line
+    const y=104, x0=40, x1=200, mx=(x0+x1)/2;
+    return open + L(x0,y,x1,y,C.bias,4) + T(mx,y+20,"bias "+fmt(ab),C.bias,12) + T(mx,y-9,"RMSE "+fmt2(predicted),C.rmse,12)
+      + T(W/2,176,"noise is 0  →  predicted RMSE = |bias|",C.mut,12,"middle","normal") + "</svg>";
+  }
+  // both nonzero → fit-to-frame right triangle; hypotenuse = predicted RMSE
+  const LEG=118, scale=LEG/Math.max(ab,sd), ox=80, oy=H-46, bx=ox+ab*scale, sy=oy-sd*scale;
+  return open
+    + L(bx,oy,ox,sy,C.rmse,4) + L(ox,oy,bx,oy,C.bias,3) + L(ox,oy,ox,sy,C.noise,3)
+    + `<rect x="${ox}" y="${oy-10}" width="10" height="10" fill="none" stroke="#94a3b8"/>`
+    + T((ox+bx)/2,oy+18,"bias "+fmt(ab),C.bias,12)
+    + T(ox-13,(oy+sy)/2,"noise "+fmt(sd),C.noise,12,"middle","bold",true)
+    + T((ox+bx)/2+6,(oy+sy)/2-4,"RMSE "+fmt2(predicted),C.rmse,12,"start")
+    + "</svg>";
+}
+
+// ---------------------------------------------------------------------------
+// SCORECARD tab: real lawsuit summaries + judge scorecards (lawsuits/data.js,
+// built by build_lawsuit_scorecards.py --bundle). Prompts shown verbatim.
+// ---------------------------------------------------------------------------
+const SC = window.LAWSUIT_SCORECARDS || null;
+const SCCASES = SC ? SC.cases.slice() : [];
+const SC_DIMS = [["accuracy","Accuracy"],["completeness","Completeness"],["fluency","Fluency"],["overall","Overall"]];
+const SC_MOVABLE = ["accuracy","completeness"];   // fluency is ~5 every draw, so it never wanders
+const SC_THR = 0.2;                               // "far" = sample mean off the full-set mean by > this
+const SUM_PROMPT = `You are a legal summarization assistant. Read the case record below — court
+filings, opinions, and docket entries — and write a SHORT factual summary a
+lawyer could skim.
+
+In 3–5 sentences, cover: who sued whom and in which court, the legal claims or
+basis, and the outcome or current status (settlement, ruling, dismissal, still
+ongoing). Be concrete with names, dates, and dollar amounts when the record
+states them. Do not add anything that is not supported by the record.
+
+CASE RECORD:
+{{ the full case record — court filings, opinions, docket }}
+
+Write only the summary, nothing else.`;
+const JUDGE_PROMPT = `You are grading an AI-generated summary of a legal case against an expert
+reference summary. Score the AI summary on three dimensions, each an integer
+from 1 to 5:
+
+- accuracy: are the stated facts correct and consistent with the reference —
+  no contradictions, no invented facts?
+- completeness: does it capture the key points of the reference — parties,
+  claims, outcome?
+- fluency: is it clear, well-formed, professional prose?
+
+Also give a one-sentence rationale. Judge substance, not length. (An overall
+score is computed from the three dimensions afterward — do not produce one
+yourself.)
+
+EXPERT REFERENCE SUMMARY:
+{{ the expert short summary }}
+
+AI SUMMARY TO SCORE:
+{{ the AI-generated summary }}
+
+Respond with ONLY a JSON object:
+{"accuracy": <1-5>, "completeness": <1-5>, "fluency": <1-5>, "rationale": "<one sentence>"}`;
+
+let scI = 0;
+function renderCase(){
+  const c=SCCASES[scI]; if(!c) return;
+  const s=c.scorecard;
+  $("scPos").innerHTML=`case <b>${scI+1}</b> of ${SCCASES.length}`;
+  const cell=(lbl,v)=>`<div class="scscore"><div class="lbl">${lbl}</div><div class="num">${v.toFixed(v%1?1:0)}<small>/5</small></div></div>`;
+  const srcLink = c.case_url
+    ? ` · <a href="${escH(c.case_url)}" target="_blank" rel="noopener">open the case on the Civil Rights Litigation Clearinghouse ↗</a>`
+    : "";
+  $("scCard").innerHTML=`
+    <p class="scmeta"><b>${escH(c.case_name||c.id)}</b> · ${c.src_words.toLocaleString()} words summarized${srcLink}</p>
+    <div class="scgrid">
+      <div class="scbox ai"><h4>AI summary (the thing being scored)</h4><p>${escH(c.summary)}</p></div>
+      <div class="scbox ref"><h4>Expert reference (ground truth)</h4><p>${escH(c.reference)}</p></div>
+    </div>
+    <div class="scscores">
+      ${cell("Accuracy", s.accuracy)}
+      ${cell("Completeness", s.completeness)}
+      ${cell("Fluency", s.fluency)}
+      <div class="scscore overall"><div class="lbl">Overall (computed)</div><div class="num">${s.overall.toFixed(1)}<small>/5</small></div></div>
+    </div>
+    <p class="scrat">&ldquo;${escH(s.rationale||"—")}&rdquo;</p>`;
+}
+function farProbs(n, thr, trials){
+  // Empirical P(a metric's sample mean is > thr from its full-set mean) for accuracy,
+  // completeness, and "at least one of the two", by repeatedly drawing n distinct cases.
+  const A=SCCASES.map(c=>c.scorecard.accuracy), C=SCCASES.map(c=>c.scorecard.completeness);
+  const N=SCCASES.length, fA=mean(A), fC=mean(C);
+  const idx=[...Array(N).keys()];
+  let ca=0, cc=0, ce=0;
+  for(let t=0;t<trials;t++){
+    for(let i=0;i<n;i++){ const j=i+Math.floor(Math.random()*(N-i)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+    let sa=0, sc=0; for(let i=0;i<n;i++){ sa+=A[idx[i]]; sc+=C[idx[i]]; }
+    const da=Math.abs(sa/n-fA)>thr, dc=Math.abs(sc/n-fC)>thr;
+    if(da)ca++; if(dc)cc++; if(da||dc)ce++;
+  }
+  return {pa:ca/trials, pc:cc/trials, pe:ce/trials};
+}
+function renderSampleNoise(){
+  if(!SC) return;
+  const n=Math.min(SCCASES.length, parseInt($("scSize").value)||20);
+  $("scSizeVal").textContent=n;
+  const full={}; SC_DIMS.forEach(([k])=> full[k]=mean(SCCASES.map(c=>c.scorecard[k])));
+  const idx=[...Array(SCCASES.length).keys()];
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  const samp=idx.slice(0,n).map(i=>SCCASES[i]);
+  const sm={}; SC_DIMS.forEach(([k])=> sm[k]=mean(samp.map(c=>c.scorecard[k])));
+  const w=v=>((v-1)/4*100).toFixed(1);              // 1..5 -> 0..100%
+  $("scSample").innerHTML=SC_DIMS.map(([k,lbl])=>{
+    let badge;
+    if(k==="overall"){                                       // Overall is computed from the others, not sampled on its own
+      badge = ` <span class="mark" style="color:var(--muted);font-weight:700">computed</span>`;
+    }else{                                                   // accuracy, completeness, fluency (fluency ≈5, so always near)
+      const far = Math.abs(sm[k]-full[k])>SC_THR;
+      badge = ` <span class="mark ${far?"bad":"ok"}">${far?"✗ far":"✓ near"}</span>`;
+    }
+    return `<div class="smrow">
+      <span class="smlbl">${lbl}</span>
+      <span class="smbar"><i style="width:${w(sm[k])}%"></i><span class="full" style="left:${w(full[k])}%"></span></span>
+      <span class="smval"><b>${sm[k].toFixed(2)}</b> &nbsp;vs&nbsp; ${full[k].toFixed(2)} full${badge}</span>
+    </div>`;
+  }).join("");
+  const farNow = SC_MOVABLE.filter(k=>Math.abs(sm[k]-full[k])>SC_THR);
+  $("scSampleNote").innerHTML=`Sample of <b>${n}</b> of ${SCCASES.length}, &ldquo;far&rdquo; = more than ${SC_THR} off the
+    full-set mean. This draw: <b>${farNow.length} of 2</b> metrics landed far${farNow.length?` (${farNow.join(", ")})`:""}.`;
+
+  // The multiple-metrics effect: with two numbers that can wander, the chance that AT LEAST ONE
+  // is far in a given sample beats the chance for either one alone. Estimate it empirically from
+  // the real data at this n (so the accuracy/completeness correlation is baked in, not assumed).
+  const pr=farProbs(n, SC_THR, 2000), pc=x=>Math.round(100*x);
+  $("scMulti").innerHTML = n>=SCCASES.length
+    ? `At n = ${n} you score the whole set, so the sample mean <em>is</em> the true mean — nothing can be far.
+       Slide n down to see the wander return.`
+    : `Across repeated draws at n = ${n}: accuracy is far <b>${pc(pr.pa)}%</b> of the time, completeness
+       <b>${pc(pr.pc)}%</b> — but <b>at least one of the two is far ${pc(pr.pe)}%</b> of the time, more than either
+       alone. Two numbers that wander, not one (fluency sits at ~5 every draw, so it adds no risk). Pile on a full
+       scorecard of metrics and &ldquo;at least one looks off&rdquo; becomes almost certain — which is why a single bad
+       cell is usually chance, not a real regression.
+       <span style="color:var(--muted)">(Accuracy and completeness move together here, so the combined rate sits a little
+       below multiplying the two independent chances.)</span>`;
+}
+function initScorecard(){
+  if(!SC){
+    $("scCard").innerHTML=`<p class="note" style="color:var(--bad);font-weight:600">Could not load
+      <code>lawsuits/data.js</code> — rebuild it with <code>build_lawsuit_scorecards.py --bundle</code>.</p>`;
+    return;
+  }
+  // Keep the 100 most distinctive cases — scores furthest from the lot's mean (tails, low AND
+  // high) — and browse them most-distinctive first. This fattens the spread so the sample-noise
+  // demo wobbles more; and because these 100 ARE the population we sample from, uniform draws
+  // still center honestly on the full-set line (no hidden selection bias).
+  const mA=mean(SCCASES.map(c=>c.scorecard.accuracy)), mC=mean(SCCASES.map(c=>c.scorecard.completeness));
+  const dev=c=>Math.abs(c.scorecard.accuracy-mA)+Math.abs(c.scorecard.completeness-mC);
+  SCCASES.sort((a,b)=>dev(b)-dev(a));
+  const KEEP=100;
+  if(SCCASES.length>KEEP) SCCASES.splice(KEEP);
+  $("sumPrompt").textContent=SUM_PROMPT;
+  $("judgePrompt").textContent=JUDGE_PROMPT;
+  $("scModel").textContent=(SC.model||"").replace(/^openai\//,"");
+  $("scN").textContent=SCCASES.length; $("scOf").textContent=SCCASES.length;
+  $("scSize").max=SCCASES.length;
+  renderCase();
+  renderSampleNoise();
+  $("scPrev").onclick=()=>{ scI=(scI-1+SCCASES.length)%SCCASES.length; renderCase(); };
+  $("scNext").onclick=()=>{ scI=(scI+1)%SCCASES.length; renderCase(); };
+  $("scRand").onclick=()=>{ scI=Math.floor(Math.random()*SCCASES.length); renderCase(); };
+  $("scLow").onclick=()=>{
+    const min=Math.min(...SCCASES.map(c=>c.scorecard.overall));
+    const lows=SCCASES.map((c,i)=>i).filter(i=>SCCASES[i].scorecard.overall<=min+0.5);
+    scI=lows[Math.floor(Math.random()*lows.length)]; renderCase();
+  };
+  $("scSize").addEventListener("input", renderSampleNoise);
+  $("scSpin").addEventListener("click", renderSampleNoise);
+}
+
+// initial paint (canvases redraw on tab show / resize, when they have a width)
+initScorecard();
+renderPop();
+renderBoot();
+renderBM();
+window.addEventListener("resize", ()=>{
+  if($("tab-compounds").classList.contains("active")) cmpRenderScale();
+  if($("tab-bootstrapmeans").classList.contains("active")) bmRenderScale(); });   // REDRAW from stored data — no re-roll.
+
+// open the tab named in the URL hash (default: classifier)
+showTab((location.hash||"#classifier").slice(1));
+</script>
+</body>
+</html>

@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bootstrap Hypothesis Testing Lab</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0c0f14;
+    --surface: #151a23;
+    --surface-2: #1c2230;
+    --border: #2a3040;
+    --text: #e2e8f0;
+    --text-dim: #8892a4;
+    --accent-a: #3b82f6;
+    --accent-a-dim: rgba(59,130,246,0.15);
+    --accent-b: #f97316;
+    --accent-b-dim: rgba(249,115,22,0.15);
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --purple: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* --- Explanation panel --- */
+  .explainer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    max-width: none;
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+    overflow: hidden;
+  }
+  .explainer-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+  }
+  .explainer-toggle:hover { background: var(--surface-2); }
+  .explainer-toggle .arrow { transition: transform 0.25s; font-size: 0.8rem; color: var(--text-dim); }
+  .explainer-toggle.open .arrow { transform: rotate(180deg); }
+
+  .explainer-body {
+    display: none;
+    padding: 0 1.25rem 1.25rem;
+    line-height: 1.7;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .explainer-body.open { display: block; }
+
+  .explainer-body h3 {
+    color: var(--text);
+    font-size: 0.85rem;
+    margin: 1rem 0 0.4rem;
+    font-weight: 600;
+  }
+  .explainer-body h3:first-child { margin-top: 0.25rem; }
+
+  .explainer-body .step-list {
+    counter-reset: steps;
+    list-style: none;
+    padding: 0;
+  }
+  .explainer-body .step-list li {
+    counter-increment: steps;
+    padding-left: 2rem;
+    position: relative;
+    margin-bottom: 0.35rem;
+  }
+  .explainer-body .step-list li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 0;
+    width: 1.4rem;
+    height: 1.4rem;
+    background: var(--accent-a-dim);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent-a);
+    top: 0.15rem;
+  }
+
+  .vs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0;
+    font-size: 0.8rem;
+  }
+  .vs-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: 'DM Mono', monospace;
+  }
+  .vs-table td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid rgba(42,48,64,0.5);
+  }
+  .vs-table tr:last-child td { border-bottom: none; }
+  .tag-boot { color: var(--accent-a); font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+  .tag-ttest { color: var(--purple); font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+
+  /* --- Layout --- */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(420px, 1fr) minmax(0, 1.6fr);
+    gap: 1.5rem;
+    max-width: none;
+    width: auto;
+    margin: 0;
+    padding: 0 1.5rem;
+  }
+
+  .sample-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .sample-grid .sample-section { margin-bottom: 0; }
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+    .sample-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .sample-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .panel h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sample-section {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .sample-a { background: var(--accent-a-dim); border: 1px solid rgba(59,130,246,0.25); }
+  .sample-b { background: var(--accent-b-dim); border: 1px solid rgba(249,115,22,0.25); }
+
+  .sample-section h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .sample-a h3 { color: var(--accent-a); }
+  .sample-b h3 { color: var(--accent-b); }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 0.2rem;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  select, input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.45rem 0.6rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    margin-bottom: 0.6rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent-a); }
+
+  .params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-run {
+    background: linear-gradient(135deg, var(--accent-a), #6366f1);
+    color: #fff;
+    margin-top: 0.5rem;
+  }
+  .btn-generate {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    margin-top: 0.5rem;
+  }
+  .btn-generate:hover, .btn-run:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .btn-run:active { transform: translateY(0); }
+  .btn-run.running { opacity: 0.6; pointer-events: none; }
+
+  .config-row { margin-bottom: 0.6rem; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.82rem;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--accent-a);
+  }
+
+  .results { display: flex; flex-direction: column; gap: 1rem; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .chart-card h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+  .chart-desc {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    background: var(--surface-2);
+    border-radius: 6px;
+    border-left: 3px solid var(--border);
+  }
+  .chart-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+  }
+  .chart-meta .pval { font-weight: 600; }
+  .chart-meta .reject { color: var(--red); }
+  .chart-meta .accept { color: var(--green); }
+  .chart-meta .ttest-line { color: var(--purple); }
+
+  .chart-wrap { position: relative; height: 180px; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.75rem;
+  }
+  .stat-card {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    text-align: center;
+  }
+  .stat-card .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+  }
+  .stat-card .value { font-size: 1.4rem; font-weight: 700; }
+  .stat-card .sub { font-family: 'DM Mono', monospace; font-size: 0.7rem; margin-top: 0.15rem; }
+
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    text-align: center;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+
+<h1>Bootstrap Hypothesis Testing Lab</h1>
+<p class="subtitle">Generate &#8594; Permute &#8594; Decide. Play with sample sizes, distributions, and test statistics.</p>
+
+<!-- Methodology Explainer -->
+<div class="explainer">
+  <button class="explainer-toggle" onclick="toggleExplainer()" id="expToggle">
+    <span>How does this work? &#8212; Methodology &amp; intuition</span>
+    <span class="arrow">&#9660;</span>
+  </button>
+  <div class="explainer-body" id="expBody">
+
+    <h3>The Null Hypothesis (same for all tests)</h3>
+    <p><strong>H&#8320;: Both samples come from the same distribution.</strong><br>
+    If this is true, the labels &#8220;Sample A&#8221; and &#8220;Sample B&#8221; are meaningless &#8212; every data point could equally have ended up in either group.</p>
+
+    <h3>The Permutation Bootstrap Procedure</h3>
+    <ol class="step-list">
+      <li>Compute the <strong>observed test statistic</strong> (e.g. |mean(A) &#8722; mean(B)|) on the real data.</li>
+      <li><strong>Pool</strong> all data points together &#8212; forget which group they came from.</li>
+      <li><strong>Shuffle</strong> the pool randomly and split into two fake groups of the original sizes n<sub>A</sub> and n<sub>B</sub>.</li>
+      <li>Compute the test statistic on these <strong>fake groups</strong>.</li>
+      <li>Repeat steps 3&#8211;4 thousands of times to build the <strong>null distribution</strong> &#8212; what the statistic looks like when group membership truly doesn&#8217;t matter.</li>
+      <li><strong>p-value</strong> = fraction of shuffled statistics &#8805; the observed statistic.</li>
+    </ol>
+    <p>If the observed statistic lands far in the tail of the null distribution (small p-value), we reject H&#8320;.</p>
+
+    <h3>Bootstrap vs. Welch&#8217;s t-test &#8212; side by side</h3>
+    <table class="vs-table">
+      <tr>
+        <th></th>
+        <th><span class="tag-boot">Bootstrap permutation</span></th>
+        <th><span class="tag-ttest">Welch&#8217;s t-test</span></th>
+      </tr>
+      <tr>
+        <td>Assumptions</td>
+        <td>None &#8212; works for any distribution, any statistic</td>
+        <td>Approximately normal populations (relaxed for large n by CLT)</td>
+      </tr>
+      <tr>
+        <td>How null is built</td>
+        <td>Empirically, by shuffling real data</td>
+        <td>Analytically, using the t-distribution</td>
+      </tr>
+      <tr>
+        <td>What it tests</td>
+        <td>Whatever statistic you plug in (means, medians, variance, KS&#8230;)</td>
+        <td>Difference in means only</td>
+      </tr>
+      <tr>
+        <td>When they agree</td>
+        <td colspan="2" style="text-align:center;">When data is roughly normal and n is moderate-to-large, p-values are very similar</td>
+      </tr>
+      <tr>
+        <td>When they diverge</td>
+        <td colspan="2" style="text-align:center;">Skewed data, heavy tails, small n, or non-mean statistics &#8212; bootstrap is more reliable</td>
+      </tr>
+    </table>
+    <p style="margin-top:0.6rem;">This tool runs <strong>both</strong> on the difference-in-means test so you can compare. Try Exponential or Log-Normal with n=10 to see divergence.</p>
+  </div>
+</div>
+
+<!-- Paired-bootstrap worked example -->
+<div class="explainer">
+  <button class="explainer-toggle" onclick="togglePaired()" id="pairedToggle">
+    <span>Worked example &#8212; paired bootstrap for comparing two variants on the same eval set</span>
+    <span class="arrow">&#9660;</span>
+  </button>
+  <div class="explainer-body" id="pairedBody">
+
+    <h3>The setup</h3>
+    <p>You compare two prompt variants on the <em>same</em> 10-example eval set. Each example is scored 0/1 by the same judge.</p>
+    <pre style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:0.75rem;font-family:'DM Mono',monospace;font-size:0.8rem;overflow-x:auto;">
+example i :   1  2  3  4  5  6  7  8  9 10
+Variant A :   1  1  0  1  1  0  1  1  1  0     mean = 0.70
+Variant B :   0  1  1  1  1  0  0  1  1  0     mean = 0.60
+diff  d_i :  +1  0 -1  0  0  0 +1  0  0  0     mean = 0.10</pre>
+
+    <h3>The wrong move: two separate CIs and "do they overlap?"</h3>
+    <p>Compute a bootstrap CI for <code>mean(A)</code> and a separate one for <code>mean(B)</code>; if they overlap, declare "no difference." This throws away the pairing structure. Example&nbsp;3 is hard for A and easy for B; example&nbsp;7 is the reverse. Treating the two samples as independent inflates the noise you compare against, because you're letting "which examples happened to be in sample A" add variance that the paired data does not actually have. Two overlapping per-variant CIs can coexist with a CI on the <em>difference</em> that excludes zero &mdash; so the overlap rule misses real regressions.</p>
+
+    <h3>The right move: bootstrap the per-example differences</h3>
+    <ol class="step-list">
+      <li>For each example <em>i</em>, compute <code>d_i = A_i &minus; B_i</code>. (In our table: <code>[+1, 0, &minus;1, 0, 0, 0, +1, 0, 0, 0]</code>, observed mean <code>0.10</code>.)</li>
+      <li>Resample <strong>indices</strong> <code>i&#8320;, i&#8321;, &hellip;, i&#8329;</code> from <code>{1, &hellip;, 10}</code> with replacement &mdash; one list of indices, used for <em>both</em> variants. Equivalently: resample the vector of <code>d_i</code> values directly.</li>
+      <li>Compute the mean of the resampled differences <code>d&#772;*</code>.</li>
+      <li>Repeat <em>B</em> = 10,000 times to get the bootstrap distribution of <code>d&#772;*</code>.</li>
+      <li>Report the observed <code>d&#772;</code> and the <strong>2.5% / 97.5% percentiles</strong> of the bootstrap distribution as a 95% CI on the mean difference.</li>
+      <li>Decide: if the CI lies entirely above 0, A is better; entirely below 0, B is better; straddles 0, you can't tell from this data.</li>
+    </ol>
+
+    <h3>Pseudocode</h3>
+    <pre style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:0.75rem;font-family:'DM Mono',monospace;font-size:0.8rem;overflow-x:auto;">
+d = [a - b for a, b in zip(A, B)]        # per-example differences
+boot_means = []
+for _ in range(10_000):
+    idx = [random.randrange(len(d)) for _ in range(len(d))]   # resample indices
+    boot_means.append(mean(d[i] for i in idx))
+ci_low, ci_high = percentile(boot_means, 2.5), percentile(boot_means, 97.5)</pre>
+
+    <h3>Why resampling at the example level matters</h3>
+    <p>The pairing <em>is</em> the signal. Example difficulty is a nuisance variable: hard prompts score low under both variants, easy prompts score high under both. When we resample indices jointly &mdash; so A and B are always evaluated on the <em>same</em> bootstrapped examples &mdash; that shared difficulty cancels inside each <code>d_i</code> and never enters the variance of <code>d&#772;*</code>. If you bootstrap A and B independently, you reintroduce that variance and your CI on the difference is wider than it should be, so real improvements fail to show up as significant.</p>
+
+    <h3>What the observed data says here</h3>
+    <p>The observed mean difference is <code>+0.10</code> (A&nbsp;&minus;&nbsp;B). With only 10 paired examples and 8 ties, a paired bootstrap CI on this difference will straddle 0 &mdash; you don't yet have enough evidence to call A better. The right response is not "ship A" (or "overlap &#8658; ship neither") but <em>collect more paired examples</em> until the CI on <code>d&#772;</code> moves off zero in a direction you can defend.</p>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT: Controls -->
+  <div>
+    <div class="panel">
+      <h2>Step 1 — Generate Data</h2>
+
+      <div class="sample-grid">
+        <div class="sample-section sample-a">
+          <h3>Sample A</h3>
+          <label>Distribution</label>
+          <select id="distA" onchange="updateParams('A')">
+            <option value="normal">Normal</option>
+            <option value="exponential">Exponential</option>
+            <option value="uniform">Uniform</option>
+            <option value="poisson">Poisson</option>
+            <option value="lognormal">Log-Normal</option>
+            <option value="gamma">Gamma</option>
+          </select>
+          <div class="params-grid" id="paramsA"></div>
+          <label>Sample size</label>
+          <input type="number" id="nA" value="50" min="5" max="5000" step="5">
+        </div>
+
+        <div class="sample-section sample-b">
+          <h3>Sample B</h3>
+          <label>Distribution</label>
+          <select id="distB" onchange="updateParams('B')">
+            <option value="normal">Normal</option>
+            <option value="exponential">Exponential</option>
+            <option value="uniform">Uniform</option>
+            <option value="poisson">Poisson</option>
+            <option value="lognormal">Log-Normal</option>
+            <option value="gamma">Gamma</option>
+          </select>
+          <div class="params-grid" id="paramsB"></div>
+          <label>Sample size</label>
+          <input type="number" id="nB" value="50" min="5" max="5000" step="5">
+        </div>
+      </div>
+
+      <button class="btn btn-generate" id="genBtn" onclick="generateSamples()">Generate Samples</button>
+    </div>
+
+    <!-- Sample distributions chart appears here after generation -->
+    <div id="sampleChartArea"></div>
+  </div>
+
+  <!-- RIGHT: Bootstrap config + results -->
+  <div>
+    <div class="panel" id="bootstrapPanel" style="display:none;">
+      <h2>Step 2 — Bootstrap Test</h2>
+
+      <h2 style="margin-top:0">Test Statistics</h2>
+      <div class="checkbox-row"><input type="checkbox" id="test_means" checked><label style="margin:0" for="test_means">Difference in Means</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="test_medians" checked><label style="margin:0" for="test_medians">Difference in Medians</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="test_variance" checked><label style="margin:0" for="test_variance">Difference in Variance</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="test_ks" checked><label style="margin:0" for="test_ks">KS Statistic</label></div>
+
+      <h2 style="margin-top:1rem">Settings</h2>
+      <div class="config-row">
+        <label>Bootstrap iterations</label>
+        <input type="number" id="nBoot" value="10000" min="500" max="100000" step="500">
+      </div>
+      <div class="config-row">
+        <label>Significance level (&#945;)</label>
+        <select id="alpha">
+          <option value="0.01">0.01</option>
+          <option value="0.05" selected>0.05</option>
+          <option value="0.10">0.10</option>
+        </select>
+      </div>
+
+      <button class="btn btn-run" id="runBtn" onclick="runBootstrap()">Run Bootstrap Test</button>
+    </div>
+
+    <div class="results" id="results" style="margin-top:1rem;">
+      <div class="empty-state">
+        <div>
+          <strong>Step 1:</strong> Configure distributions and hit <strong>Generate Samples</strong><br>
+          <strong>Step 2:</strong> Inspect your data, then hit <strong>Run Bootstrap Test</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Explainer toggle
+function toggleExplainer() {
+  document.getElementById('expToggle').classList.toggle('open');
+  document.getElementById('expBody').classList.toggle('open');
+}
+function togglePaired() {
+  document.getElementById('pairedToggle').classList.toggle('open');
+  document.getElementById('pairedBody').classList.toggle('open');
+}
+
+// Distribution parameter definitions
+const DIST_PARAMS = {
+  normal:      [{key:"loc",label:"Mean",default:0},{key:"scale",label:"Std",default:1}],
+  exponential: [{key:"scale",label:"Scale",default:1}],
+  uniform:     [{key:"low",label:"Low",default:0},{key:"high",label:"High",default:1}],
+  poisson:     [{key:"lam",label:"Lambda",default:3}],
+  lognormal:   [{key:"mean",label:"Mu (log)",default:0},{key:"sigma",label:"Sigma (log)",default:1}],
+  gamma:       [{key:"shape",label:"Shape",default:2},{key:"scale",label:"Scale",default:1}],
+};
+
+function updateParams(which) {
+  const dist = document.getElementById('dist'+which).value;
+  const container = document.getElementById('params'+which);
+  container.innerHTML = DIST_PARAMS[dist].map(p =>
+    '<div><label>'+p.label+'</label><input type="number" id="p_'+which+'_'+p.key+'" value="'+p.default+'" step="0.1"></div>'
+  ).join('');
+}
+updateParams('A');
+updateParams('B');
+
+// Random number generation
+function randn() {
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function sampleDist(name,n,params) {
+  const arr=new Float64Array(n);
+  for(let i=0;i<n;i++){
+    switch(name){
+      case 'normal': arr[i]=params.loc+params.scale*randn(); break;
+      case 'exponential': arr[i]=-params.scale*Math.log(1-Math.random()); break;
+      case 'uniform': arr[i]=params.low+(params.high-params.low)*Math.random(); break;
+      case 'poisson': {
+        const L=Math.exp(-params.lam); let k=0,p=1;
+        do{k++;p*=Math.random();}while(p>L); arr[i]=k-1; break;
+      }
+      case 'lognormal': arr[i]=Math.exp(params.mean+params.sigma*randn()); break;
+      case 'gamma': {
+        const shape=params.shape;
+        if(shape<1){arr[i]=sampleDist('gamma',1,{shape:shape+1,scale:1})[0]*Math.pow(Math.random(),1/shape)*params.scale;}
+        else{
+          const d=shape-1/3,c=1/Math.sqrt(9*d); let x,v2;
+          while(true){
+            do{x=randn();v2=1+c*x;}while(v2<=0);
+            v2=v2*v2*v2; const u2=Math.random();
+            if(u2<1-0.0331*(x*x)*(x*x)){arr[i]=d*v2*params.scale;break;}
+            if(Math.log(u2)<0.5*x*x+d*(1-v2+Math.log(v2))){arr[i]=d*v2*params.scale;break;}
+          }
+        } break;
+      }
+    }
+  }
+  return arr;
+}
+
+// Statistics
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+const variance=a=>{const m=mean(a);return a.reduce((s,v)=>s+(v-m)*(v-m),0)/(a.length-1);};
+const median=a=>{const s=Array.from(a).sort((a,b)=>a-b);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+
+function ksStatistic(a,b){
+  const sa=Array.from(a).sort((x,y)=>x-y), sb=Array.from(b).sort((x,y)=>x-y);
+  const all=Array.from(new Set([...sa,...sb])).sort((x,y)=>x-y);
+  let maxD=0;
+  for(const v of all){maxD=Math.max(maxD,Math.abs(upperBound(sa,v)/sa.length-upperBound(sb,v)/sb.length));}
+  return maxD;
+}
+function upperBound(sorted,val){let lo=0,hi=sorted.length;while(lo<hi){const mid=(lo+hi)>>1;sorted[mid]<=val?lo=mid+1:hi=mid;}return lo;}
+
+// ============================================================
+// Theoretical PDFs for plotting
+// ============================================================
+function pdfNormal(x,loc,scale){
+  const z=(x-loc)/scale;
+  return Math.exp(-0.5*z*z)/(scale*Math.sqrt(2*Math.PI));
+}
+function pdfExponential(x,scale){
+  if(x<0)return 0;
+  return (1/scale)*Math.exp(-x/scale);
+}
+function pdfUniform(x,low,high){
+  if(x<low||x>high)return 0;
+  return 1/(high-low);
+}
+function pdfPoisson(x,lam){
+  // Continuous approximation for plotting: use normal approx or compute PMF at integer
+  const k=Math.round(x);
+  if(k<0)return 0;
+  // log(PMF) = k*ln(lam) - lam - ln(k!)
+  let logFact=0;
+  for(let i=2;i<=k;i++)logFact+=Math.log(i);
+  return Math.exp(k*Math.log(lam)-lam-logFact);
+}
+function pdfLognormal(x,mu,sigma){
+  if(x<=0)return 0;
+  const logx=Math.log(x);
+  const z=(logx-mu)/sigma;
+  return Math.exp(-0.5*z*z)/(x*sigma*Math.sqrt(2*Math.PI));
+}
+function pdfGamma(x,shape,scale){
+  if(x<=0)return 0;
+  // log(pdf) = (shape-1)*ln(x) - x/scale - shape*ln(scale) - lgamma(shape)
+  const logpdf=(shape-1)*Math.log(x)-x/scale-shape*Math.log(scale)-lgamma(shape);
+  return Math.exp(logpdf);
+}
+
+function getTheoreticalPDF(distName,params){
+  switch(distName){
+    case 'normal':      return x=>pdfNormal(x,params.loc,params.scale);
+    case 'exponential': return x=>pdfExponential(x,params.scale);
+    case 'uniform':     return x=>pdfUniform(x,params.low,params.high);
+    case 'poisson':     return x=>pdfPoisson(x,params.lam);
+    case 'lognormal':   return x=>pdfLognormal(x,params.mean,params.sigma);
+    case 'gamma':       return x=>pdfGamma(x,params.shape,params.scale);
+  }
+}
+
+function getPDFRange(distName,params){
+  // Return a sensible [min,max] range for plotting
+  switch(distName){
+    case 'normal':      return [params.loc-4*params.scale, params.loc+4*params.scale];
+    case 'exponential': return [0, params.scale*5];
+    case 'uniform':     return [params.low-0.5*(params.high-params.low), params.high+0.5*(params.high-params.low)];
+    case 'poisson':     return [0, params.lam+4*Math.sqrt(params.lam)];
+    case 'lognormal':   return [0, Math.exp(params.mean+3*params.sigma)];
+    case 'gamma':       return [0, (params.shape+3*Math.sqrt(params.shape))*params.scale];
+  }
+}
+
+const TEST_FNS={
+  means:(a,b)=>Math.abs(mean(a)-mean(b)),
+  medians:(a,b)=>Math.abs(median(a)-median(b)),
+  variance:(a,b)=>Math.abs(variance(a)-variance(b)),
+  ks:(a,b)=>ksStatistic(a,b),
+};
+const TEST_LABELS={means:'Difference in Means',medians:'Difference in Medians',variance:'Difference in Variance',ks:'KS Statistic'};
+const TEST_DESCRIPTIONS={
+  means:'The <strong>grey bars</strong> show all the mean-differences we got from random shuffling \u2014 this is what "no real difference" looks like. The <strong>red bars</strong> highlight every shuffled difference that was as large or larger than the one we actually observed. The p-value is the red area divided by the total area: if only a tiny red sliver exists at the right edge, your observed difference is unusually large and unlikely to be due to chance. If a big chunk is red, random shuffling routinely produces differences this large, and your result isn\u2019t special.',
+  medians:'Same logic as the means test, but using medians. <strong>Grey bars</strong> = median differences from random shuffles. <strong>Red bars</strong> = shuffles where the median difference was as large or larger than what you observed. Medians are more robust to outliers and skew \u2014 a few extreme values won\u2019t fool this test the way they can fool a means test.',
+  variance:'<strong>Grey bars</strong> = variance differences from random shuffles. <strong>Red bars</strong> = shuffles where the variance difference was as large or larger than observed. This detects whether one group is more spread out than the other, even if the means are identical. Useful for spotting differences in consistency or volatility.',
+  ks:'<strong>Grey bars</strong> = KS statistics from random shuffles. <strong>Red bars</strong> = shuffles where the KS statistic was as large or larger than observed. The KS statistic measures the maximum gap between the two cumulative distribution functions, so it catches any kind of distributional difference: shifts in location, spread, shape, skew, or multimodality. The most general test here.',
+};
+
+// Welch's t-test
+function welchTTest(a,b){
+  const nA=a.length,nB=b.length,mA=mean(a),mB=mean(b),vA=variance(a),vB=variance(b);
+  const se=Math.sqrt(vA/nA+vB/nB);
+  const tStat=(mA-mB)/se;
+  const num=Math.pow(vA/nA+vB/nB,2);
+  const denom=Math.pow(vA/nA,2)/(nA-1)+Math.pow(vB/nB,2)/(nB-1);
+  const df=num/denom;
+  const pValue=tCdfTwoSided(Math.abs(tStat),df);
+  return {tStat,df,pValue};
+}
+function tCdfTwoSided(t,df){const x=df/(df+t*t);return Math.min(2*betaInc(df/2,0.5,x)/2,1.0);}
+function betaInc(a,b,x){
+  if(x<=0)return 0;if(x>=1)return 1;
+  const lbeta=lgamma(a)+lgamma(b)-lgamma(a+b);
+  const front=Math.exp(a*Math.log(x)+b*Math.log(1-x)-lbeta)/a;
+  let d=1-(a+b)*x/(a+1);if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let f=d,c=1;
+  for(let m=1;m<=200;m++){
+    let num=m*(b-m)*x/((a+2*m-1)*(a+2*m));
+    d=1+num*d;if(Math.abs(d)<1e-30)d=1e-30;
+    c=1+num/c;if(Math.abs(c)<1e-30)c=1e-30;
+    d=1/d;f*=d*c;
+    num=-(a+m)*(a+b+m)*x/((a+2*m)*(a+2*m+1));
+    d=1+num*d;if(Math.abs(d)<1e-30)d=1e-30;
+    c=1+num/c;if(Math.abs(c)<1e-30)c=1e-30;
+    d=1/d;const delta=d*c;f*=delta;
+    if(Math.abs(delta-1)<1e-14)break;
+  }
+  return front*f;
+}
+function lgamma(x){
+  const coef=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x<0.5)return Math.log(Math.PI/Math.sin(Math.PI*x))-lgamma(1-x);
+  x-=1;let a=coef[0];const t=x+7.5;
+  for(let i=1;i<9;i++)a+=coef[i]/(x+i);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+
+// Bootstrap permutation test
+function bootstrapTest(a,b,statFn,nBoot){
+  const observed=statFn(a,b);
+  const pooled=new Float64Array(a.length+b.length);
+  pooled.set(a);pooled.set(b,a.length);
+  const nA=a.length,bootStats=new Float64Array(nBoot);
+  for(let i=0;i<nBoot;i++){
+    for(let j=pooled.length-1;j>0;j--){const k=Math.random()*(j+1)|0;[pooled[j],pooled[k]]=[pooled[k],pooled[j]];}
+    bootStats[i]=statFn(pooled.subarray(0,nA),pooled.subarray(nA));
+  }
+  let count=0;for(let i=0;i<nBoot;i++)if(bootStats[i]>=observed)count++;
+  return {observed,bootStats,pValue:count/nBoot};
+}
+
+// Histogram binning
+function binData(data,nBins=60){
+  let min=Infinity,max=-Infinity;
+  for(let i=0;i<data.length;i++){if(data[i]<min)min=data[i];if(data[i]>max)max=data[i];}
+  if(min===max)max=min+1;
+  const width=(max-min)/nBins,counts=new Array(nBins).fill(0),edges=new Array(nBins);
+  for(let i=0;i<nBins;i++)edges[i]=min+(i+0.5)*width;
+  for(let i=0;i<data.length;i++){let bin=Math.floor((data[i]-min)/width);if(bin>=nBins)bin=nBins-1;counts[bin]++;}
+  return {edges,counts,min,max};
+}
+
+// Chart management
+let charts=[];
+let sampleChart=null;
+let cdfChart=null;
+let theoreticalChart=null;
+let currentA=null, currentB=null, currentTTest=null; // stored samples + t-test
+
+function destroyCharts(){charts.forEach(c=>c.destroy());charts=[];}
+function destroySampleChart(){if(sampleChart){sampleChart.destroy();sampleChart=null;}if(cdfChart){cdfChart.destroy();cdfChart=null;}if(theoreticalChart){theoreticalChart.destroy();theoreticalChart=null;}}
+
+// ============================================================
+// STEP 1: Generate samples and show them
+// ============================================================
+function generateSamples(){
+  destroySampleChart();
+  destroyCharts();
+  document.getElementById('results').innerHTML='<div class="empty-state">Samples generated. Inspect the chart on the left,<br>then hit <strong>Run Bootstrap Test</strong> below.</div>';
+
+  const distA=document.getElementById('distA').value,distB=document.getElementById('distB').value;
+  const nA=+document.getElementById('nA').value,nB=+document.getElementById('nB').value;
+  const paramsA={},paramsB={};
+  for(const p of DIST_PARAMS[distA])paramsA[p.key]=+document.getElementById('p_A_'+p.key).value;
+  for(const p of DIST_PARAMS[distB])paramsB[p.key]=+document.getElementById('p_B_'+p.key).value;
+
+  currentA=sampleDist(distA,nA,paramsA);
+  currentB=sampleDist(distB,nB,paramsB);
+
+  // Compute Welch's t-test (property of the data, not the bootstrap)
+  const ttest=welchTTest(currentA,currentB);
+  currentTTest=ttest;
+
+  // Show summary cards + sample chart in the left column
+  const area=document.getElementById('sampleChartArea');
+  let areaHTML='<div class="summary-grid" style="margin-top:1rem;">';
+  areaHTML+='<div class="stat-card" title="The distribution and sample size for group A"><div class="label">Sample A</div><div class="value" style="color:var(--accent-a);font-size:1rem">'+distA+'</div><div class="sub">n = '+nA+'</div></div>';
+  areaHTML+='<div class="stat-card" title="The distribution and sample size for group B"><div class="label">Sample B</div><div class="value" style="color:var(--accent-b);font-size:1rem">'+distB+'</div><div class="sub">n = '+nB+'</div></div>';
+  const tR=ttest.pValue<0.05;
+  areaHTML+='</div>';
+
+  // Welch's t-test explanation card (full width)
+  areaHTML+='<div class="panel" style="margin-top:0.75rem;border:1px solid rgba(167,139,250,0.3);">';
+  areaHTML+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.4rem;"><h3 style="font-size:0.85rem;font-weight:600;color:var(--purple);margin:0;">Welch\u2019s t-test</h3><span style="font-family:DM Mono,monospace;font-size:0.75rem;color:var(--text-dim);">Classical parametric baseline</span></div>';
+  areaHTML+='<div class="summary-grid" style="margin-bottom:0.6rem;">';
+  areaHTML+='<div class="stat-card"><div class="label">|t| statistic</div><div class="value" style="font-size:1.2rem;">'+Math.abs(ttest.tStat).toFixed(3)+'</div><div class="sub">how many standard errors apart the means are</div></div>';
+  areaHTML+='<div class="stat-card"><div class="label">p-value</div><div class="value" style="font-size:1.2rem;color:'+(tR?'var(--red)':'var(--green)')+'">'+ttest.pValue.toFixed(4)+'</div><div class="sub">probability of seeing this big a difference (or bigger) by chance</div></div>';
+  areaHTML+='</div>';
+  // Dynamic interpretation
+  areaHTML+='<div class="chart-desc" style="border-left-color:var(--purple);">';
+  areaHTML+='<strong>How to read this:</strong> ';
+  areaHTML+='The |t| statistic (<strong>'+Math.abs(ttest.tStat).toFixed(3)+'</strong>) measures how far apart the two sample means are, scaled by the noise in the data. ';
+  if(Math.abs(ttest.tStat)<1) areaHTML+='A value below 1 means the means are less than one standard error apart \u2014 the difference is small relative to the noise. ';
+  else if(Math.abs(ttest.tStat)<2) areaHTML+='A value between 1 and 2 means the means are moderately separated, but not enough to be confident the difference is real. ';
+  else areaHTML+='A value above 2 means the means are well-separated relative to the noise \u2014 strong evidence of a real difference. ';
+  areaHTML+='The p-value (<strong>'+ttest.pValue.toFixed(4)+'</strong>) is the probability of seeing a difference this large (or larger) if the true means were actually equal. ';
+  if(tR) areaHTML+='Since p &lt; 0.05, we <span style="color:var(--red);font-weight:600;">reject H\u2080</span> \u2014 the data suggests the means are genuinely different.';
+  else areaHTML+='Since p \u2265 0.05, we <span style="color:var(--green);font-weight:600;">fail to reject H\u2080</span> \u2014 we don\u2019t have enough evidence to say the means differ. This doesn\u2019t prove they\u2019re equal; we just can\u2019t tell with this data.';
+  areaHTML+='</div>';
+  areaHTML+='</div>';
+
+  // Theoretical PDF panel
+  areaHTML+='<div class="panel" style="margin-top:0.75rem;"><h3 style="font-size:0.85rem;font-weight:600;margin-bottom:0.15rem;">Theoretical Distributions (PDFs)</h3><div class="chart-desc">These are the <strong>exact mathematical shapes</strong> of the distributions you chose \u2014 what you\u2019d see with infinite data. The histogram below shows what your finite random sample actually looks like. With small n the sample can look quite different from the theory; with large n it converges.</div><div class="chart-wrap" style="height:200px;"><canvas id="chartTheoretical"></canvas></div></div>';
+
+  areaHTML+='<div class="panel" style="margin-top:0.75rem;"><h3 style="font-size:0.85rem;font-weight:600;margin-bottom:0.15rem;">Sample Distributions</h3><div class="chart-desc">This is your raw data <strong>before any bootstrapping</strong>. If you set n='+nA+' and n='+nB+', these are just those '+nA+'+'+nB+' data points plotted as histograms. Each bar shows how many individual data points fell into that value range.</div><div class="chart-meta">A: \u03bc='+mean(currentA).toFixed(3)+', \u03c3\u00b2='+variance(currentA).toFixed(3)+' &nbsp;|&nbsp; B: \u03bc='+mean(currentB).toFixed(3)+', \u03c3\u00b2='+variance(currentB).toFixed(3)+'</div><div class="chart-wrap" style="height:200px;"><canvas id="chartSamples"></canvas></div></div>';
+  area.innerHTML=areaHTML;
+
+  // --- Render theoretical PDFs ---
+  const pdfA=getTheoreticalPDF(distA,paramsA);
+  const pdfB=getTheoreticalPDF(distB,paramsB);
+  const rangeA=getPDFRange(distA,paramsA);
+  const rangeB=getPDFRange(distB,paramsB);
+  const plotMin=Math.min(rangeA[0],rangeB[0]);
+  const plotMax=Math.max(rangeA[1],rangeB[1]);
+  const nPts=200;
+  const step=(plotMax-plotMin)/nPts;
+
+  const pdfDataA=[],pdfDataB=[];
+  for(let i=0;i<=nPts;i++){
+    const x=plotMin+i*step;
+    pdfDataA.push({x:x,y:pdfA(x)});
+    pdfDataB.push({x:x,y:pdfB(x)});
+  }
+
+  // For Poisson, overlay PMF dots at integers
+  const isPoissonA=distA==='poisson',isPoissonB=distB==='poisson';
+  const datasets=[
+    {label:distA+' A',data:pdfDataA,showLine:true,pointRadius:0,borderColor:'rgba(59,130,246,0.9)',borderWidth:2.5,fill:true,backgroundColor:'rgba(59,130,246,0.1)'},
+    {label:distB+' B',data:pdfDataB,showLine:true,pointRadius:0,borderColor:'rgba(249,115,22,0.9)',borderWidth:2.5,fill:true,backgroundColor:'rgba(249,115,22,0.1)'},
+  ];
+
+  theoreticalChart=new Chart(document.getElementById('chartTheoretical'),{
+    type:'scatter',
+    data:{datasets:datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'DM Mono',size:11}}}},
+      scales:{
+        x:{type:'linear',display:true,min:plotMin,max:plotMax,ticks:{color:'#8892a4',font:{family:'DM Mono',size:9},maxTicksLimit:12},grid:{color:'rgba(42,48,64,0.5)'},title:{display:true,text:'Value',color:'#8892a4',font:{family:'DM Mono',size:11}}},
+        y:{display:true,ticks:{color:'#8892a4',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,48,64,0.5)'},title:{display:true,text:'Density',color:'#8892a4',font:{family:'DM Mono',size:11}}},
+      }
+    }
+  });
+
+  const binsA=binData(currentA,40),binsB=binData(currentB,40);
+  sampleChart=new Chart(document.getElementById('chartSamples'),{
+    type:'bar',
+    data:{labels:binsA.edges.map(v=>v.toFixed(2)),datasets:[
+      {label:'Sample A',data:binsA.counts,backgroundColor:'rgba(59,130,246,0.5)',borderColor:'rgba(59,130,246,0.8)',borderWidth:1},
+      {label:'Sample B',data:binsB.counts,backgroundColor:'rgba(249,115,22,0.45)',borderColor:'rgba(249,115,22,0.8)',borderWidth:1},
+    ]},options:chartOpts('Value','Count'),
+  });
+
+  // --- CDF chart with KS gap ---
+  // Compute empirical CDFs
+  const sortedA=Array.from(currentA).sort((a,b)=>a-b);
+  const sortedB=Array.from(currentB).sort((a,b)=>a-b);
+  const allVals=Array.from(new Set([...sortedA,...sortedB])).sort((a,b)=>a-b);
+
+  // Sample down if too many points for smooth chart
+  let cdfPoints=allVals;
+  if(cdfPoints.length>300){
+    const step=Math.ceil(cdfPoints.length/300);
+    cdfPoints=cdfPoints.filter((_,i)=>i%step===0);
+    if(cdfPoints[cdfPoints.length-1]!==allVals[allVals.length-1])cdfPoints.push(allVals[allVals.length-1]);
+  }
+
+  const cdfA=cdfPoints.map(v=>upperBound(sortedA,v)/sortedA.length);
+  const cdfB=cdfPoints.map(v=>upperBound(sortedB,v)/sortedB.length);
+
+  // Find max gap location
+  let maxGap=0, maxGapIdx=0;
+  for(let i=0;i<cdfPoints.length;i++){
+    const gap=Math.abs(cdfA[i]-cdfB[i]);
+    if(gap>maxGap){maxGap=gap;maxGapIdx=i;}
+  }
+  const ksVal=maxGap;
+  const ksX=cdfPoints[maxGapIdx];
+  const ksYa=cdfA[maxGapIdx];
+  const ksYb=cdfB[maxGapIdx];
+
+  // Build CDF data as {x,y} points for line chart
+  const cdfDataA=cdfPoints.map((v,i)=>({x:v,y:cdfA[i]}));
+  const cdfDataB=cdfPoints.map((v,i)=>({x:v,y:cdfB[i]}));
+  // KS gap line (vertical line at max gap)
+  const ksLineData=[{x:ksX,y:Math.min(ksYa,ksYb)},{x:ksX,y:Math.max(ksYa,ksYb)}];
+
+  // Add CDF panel to HTML
+  const cdfPanel=document.createElement('div');
+  cdfPanel.className='panel';
+  cdfPanel.style.marginTop='0.75rem';
+  cdfPanel.innerHTML='<h3 style="font-size:0.85rem;font-weight:600;margin-bottom:0.15rem;">Cumulative Distribution Functions (CDFs)</h3>'
+    +'<div class="chart-desc">Each curve shows, for any value on the x-axis, what fraction of that sample\u2019s data falls at or below it. The curve starts at 0 (no data below the minimum) and climbs to 1 (all data below the maximum). The <strong style="color:var(--red);">red vertical line</strong> marks where the two curves are furthest apart \u2014 that maximum gap is the <strong>KS statistic ('+ksVal.toFixed(4)+')</strong>. A large gap means the distributions are shaped differently; a small gap means they\u2019re similar.</div>'
+    +'<div class="chart-wrap" style="height:220px;"><canvas id="chartCDF"></canvas></div>';
+
+  // Insert after the sample chart panel
+  document.getElementById('sampleChartArea').appendChild(cdfPanel);
+
+  cdfChart=new Chart(document.getElementById('chartCDF'),{
+    type:'scatter',
+    data:{
+      datasets:[
+        {label:'CDF Sample A',data:cdfDataA,showLine:true,pointRadius:0,borderColor:'rgba(59,130,246,0.9)',borderWidth:2,fill:false},
+        {label:'CDF Sample B',data:cdfDataB,showLine:true,pointRadius:0,borderColor:'rgba(249,115,22,0.9)',borderWidth:2,fill:false},
+        {label:'KS gap = '+ksVal.toFixed(4),data:ksLineData,showLine:true,pointRadius:5,pointBackgroundColor:'rgba(239,68,68,1)',borderColor:'rgba(239,68,68,0.9)',borderWidth:2.5,borderDash:[6,3],fill:false},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'DM Mono',size:11}}}},
+      scales:{
+        x:{type:'linear',display:true,ticks:{color:'#8892a4',font:{family:'DM Mono',size:9},maxTicksLimit:12},grid:{color:'rgba(42,48,64,0.5)'},title:{display:true,text:'Value',color:'#8892a4',font:{family:'DM Mono',size:11}}},
+        y:{display:true,min:0,max:1,ticks:{color:'#8892a4',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,48,64,0.5)'},title:{display:true,text:'Cumulative Probability',color:'#8892a4',font:{family:'DM Mono',size:11}}},
+      }
+    }
+  });
+
+  // Show the bootstrap panel
+  document.getElementById('bootstrapPanel').style.display='block';
+}
+
+// ============================================================
+// STEP 2: Run bootstrap on the already-generated samples
+// ============================================================
+function runBootstrap(){
+  if(!currentA||!currentB){alert('Generate samples first!');return;}
+
+  const btn=document.getElementById('runBtn');
+  btn.classList.add('running');btn.textContent='Running\u2026';
+  requestAnimationFrame(()=>setTimeout(()=>{
+    try{_runBootstrap();}finally{btn.classList.remove('running');btn.textContent='Run Bootstrap Test';}
+  },30));
+}
+
+function _runBootstrap(){
+  destroyCharts();
+
+  const a=currentA,b=currentB;
+  const nBoot=+document.getElementById('nBoot').value,alpha=+document.getElementById('alpha').value;
+  const ttest=currentTTest;
+
+  const activeTests=[];
+  if(document.getElementById('test_means').checked)activeTests.push('means');
+  if(document.getElementById('test_medians').checked)activeTests.push('medians');
+  if(document.getElementById('test_variance').checked)activeTests.push('variance');
+  if(document.getElementById('test_ks').checked)activeTests.push('ks');
+  if(!activeTests.length){document.getElementById('results').innerHTML='<div class="empty-state">Select at least one test statistic.</div>';return;}
+
+  let html='<div class="summary-grid">';
+  html+='<div class="stat-card" title="How many times we shuffle and recompute. More iterations = more precise p-values. 10k is usually plenty."><div class="label">Bootstrap iters</div><div class="value" style="font-size:1rem">'+nBoot.toLocaleString()+'</div><div class="sub">\u03b1 = '+alpha+'</div></div>';
+  html+='</div>';
+
+  for(const t of activeTests){
+    html+='<div class="chart-card"><h3>'+TEST_LABELS[t]+'</h3><div class="chart-desc">'+TEST_DESCRIPTIONS[t]+'</div><div class="chart-meta" id="meta_'+t+'"></div><div class="chart-wrap"><canvas id="chart_'+t+'"></canvas></div></div>';
+  }
+  document.getElementById('results').innerHTML=html;
+
+  for(const t of activeTests){
+    const result=bootstrapTest(a,b,TEST_FNS[t],nBoot);
+    const reject=result.pValue<alpha;
+    const metaEl=document.getElementById('meta_'+t);
+    let metaHTML='<span class="tag-boot">Bootstrap</span> &nbsp; Observed: <strong>'+result.observed.toFixed(5)+'</strong> &nbsp;|&nbsp; p-value: <span class="pval '+(reject?'reject':'accept')+'">'+result.pValue.toFixed(4)+'</span> \u2192 <span class="'+(reject?'reject':'accept')+'">'+(reject?'REJECT H\u2080':'Fail to reject H\u2080')+'</span>';
+    if(t==='means'){
+      const tRej=ttest.pValue<alpha;
+      metaHTML+='<br><span class="ttest-line"><span class="tag-ttest">Welch t-test</span> &nbsp; |t| = '+Math.abs(ttest.tStat).toFixed(4)+' &nbsp;|&nbsp; p-value: <span class="pval" style="color:'+(tRej?'var(--red)':'var(--green)')+'">'+ttest.pValue.toFixed(4)+'</span> \u2192 <span style="color:'+(tRej?'var(--red)':'var(--green)')+'">'+(tRej?'REJECT H\u2080':'Fail to reject H\u2080')+'</span></span>';
+    }
+    metaEl.innerHTML=metaHTML;
+
+    const bins=binData(result.bootStats,70);
+    const bgColors=bins.edges.map(v=>v>=result.observed?'rgba(239,68,68,0.45)':'rgba(100,116,139,0.45)');
+    const borderColors=bins.edges.map(v=>v>=result.observed?'rgba(239,68,68,0.8)':'rgba(100,116,139,0.6)');
+    charts.push(new Chart(document.getElementById('chart_'+t),{
+      type:'bar',
+      data:{labels:bins.edges.map(v=>v.toFixed(4)),datasets:[{
+        label:'Null distribution (permuted)',data:bins.counts,backgroundColor:bgColors,borderColor:borderColors,borderWidth:1,
+      }]},options:chartOpts('Statistic','Count'),
+    }));
+  }
+}
+
+function chartOpts(xLabel,yLabel){
+  return{
+    responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'DM Mono',size:11}}}},
+    scales:{
+      x:{display:true,ticks:{color:'#8892a4',font:{family:'DM Mono',size:9},maxTicksLimit:10,maxRotation:0},grid:{color:'rgba(42,48,64,0.5)'},title:{display:!!xLabel,text:xLabel,color:'#8892a4',font:{family:'DM Mono',size:11}}},
+      y:{display:true,ticks:{color:'#8892a4',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,48,64,0.5)'},title:{display:!!yLabel,text:yLabel,color:'#8892a4',font:{family:'DM Mono',size:11}}},
+    }
+  };
+}
+</script>
+</body>
+</html>

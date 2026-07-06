@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domain Variance Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+    :root {
+      --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+      --text: #e2e8f0; --text-dim: #8892a4;
+      --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+      --yellow: #eab308; --purple: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+    .layout { display: grid; grid-template-columns: minmax(380px,1fr) minmax(0,2fr); gap: 1.5rem; padding: 0 1rem; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+    label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+    input[type="range"] { width: 100%; background: transparent; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; margin: 0.3rem 0 0.5rem 0; }
+    input[type="range"]::-webkit-slider-track { background: var(--border); height: 6px; border-radius: 3px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-a); cursor: pointer; margin-top: -5px; }
+    .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent-a); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-warn { background: var(--accent-b); color: #fff; }
+    .btn-warn:hover { background: #ea580c; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-green:hover { background: #16a34a; }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .insight-banner strong { color: var(--text); }
+    .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+    .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .explainer summary:hover { color: var(--text); }
+    .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+    .explainer-content strong { color: var(--text); }
+    .explainer-content p { margin-bottom: 0.5rem; }
+    .scorecard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .scorecard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+    .scorecard h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.5rem; font-family: 'DM Mono', monospace; }
+    .scorecard.highlight-bad { border-color: var(--red); box-shadow: 0 0 12px rgba(239,68,68,0.15); }
+    .scorecard.highlight-good { border-color: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.15); }
+    .scorecard.highlight-warn { border-color: var(--yellow); box-shadow: 0 0 12px rgba(234,179,8,0.15); }
+    .metric-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.8rem; }
+    .metric-row .m-name { font-weight: 600; }
+    .metric-row .m-val { font-family: 'DM Mono', monospace; font-weight: 600; }
+    .bar-wrap { width: 100%; height: 7px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem; border: 1px solid var(--border); }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .client-label { font-size: 0.7rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-bottom: 0.3rem; }
+    .slider-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .slider-row label { flex-shrink: 0; margin-bottom: 0; min-width: 80px; }
+    .slider-row input { flex: 1; }
+    .slider-row .val { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--accent-a); min-width: 35px; text-align: right; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0; }
+    .compare-table th, .compare-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.68rem; }
+    .chart-wrap { height: 250px; position: relative; }
+    .step-indicator { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .step { padding: 0.35rem 0.75rem; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.7rem; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+    .step.active { background: rgba(59,130,246,0.1); color: var(--accent-a); border-color: var(--accent-a); }
+    .step.done { background: rgba(34,197,94,0.1); color: var(--green); border-color: var(--green); }
+    .simpson-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Domain Variance Lab</h1>
+  <div class="subtitle">Source #5 — "The aggregate hides the story."</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>The big idea:</strong> Your system performs differently in different domains. The aggregate scorecard hides this. This is not a measurement problem — it's a <strong>property of the world</strong>. No amount of better measurement or more data can fix it. Only improving the system itself can reduce the gap.</p>
+
+      <p><strong>The scenario:</strong> You build an AI customer support assistant and sell it to three enterprise clients. Your internal test scorecard says Correctness 4.0 — looks solid! But each client sends a different mix of queries (finance, medical, legal), and the system handles these domains very differently.</p>
+
+      <p><strong>What the three steps show:</strong></p>
+
+      <p><strong>Step 1 — Aggregate Scorecard:</strong> You see the internal evaluation — a single scorecard weighted by your internal test mix (which happens to be finance-heavy). The numbers look good. Leadership approves. You deploy.</p>
+
+      <p><strong>Step 2 — Deploy to Clients:</strong> Each client has a different query mix. Client A (finance-heavy) sees great scores. Client B (medical-heavy) sees terrible scores. Client C (mixed) is somewhere in between. The system didn't change — the clients' realities are different. You also see a per-domain breakdown showing the real story: the system is great at finance and struggling with medical. The aggregate hid this.</p>
+
+      <p><strong>Step 3 — Simpson's Paradox:</strong> Two systems (A and B) are tested on the <strong>same 200 queries</strong>. System A wins the per-query average. But when you look per-domain, System B is better at medical and legal — it just loses slightly on finance, which dominates the test set (80% of queries). If you weight domains equally or by production traffic, B wins. The "winner" reverses depending on how you aggregate. This is Simpson's Paradox: a trend in the aggregate that reverses when you break the data into subgroups, caused by a confounding variable (domain composition) hidden inside the average.</p>
+
+      <p><strong>On the left panel</strong> you can see the true scores per domain (how the system actually performs in each language/domain — in practice you wouldn't know these) and the client query mixes (adjustable with sliders — drag them to see how different mixes create different client experiences from the same system).</p>
+
+      <p><strong>Connection to Source #2 (Sampling Bias):</strong> Source #2 is about your <em>test set</em> having the wrong mix. Source #5 is about <em>reality itself</em> being heterogeneous. Even with a perfectly representative test set, the aggregate hides that some segments are failing. The fix isn't better sampling — it's per-segment reporting and improving the system on weak domains.</p>
+
+      <p><strong>Does more data help?</strong> No. More data gives you a tighter estimate of each domain's score, but doesn't reduce the variance <em>between</em> domains. The gap is real. Only system improvements (better medical handling, domain-specific prompts, routing) can reduce it.</p>
+    </div>
+  </details>
+
+  <div class="step-indicator">
+    <span class="step active" id="step1-ind">1. See the Aggregate</span>
+    <span class="step" id="step2-ind">2. Deploy to Clients</span>
+    <span class="step" id="step3-ind">3. Simpson's Paradox</span>
+  </div>
+
+  <div class="layout">
+    <div class="left-col">
+      <!-- Domain true scores -->
+      <div class="panel">
+        <h2>True Scores by Domain</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.6rem;">
+          How your system actually performs in each domain. Finance: great. Medical: struggling. Legal: decent.
+        </p>
+        <table class="compare-table" id="domain-scores-table">
+          <thead><tr><th>Domain</th><th>Correct.</th><th>Helpful.</th><th>Tone</th><th>Complet.</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Client mixes -->
+      <div class="panel">
+        <h2>Client Query Mixes</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.6rem;">
+          Each client sends a different mix of queries. Adjust to see how the same system creates different experiences.
+        </p>
+        <div id="client-sliders"></div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="showAggregate()">1. Aggregate Scorecard</button>
+        <button class="btn btn-warn" onclick="deployToClients()">2. Deploy to Clients</button>
+        <button class="btn btn-green" onclick="showSimpson()">3. Simpson's Paradox</button>
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); line-height:1.5;">
+        <p><strong style="color:var(--accent-a);">1. Aggregate Scorecard</strong> — Shows the internal evaluation, weighted by your finance-heavy test mix. A single scorecard with 4 metrics. The numbers look solid — leadership approves.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--accent-b);">2. Deploy to Clients</strong> — Reveals what three different clients actually experience: Client A (finance-heavy) sees great scores, Client B (medical-heavy) sees terrible scores, Client C (mixed) is in between. Also shows a per-domain breakdown exposing the real story behind the aggregate.</p>
+        <p style="margin-top:0.4rem;"><strong style="color:var(--green);">3. Simpson's Paradox</strong> — Compares two systems (A and B) on the same 200 queries. System A wins the per-query average, but System B wins per-domain and production-weighted averages. The "winner" reverses depending on how you aggregate — a classic aggregation paradox caused by domain composition as a confounding variable.</p>
+      </div>
+    </div>
+
+    <div class="right-col" id="results">
+      <div class="insight-banner">
+        <strong>Start here:</strong> Click "Aggregate Scorecard" to see the company-wide numbers. They look fine. Then deploy to individual clients and watch the story change.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const domains = [
+      { id: 'finance', name: 'Finance', color: '#3b82f6' },
+      { id: 'medical', name: 'Medical', color: '#ef4444' },
+      { id: 'legal',   name: 'Legal',   color: '#22c55e' }
+    ];
+
+    const metrics = ['Correctness', 'Helpfulness', 'Tone', 'Completeness'];
+    const metricColors = { Correctness: '#3b82f6', Helpfulness: '#f97316', Tone: '#22c55e', Completeness: '#a78bfa' };
+
+    // True scores per domain
+    const domainScores = {
+      finance: { Correctness: 4.5, Helpfulness: 4.4, Tone: 4.5, Completeness: 4.3 },
+      medical: { Correctness: 3.0, Helpfulness: 2.8, Tone: 3.8, Completeness: 2.6 },
+      legal:   { Correctness: 3.8, Helpfulness: 3.6, Tone: 4.1, Completeness: 3.5 }
+    };
+
+    // Client query mixes (% per domain)
+    const clients = [
+      { name: 'Client A (FinCorp)', mix: { finance: 80, medical: 5,  legal: 15 }, emoji: '🏦' },
+      { name: 'Client B (MedTech)', mix: { finance: 10, medical: 70, legal: 20 }, emoji: '🏥' },
+      { name: 'Client C (Conglomerate)', mix: { finance: 35, medical: 30, legal: 35 }, emoji: '🏢' }
+    ];
+
+    // Internal test mix (finance-leaning)
+    const internalMix = { finance: 50, medical: 20, legal: 30 };
+
+    // ===== SAMPLING =====
+    function sampleGamma(shape) {
+      if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x, v;
+        do {
+          const u1 = Math.random(); const u2 = Math.random();
+          x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          v = 1 + c * x;
+        } while (v <= 0);
+        v = v * v * v;
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    }
+    function sampleBeta(a, b) { const x = sampleGamma(a); const y = sampleGamma(b); return x / (x + y); }
+
+    function generateScore(trueScore, n) {
+      const mu = Math.max(0.01, Math.min(0.99, (trueScore - 1) / 4));
+      const alpha = mu * 14; const beta = (1 - mu) * 14;
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        sum += 1 + sampleBeta(alpha, beta) * 4;
+      }
+      return sum / n;
+    }
+
+    function weightedScorecard(mix) {
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      const result = {};
+      metrics.forEach(m => {
+        let w = 0;
+        domains.forEach(d => { w += (mix[d.id] / total) * generateScore(domainScores[d.id][m], 40); });
+        result[m] = w;
+      });
+      return result;
+    }
+
+    function exactWeightedScorecard(mix) {
+      const total = Object.values(mix).reduce((a, b) => a + b, 0);
+      const result = {};
+      metrics.forEach(m => {
+        let w = 0;
+        domains.forEach(d => { w += (mix[d.id] / total) * domainScores[d.id][m]; });
+        result[m] = w;
+      });
+      return result;
+    }
+
+    // ===== RENDER =====
+    function renderScorecard(title, scores, opts = {}) {
+      const { highlight, subtitle: sub, comparison } = opts;
+      let cls = 'scorecard';
+      if (highlight === 'bad') cls += ' highlight-bad';
+      if (highlight === 'good') cls += ' highlight-good';
+      if (highlight === 'warn') cls += ' highlight-warn';
+
+      let html = `<div class="${cls}"><h3>${title}</h3>`;
+      if (sub) html += `<div class="client-label">${sub}</div>`;
+      metrics.forEach(m => {
+        const v = scores[m];
+        const pct = (v / 5) * 100;
+        let delta = '';
+        if (comparison) {
+          const diff = v - comparison[m];
+          const c = diff < -0.15 ? 'color:var(--red)' : diff > 0.15 ? 'color:var(--green)' : 'color:var(--text-dim)';
+          delta = `<span style="font-size:0.68rem; font-family:'DM Mono',monospace; ${c}; margin-left:0.3rem;">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</span>`;
+        }
+        html += `<div class="metric-row"><span class="m-name">${m}</span><span><span class="m-val" style="color:${v < 3.5 ? 'var(--red)' : v < 4.0 ? 'var(--yellow)' : 'var(--green)'}">${v.toFixed(2)}</span>${delta}</span></div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%; background:${metricColors[m]};"></div></div>`;
+      });
+      html += `</div>`;
+      return html;
+    }
+
+    // ===== INIT =====
+    function initDomainTable() {
+      const tbody = document.querySelector('#domain-scores-table tbody');
+      tbody.innerHTML = '';
+      domains.forEach(d => {
+        tbody.innerHTML += `<tr>
+          <td style="color:${d.color};font-weight:600;">${d.name}</td>
+          ${metrics.map(m => `<td style="color:${domainScores[d.id][m] < 3.5 ? 'var(--red)' : 'var(--text)'}">${domainScores[d.id][m].toFixed(1)}</td>`).join('')}
+        </tr>`;
+      });
+    }
+
+    function initClientSliders() {
+      const container = document.getElementById('client-sliders');
+      container.innerHTML = '';
+      clients.forEach((client, ci) => {
+        let html = `<div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.78rem; font-weight:600; margin-bottom:0.3rem;">${client.emoji} ${client.name}</div>`;
+        domains.forEach(d => {
+          html += `<div class="slider-row">
+            <label style="color:${d.color}">${d.name}</label>
+            <input type="range" min="0" max="90" value="${client.mix[d.id]}"
+                   id="client-${ci}-${d.id}"
+                   oninput="updateClientMix(${ci}, '${d.id}', this.value)">
+            <span class="val" id="client-${ci}-${d.id}-val">${client.mix[d.id]}%</span>
+          </div>`;
+        });
+        html += `</div>`;
+        container.innerHTML += html;
+      });
+    }
+
+    function updateClientMix(ci, domainId, val) {
+      clients[ci].mix[domainId] = parseInt(val);
+      document.getElementById(`client-${ci}-${domainId}-val`).textContent = val + '%';
+    }
+
+    // ===== STEPS =====
+    function setStep(n) {
+      ['step1-ind','step2-ind','step3-ind'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        el.className = 'step';
+        if (i + 1 < n) el.className = 'step done';
+        if (i + 1 === n) el.className = 'step active';
+      });
+    }
+
+    function showAggregate() {
+      setStep(1);
+      const scores = weightedScorecard(internalMix);
+      let html = '';
+
+      html += `<div class="insight-banner">
+        <strong>Your internal evaluation:</strong> Scorecard based on your internal test set (${domains.map(d => d.name + ' ' + internalMix[d.id] + '%').join(', ')}).
+        The numbers look solid. Correctness is above 4.0. You'd present this to leadership with confidence.
+      </div>`;
+
+      html += renderScorecard('Internal Aggregate Scorecard', scores, {
+        highlight: 'good',
+        subtitle: `Internal test mix: Finance ${internalMix.finance}%, Medical ${internalMix.medical}%, Legal ${internalMix.legal}%`
+      });
+
+      html += `<div style="background:var(--surface-2); border:2px dashed var(--border); border-radius:12px; padding:1.25rem; text-align:center; margin-top:1rem;">
+        <h3 style="font-size:1rem; margin-bottom:0.5rem;">The board approves. Time to deploy.</h3>
+        <p style="color:var(--text-dim); font-size:0.8rem; margin-bottom:0.75rem;">Three enterprise clients are waiting. They each have different needs.</p>
+        <button class="btn btn-warn" onclick="deployToClients()" style="font-size:0.9rem; padding:0.7rem 1.5rem;">Deploy to Clients →</button>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function deployToClients() {
+      setStep(2);
+      const internalScores = weightedScorecard(internalMix);
+      let html = '';
+
+      html += `<div class="insight-banner" style="border-left-color: var(--red);">
+        <strong>Reality check:</strong> Each client has a different query mix, so each experiences a different system.
+        Client B (medical-heavy) is having a very different experience than Client A (finance-heavy).
+        <strong>The aggregate is the same system. The experience is not.</strong>
+      </div>`;
+
+      // Internal scorecard
+      html += renderScorecard('Internal Aggregate', internalScores, {
+        subtitle: 'What you reported to leadership'
+      });
+
+      // Per-client scorecards
+      html += `<div class="scorecard-grid">`;
+      clients.forEach(client => {
+        const scores = weightedScorecard(client.mix);
+        const worstMetric = metrics.reduce((worst, m) => scores[m] < scores[worst] ? m : worst, metrics[0]);
+        const hl = scores[worstMetric] < 3.0 ? 'bad' : scores[worstMetric] < 3.5 ? 'warn' : 'good';
+        html += renderScorecard(`${client.emoji} ${client.name}`, scores, {
+          highlight: hl,
+          comparison: internalScores,
+          subtitle: domains.map(d => d.name + ' ' + client.mix[d.id] + '%').join(', ')
+        });
+      });
+      html += `</div>`;
+
+      // Per-domain breakdown
+      html += `<div class="panel">
+        <h2>Per-Domain Breakdown (the honest view)</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          This is what the aggregate hides. The system isn't "4.0 overall" — it's great at finance and struggling with medical.
+          These are different stories with different consequences. <strong>This variance is a property of the world, not a measurement problem.</strong>
+        </p>
+        <div class="scorecard-grid">`;
+      domains.forEach(d => {
+        const scores = {};
+        metrics.forEach(m => { scores[m] = generateScore(domainScores[d.id][m], 50); });
+        const worst = Math.min(...Object.values(scores));
+        html += renderScorecard(d.name, scores, { highlight: worst < 3.0 ? 'bad' : worst < 3.5 ? 'warn' : 'good' });
+      });
+      html += `</div></div>`;
+
+      // Takeaway
+      html += `<div class="panel">
+        <h2>Key Insight</h2>
+        <table class="compare-table">
+          <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Does more data help?</strong></td><td><strong>No.</strong> More data gives a tighter estimate of each domain's score, but doesn't reduce the variance between domains. The gap is real — your system handles finance better than medical. Only system improvements can change that.</td></tr>
+            <tr><td><strong>How is this different from #2?</strong></td><td>#2 (sampling bias) = your test set has the wrong mix. #5 = reality itself is heterogeneous. Even a perfectly representative test set can't hide that medical is failing.</td></tr>
+            <tr><td><strong>The fix?</strong></td><td>Per-segment reporting as standard practice. Per-client SLAs. And most importantly: <em>improve the system</em> on weak domains.</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+
+      html += `<div style="text-align:center; margin-top:0.5rem;">
+        <button class="btn btn-green" onclick="showSimpson()" style="font-size:0.9rem; padding:0.7rem 1.5rem;">Show Simpson's Paradox →</button>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function showSimpson() {
+      setStep(3);
+
+      // Simpson's paradox — SAME test set for both systems.
+      // Test set: 160 finance, 20 medical, 20 legal (200 total).
+      // Both A and B are evaluated on ALL 200 queries.
+      //
+      // System A: great at finance (the big segment), terrible at the rest.
+      // System B: slightly worse at finance, much better at medical & legal.
+      //
+      // Per-query average (= test set weighted): A wins (dominated by 80% finance).
+      // Per-domain average (= equal weight per domain): B wins.
+      // Production-weighted average (33/33/33): B wins by a lot.
+      //
+      // The paradox: same data, same queries, different aggregation → different winner.
+
+      const testMix = { finance: 80, medical: 10, legal: 10 }; // 80-10-10
+
+      const sysA = {
+        finance: { Correctness: 4.6, Helpfulness: 4.4, Tone: 4.5, Completeness: 4.3 },
+        medical: { Correctness: 2.4, Helpfulness: 2.2, Tone: 3.2, Completeness: 2.0 },
+        legal:   { Correctness: 2.8, Helpfulness: 2.5, Tone: 3.3, Completeness: 2.3 }
+      };
+      const sysB = {
+        finance: { Correctness: 4.2, Helpfulness: 4.1, Tone: 4.3, Completeness: 4.0 },
+        medical: { Correctness: 4.0, Helpfulness: 3.8, Tone: 4.1, Completeness: 3.6 },
+        legal:   { Correctness: 3.8, Helpfulness: 3.6, Tone: 4.0, Completeness: 3.4 }
+      };
+
+      const prodMix = { finance: 33, medical: 34, legal: 33 };
+
+      function aggScores(sys, mix) {
+        const total = Object.values(mix).reduce((a, b) => a + b, 0);
+        const result = {};
+        metrics.forEach(m => {
+          let w = 0;
+          domains.forEach(d => { w += (mix[d.id] / total) * sys[d.id][m]; });
+          result[m] = w;
+        });
+        return result;
+      }
+
+      // Per-query average = weighted by test mix (finance-heavy)
+      const aggA_test = aggScores(sysA, testMix);
+      const aggB_test = aggScores(sysB, testMix);
+
+      // Per-domain average = equal weight
+      const equalMix = { finance: 33, medical: 34, legal: 33 };
+      const aggA_domain = aggScores(sysA, equalMix);
+      const aggB_domain = aggScores(sysB, equalMix);
+
+      let html = '';
+
+      html += `<div class="panel" style="border-left: 3px solid var(--purple);">
+        <h2>What is Simpson's Paradox?</h2>
+        <p style="font-size:0.8rem; line-height:1.6; color:var(--text-dim); margin-bottom:0.5rem;">
+          <strong style="color:var(--text);">Simpson's Paradox</strong> is a statistical phenomenon where a trend that appears in the
+          overall (aggregated) data <strong style="color:var(--text);">reverses or disappears</strong> when you break the data down into subgroups.
+        </p>
+        <p style="font-size:0.8rem; line-height:1.6; color:var(--text-dim); margin-bottom:0.5rem;">
+          The classic example: Hospital A has a higher overall survival rate than Hospital B.
+          But when you split by patient severity, Hospital B has a higher survival rate for <em>both</em> mild and severe cases.
+          The paradox? Hospital B takes on more severe patients, which pulls its aggregate down.
+          The aggregate hides a <strong style="color:var(--text);">confounding variable</strong> (patient severity) that reverses the conclusion.
+        </p>
+        <p style="font-size:0.8rem; line-height:1.6; color:var(--text-dim);">
+          <strong style="color:var(--text);">Why it applies here:</strong> Both systems are evaluated on the same 200 queries.
+          But the test set is 80% finance — and System A happens to be great at finance.
+          The per-query average is <em>confounded by domain composition</em>: it's really measuring
+          "who's better at finance?" because finance dominates the average.
+          When you control for the confounder (look per-domain, or reweight equally), the winner reverses.
+          Same data, same queries — the paradox lives in the aggregation.
+        </p>
+      </div>`;
+
+      html += `<div class="insight-banner" style="border-left-color: var(--purple);">
+        <strong>Same test set. Same 200 queries. Both systems answer all of them.</strong>
+        The test set is 80% finance, 10% medical, 10% legal.
+        When you compute the per-query average, System A wins — because A dominates the 80% finance slice.
+        But System B is far better on medical and legal. <strong>The "winner" depends entirely on how you aggregate.</strong>
+      </div>`;
+
+      // Aggregate comparison — per-query (test weighted)
+      html += `<div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); font-family:'DM Mono',monospace; margin-bottom:0.5rem;">Per-Query Average (each of the 200 queries counts equally)</div>`;
+      html += `<div class="simpson-grid">`;
+      html += renderScorecard('System A', aggA_test, {
+        highlight: 'good',
+        subtitle: 'Wins per-query average (80% of queries are finance)'
+      });
+      html += renderScorecard('System B', aggB_test, {
+        highlight: 'bad',
+        comparison: aggA_test,
+        subtitle: 'Loses per-query average'
+      });
+      html += `</div>`;
+
+      // Aggregate comparison — per-domain (equal weight)
+      html += `<div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); font-family:'DM Mono',monospace; margin-bottom:0.5rem; margin-top:1rem;">Per-Domain Average (each domain weighted equally)</div>`;
+      html += `<div class="simpson-grid">`;
+      html += renderScorecard('System A', aggA_domain, {
+        highlight: 'bad',
+        subtitle: 'Loses when domains are weighted equally'
+      });
+      html += renderScorecard('System B', aggB_domain, {
+        highlight: 'good',
+        comparison: aggA_domain,
+        subtitle: 'Wins when domains are weighted equally'
+      });
+      html += `</div>`;
+
+      html += `<div class="insight-banner" style="border-left-color: var(--yellow);">
+        <strong>Same data. Different aggregation. Opposite conclusions.</strong>
+        The per-query average is implicitly weighted 80/10/10 (the test set composition).
+        The per-domain average weights each domain equally. Which is "right"?
+        That depends on what your production looks like — and what your users care about.
+      </div>`;
+
+      // Per-domain comparison table
+      html += `<div class="panel"><h2>Per-Domain Breakdown — Same 200 Queries</h2>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          A wins finance (the 80% slice). B wins medical and legal by a wide margin.
+          The per-query average hides B's strength because medical and legal are only 20% of the test set.
+        </p>
+        <table class="compare-table">
+          <thead><tr><th>Domain</th><th>Queries</th><th>Metric</th><th>Sys A</th><th>Sys B</th><th>Winner</th></tr></thead>
+          <tbody>`;
+
+      const domainQueryCounts = { finance: 160, medical: 20, legal: 20 };
+      domains.forEach(d => {
+        metrics.forEach((m, mi) => {
+          const a = sysA[d.id][m];
+          const b = sysB[d.id][m];
+          const winner = b > a ? 'B' : b < a ? 'A' : 'Tie';
+          const wColor = winner === 'B' ? 'var(--green)' : winner === 'A' ? 'var(--accent-a)' : 'var(--text-dim)';
+          html += `<tr${mi === 0 ? ` style="border-top:2px solid var(--border);"` : ''}>
+            <td style="color:${d.color}; font-weight:${mi === 0 ? 600 : 400};">${mi === 0 ? d.name : ''}</td>
+            <td>${mi === 0 ? domainQueryCounts[d.id] : ''}</td>
+            <td>${m}</td>
+            <td>${a.toFixed(1)}</td>
+            <td>${b.toFixed(1)}</td>
+            <td style="color:${wColor}; font-weight:600;">${winner}</td>
+          </tr>`;
+        });
+      });
+
+      html += `</tbody></table></div>`;
+
+      // Production reality
+      const aggA_prod = aggScores(sysA, prodMix);
+      const aggB_prod = aggScores(sysB, prodMix);
+
+      html += `<div class="panel">
+        <h2>What if production is balanced?</h2>
+        <p style="font-size:0.78rem; color:var(--text-dim); margin-bottom:0.5rem;">
+          If real traffic is ~33% per domain, the per-query average from your test set is misleading.
+          Reweighting the <em>same scores</em> by the production mix tells a very different story:
+        </p>
+        <table class="compare-table">
+          <thead><tr><th>Aggregation</th><th>System A</th><th>System B</th><th>Winner</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Per-query (test: 80/10/10)</td>
+              <td>${aggA_test.Correctness.toFixed(2)}</td>
+              <td>${aggB_test.Correctness.toFixed(2)}</td>
+              <td style="color:var(--accent-a); font-weight:600;">A</td>
+            </tr>
+            <tr>
+              <td>Per-domain (equal: 33/33/33)</td>
+              <td>${aggA_domain.Correctness.toFixed(2)}</td>
+              <td>${aggB_domain.Correctness.toFixed(2)}</td>
+              <td style="color:var(--green); font-weight:600;">B</td>
+            </tr>
+            <tr>
+              <td>Production-weighted (33/34/33)</td>
+              <td>${aggA_prod.Correctness.toFixed(2)}</td>
+              <td>${aggB_prod.Correctness.toFixed(2)}</td>
+              <td style="color:var(--green); font-weight:600;">B</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.75rem; color:var(--text-dim); margin-top:0.5rem;">
+          (Showing Correctness only. The pattern holds for all 4 metrics.)
+        </p>
+      </div>`;
+
+      // Lesson
+      html += `<div class="panel">
+        <h2>The Lesson</h2>
+        <p style="font-size:0.8rem; line-height:1.6; color:var(--text-dim);">
+          <strong style="color:var(--text);">A per-query average implicitly weights by test set composition.</strong>
+          If your test set is 80% finance queries, then "average score" really means "80% finance score."
+          That's not what most users experience.
+        </p>
+        <p style="font-size:0.8rem; line-height:1.6; color:var(--text-dim); margin-top:0.5rem;">
+          <strong style="color:var(--text);">The fix:</strong> always report per-segment scores.
+          If you must report a single number, weight it by the production mix, not the test set mix.
+          And always ask: does System A's finance advantage matter more than System B's medical + legal advantage?
+          That's a product decision, not a statistical one.
+        </p>
+      </div>`;
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    // ===== INIT =====
+    initDomainTable();
+    initClientSliders();
+  </script>
+</body>
+</html>
