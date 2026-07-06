@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Basic classification + noise — the L3 lab</title>
+  <title>Sampling noise — the L3 lab</title>
   <link rel="stylesheet" href="../course.css">
   <link rel="stylesheet" href="../style.css">
   <style>
@@ -196,7 +196,7 @@
     <a class="nav-back" href="../index.html">← All playgrounds</a>
 
     <div class="hero">
-      <h1>Basic classification + noise</h1>
+      <h1>Sampling noise</h1>
     </div>
 
     <section class="lab-section">
@@ -205,7 +205,8 @@
         Two <strong>single-label</strong> datasets — customer-support tickets routed to one of five categories
         (<strong>multi-class</strong>), and movie-review sentiment as POSITIVE/NEGATIVE (<strong>binary</strong>).
         For each, the page guides you through the tabs: <strong>Explore the data</strong> (no classifier yet),
-        then the <strong>ML classifier</strong> (TF-IDF + Logistic Regression). Predictions and ground truth are
+        then the <strong>ML classifier</strong> (TF-IDF + Logistic Regression), plus a companion lab on
+        <strong>noise across multiple metrics</strong>. Predictions and ground truth are
         <em>precomputed</em>, so you can spin freely — no API calls.
         (The <strong>gen-AI classifier</strong> that used to live here has moved to the L4 lab,
         <a href="../llm_as_a_judge/index.html#classifier">LLM as a Judge</a>.)
@@ -750,7 +751,7 @@ CLASS:`;
     const octx=off.getContext('2d'), img=octx.createImageData(G,G);
     for(let i=0;i<G*G;i++){ const c=ramp(grid[i]); img.data[i*4]=c[0]; img.data[i*4+1]=c[1]; img.data[i*4+2]=c[2]; img.data[i*4+3]=255; }
     octx.putImageData(img,0,0); ctx.imageSmoothingEnabled=true; ctx.drawImage(off,0,0,G,G,0,0,Wc,Hc);
-    document.getElementById('surfcap').innerHTML = `The painted square is the <b>Model</b> right/wrong across the whole 2D map — green competence, red islands of failure. <b>But we never see this</b>; it assumes we labelled everywhere.`;
+    document.getElementById('surfcap').innerHTML = `The painted square is the <b>Model</b> right/wrong across the whole 2D map — green competence, red islands of failure. The shades are deliberate: each pixel is a smoothed estimate from nearby examples, not a single case. Strong green means nearby cases are mostly correct, strong red means mostly wrong, and blended colors mark mixed or transition regions. <b>But we never see this</b>; it assumes we labelled everywhere.`;
 
     // Bottom: an empty space — our lack of knowledge. No competence painted; only the points we sampled.
     const know=document.getElementById('surfknow');
@@ -854,6 +855,7 @@ CLASS:`;
   function renderPanel(){
     const panel=document.getElementById('stagepanel');
     if(curStage==='beta'){ renderBetaTab(); return; }
+    if(curStage==='metrics'){ renderMetricsNoise(); return; }
     if(!DATA[curDS]){ panel.innerHTML=`<h3>${DESC[curDS]?DESC[curDS].title:curDS}</h3><p class="note">No predictions found for <code>${curDS}</code> yet. Generate them with <code>python build_predictions.py</code> (and <code>build_embeddings.py</code>), then reload.</p>`; return; }
     initState(curDS);
     if(curStage==='explore') renderExplore();
@@ -890,7 +892,15 @@ CLASS:`;
     renderCalc();
   }
 
-  const STAGES=[['explore','Explore the data'],['ml','ML classifier'],['sampling','Sampling'],['imbalance','Class imbalance'],['beta','Reporting']];
+  function renderMetricsNoise(){
+    document.getElementById('stagepanel').innerHTML = `
+      <h3>Noise on multiple metrics</h3>
+      <p>This companion lab looks at the same sampling problem from another angle: one evaluation usually reports several metrics, and each one wobbles when the sample changes. Run the same evaluation repeatedly and watch accuracy, precision, recall, and intervals move together.</p>
+      <p>Use it after this lab when you want to see how a scorecard can change even when the underlying system has not changed.</p>
+      <p class="how-link"><a href="../sampling_noise/index.html">Open Noise on multiple metrics →</a></p>`;
+  }
+
+  const STAGES=[['explore','Explore the data'],['ml','ML classifier'],['sampling','Sampling'],['imbalance','Class imbalance'],['beta','Reporting'],['metrics','Noise on multiple metrics']];
   const dsbar=document.getElementById('dsbar'), stageTabs=document.getElementById('stagetabs');
   const dsBtns={}, stageBtns={};
   ORDER.forEach(key=>{ const b=document.createElement('button');
