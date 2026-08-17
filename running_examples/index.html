@@ -170,6 +170,74 @@
       margin-bottom: 1.2rem;
       max-width: 68ch;
     }
+    /* try-it blocks */
+    .try {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.2rem;
+    }
+    .try-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-a);
+      margin-bottom: 0.6rem;
+    }
+    .picker { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.8rem; }
+    .pick-btn {
+      font: inherit;
+      font-size: 0.82rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+    }
+    .pick-btn:hover { border-color: var(--accent-a); }
+    .pick-btn[aria-pressed="true"] {
+      border-color: var(--accent-a);
+      background: #eff6ff;
+      color: var(--accent-a);
+    }
+    .result {
+      font-size: 0.95rem;
+      border-left: 3px solid var(--accent-a);
+      padding: 0.4rem 0.8rem;
+      background: var(--surface-2);
+      border-radius: 0 8px 8px 0;
+    }
+    .result .big { font-weight: 600; }
+    .result.error { border-left-color: #dc2626; color: #dc2626; font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+    .num-inputs { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 0.8rem; }
+    .num-inputs label { font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.4rem; }
+    .num-inputs input {
+      font-family: 'DM Mono', monospace; font-size: 0.85rem;
+      width: 5.5rem; padding: 0.3rem 0.5rem;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text);
+    }
+    .num-inputs input:focus-visible { outline: 3px solid var(--accent-a); outline-offset: 1px; }
+    .cluster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem; }
+    .cluster-card {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.8rem 0.95rem; font-size: 0.88rem;
+    }
+    .cluster-card h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .cluster-card .terms { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.45rem; }
+    .cluster-card ul { list-style: none; margin-bottom: 0.45rem; }
+    .cluster-card li { color: var(--text-dim); font-size: 0.82rem; padding-left: 0.9rem; position: relative; }
+    .cluster-card li::before { content: '–'; position: absolute; left: 0; }
+    .cluster-card .res { font-size: 0.84rem; }
+    blockquote.src {
+      border: 1px dashed var(--border); border-radius: 8px;
+      padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--text-dim);
+      margin-bottom: 0.8rem;
+    }
     footer {
       margin-top: 3rem;
       border-top: 1px solid var(--border);
@@ -185,6 +253,7 @@
       .arrow { transform: rotate(90deg); }
       dl.facts { grid-template-columns: 1fr; gap: 0.1rem; }
       dl.facts dd { margin-bottom: 0.5rem; }
+      .cluster-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -230,6 +299,17 @@
 deviation_score(0.6, 0.8) == 1.0          # clean 3-4-5
 deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
 
+    <div class="try">
+      <div class="try-title">Try it — computed live in your browser</div>
+      <div class="num-inputs">
+        <label>cpu_dev <input type="number" id="e1-cpu" step="0.1" value="0.6"></label>
+        <label>mem_dev <input type="number" id="e1-mem" step="0.1" value="0.8"></label>
+        <span class="picker" id="e1-presets"></span>
+      </div>
+      <div class="result" id="e1-out"></div>
+      <p class="note">The same function, ported to JavaScript — including the two <code>ValueError</code> branches. Try a value outside [0,&nbsp;1].</p>
+    </div>
+
     <dl class="facts">
       <dt>One data point</dt><dd>one <code>(cpu_dev, mem_dev)</code> pair</dd>
       <dt>Question <span class="tag-derived">derived</span></dt><dd>Does the implementation match the specified formula and reject invalid inputs?</dd>
@@ -265,6 +345,13 @@ deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
       </div>
     </div>
 
+    <div class="try">
+      <div class="try-title">Try it — pick a ticket</div>
+      <div class="picker" id="e2-picker"></div>
+      <div class="result" id="e2-out"></div>
+      <p class="note">Predictions precomputed with the deck&rsquo;s baseline &mdash; TF-IDF + logistic regression trained on the 2,000-ticket cached Bitext subset. Confidence is the model&rsquo;s top-class probability &mdash; watch it drop on the ambiguous tickets.</p>
+    </div>
+
     <dl class="facts">
       <dt>One data point</dt><dd>one ticket with its routing label</dd>
       <dt>Question</dt><dd>How accurate can ticket routing be? Can we reach 90%?</dd>
@@ -296,6 +383,13 @@ deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
         </div>
         <div class="unit"><div class="box io">Refund</div></div>
       </div>
+    </div>
+
+    <div class="try">
+      <div class="try-title">Try it — pick a ticket</div>
+      <div class="picker" id="e3-picker"></div>
+      <div class="result" id="e3-out"></div>
+      <p class="note">Outputs precomputed with <span class="llm-model">the LLM</span> via OpenRouter &mdash; 5 few-shot examples per class, temperature 0 &mdash; on the same tickets as E2. Where the two disagree, ask: which one is right, and how would you know?</p>
     </div>
 
     <dl class="facts">
@@ -334,6 +428,19 @@ deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
 
     <div class="callout">You could evaluate the <strong>clustering</strong>, the <strong>cluster matching</strong>, the <strong>solution extraction</strong> — or the pipeline <strong>end-to-end</strong>. Each is a different experiment, with a different data point and a different notion of &ldquo;correct&rdquo;. Deciding this boundary is one of the lesson&rsquo;s central ideas.</div>
 
+    <div class="try">
+      <div class="try-title">The six clusters the training step produced</div>
+      <div class="cluster-grid" id="e4-clusters"></div>
+      <p class="note">Clusters computed with k-means (k&nbsp;=&nbsp;6) on TF-IDF over the same Bitext subset; each card shows real member tickets &mdash; the <code>{{&hellip;}}</code> placeholders are genuine dataset artifacts. Cluster <em>names and resolutions are hand-written</em> for this page (illustrative). Note the giant catch-all cluster: k-means owes you no tidy themes.</p>
+    </div>
+
+    <div class="try">
+      <div class="try-title">Try it — pick a ticket</div>
+      <div class="picker" id="e4-picker"></div>
+      <div class="result" id="e4-out"></div>
+      <p class="note">Matching = nearest centroid, precomputed. Watch how many natural-sounding tickets land in the catch-all cluster &mdash; the corpus vocabulary is templated, the tickets aren&rsquo;t.</p>
+    </div>
+
     <dl class="facts">
       <dt>One data point</dt><dd>one incoming ticket and its generated/extracted solution</dd>
       <dt>Question</dt><dd>Which themes could self-solve vs not? Do we cover at least 50% of tickets with a score of 4 or more?</dd>
@@ -356,20 +463,133 @@ deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
       </div>
     </div>
 
+    <div class="try">
+      <div class="try-title">Try it — pick a source text</div>
+      <div class="picker" id="e5-picker"></div>
+      <blockquote class="src" id="e5-text"></blockquote>
+      <div class="result" id="e5-out"></div>
+      <p class="note">Summaries precomputed with <span class="llm-model">the LLM</span>, temperature 0. The source texts were written for this page. Is each summary faithful? Would you score it 4 or more &mdash; and on what scale?</p>
+    </div>
+
     <dl class="facts">
-      <dt>Input <span class="tag-illustrative">illustrative</span></dt><dd>&ldquo;Customer: I was charged twice for order #4211 — please refund one charge. Agent: I see the duplicate; I&rsquo;ve opened refund case R-812, you&rsquo;ll hear back within 3 days.&rdquo;</dd>
-      <dt>Output <span class="tag-illustrative">illustrative</span></dt><dd>&ldquo;Duplicate charge on order #4211; refund case R-812 opened, reply promised within 3 days.&rdquo;</dd>
       <dt>One data point</dt><dd>one source text and its summary</dd>
       <dt>Question</dt><dd>Can we achieve faithfulness of 4 or more for at least 90% of the summaries?</dd>
       <dt>Baseline</dt><dd>Not specified in the deck.</dd>
       <dt>Assumptions</dt><dd>text less than 1000 words.</dd>
     </dl>
-    <p class="note">The input/output pair marked <em>illustrative</em> was written for this page — it comes from neither the lesson deck nor a course dataset.</p>
   </section>
 
   <footer>
     Companion to Lesson 3 &mdash; <em>The Dimensions of Experiment Design</em>, from
     <a href="https://reliableai.github.io/ai-ready-engineer-eval/">Experiment Design and Evaluation of AI Systems</a>.
   </footer>
+
+  <script src="data.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // ---- E1: live port of deviation_score, including the ValueError branches ----
+    var cpu = document.getElementById('e1-cpu');
+    var mem = document.getElementById('e1-mem');
+    var e1out = document.getElementById('e1-out');
+    function deviationScore(c, m) {
+      if (!(c >= 0 && c <= 1)) throw new Error('cpu_dev must be in [0, 1], got ' + c);
+      if (!(m >= 0 && m <= 1)) throw new Error('mem_dev must be in [0, 1], got ' + m);
+      return Math.sqrt(c * c + m * m);
+    }
+    function runE1() {
+      var c = parseFloat(cpu.value), m = parseFloat(mem.value);
+      e1out.classList.remove('error');
+      if (Number.isNaN(c) || Number.isNaN(m)) { e1out.textContent = 'enter two numbers'; return; }
+      try {
+        e1out.innerHTML = '<span class="big">deviation_score(' + c + ', ' + m + ') = ' +
+          deviationScore(c, m).toFixed(4) + '</span>';
+      } catch (err) {
+        e1out.classList.add('error');
+        e1out.textContent = 'ValueError: ' + err.message;
+      }
+    }
+    cpu.addEventListener('input', runE1);
+    mem.addEventListener('input', runE1);
+    [[0.0, 0.0], [0.6, 0.8], [1.0, 1.0], [1.2, 0.3]].forEach(function (p) {
+      var b = document.createElement('button');
+      b.className = 'pick-btn';
+      b.textContent = '(' + p[0] + ', ' + p[1] + ')';
+      b.addEventListener('click', function () { cpu.value = p[0]; mem.value = p[1]; runE1(); });
+      document.getElementById('e1-presets').appendChild(b);
+    });
+    runE1();
+
+    // ---- E2/E3/E4/E5: precomputed data from data.js ----
+    var D = window.RUNNING_EXAMPLES;
+    if (!D) {
+      ['e2-out', 'e3-out', 'e4-out', 'e5-out'].forEach(function (id) {
+        var el = document.getElementById(id);
+        el.classList.add('error');
+        el.textContent = 'data.js failed to load — precomputed examples unavailable';
+      });
+      return;
+    }
+    document.querySelectorAll('.llm-model').forEach(function (el) { el.textContent = D.meta.llm_model; });
+
+    function buildPicker(containerId, labels, onPick) {
+      var wrap = document.getElementById(containerId);
+      var btns = labels.map(function (t, i) {
+        var b = document.createElement('button');
+        b.className = 'pick-btn';
+        b.textContent = t;
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () {
+          btns.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+          b.setAttribute('aria-pressed', 'true');
+          onPick(i);
+        });
+        wrap.appendChild(b);
+        return b;
+      });
+      btns[0].click();
+    }
+
+    buildPicker('e2-picker', D.sentences, function (i) {
+      var r = D.e2[i];
+      document.getElementById('e2-out').innerHTML =
+        '<span class="big">&rarr; ' + r.label + '</span> &nbsp;(confidence ' + r.confidence.toFixed(2) + ')';
+    });
+
+    buildPicker('e3-picker', D.sentences, function (i) {
+      var r = D.e3[i], base = D.e2[i];
+      var cmp = (r.label === base.label)
+        ? 'same as the E2 baseline'
+        : 'the E2 baseline said ' + base.label;
+      document.getElementById('e3-out').innerHTML =
+        '<span class="big">&rarr; ' + r.label + '</span> &nbsp;&middot; ' + cmp;
+    });
+
+    D.e4.clusters.forEach(function (c) {
+      var div = document.createElement('div');
+      div.className = 'cluster-card';
+      div.innerHTML = '<h3>' + esc(c.name) + '</h3>' +
+        '<div class="terms">n = ' + c.size + ' &middot; ' + c.top_terms.join(', ') + '</div>' +
+        '<ul>' + c.samples.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
+        '<div class="res"><strong>Resolution:</strong> ' + esc(c.resolution) + '</div>';
+      document.getElementById('e4-clusters').appendChild(div);
+    });
+
+    buildPicker('e4-picker', D.sentences, function (i) {
+      var c = D.e4.clusters[D.e4.matched[i]];
+      document.getElementById('e4-out').innerHTML =
+        '<span class="big">&rarr; ' + esc(c.name) + '</span><br>' + esc(c.resolution);
+    });
+
+    buildPicker('e5-picker', D.e5.map(function (t) { return t.title; }), function (i) {
+      document.getElementById('e5-text').textContent = D.e5[i].text;
+      document.getElementById('e5-out').innerHTML =
+        '<span class="big">Summary:</span> ' + esc(D.e5[i].summary);
+    });
+  })();
+  </script>
 </body>
 </html>
