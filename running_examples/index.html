@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Running Examples — five systems under eval</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-dim: #64748b;
+      --accent-a: #2563eb;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      line-height: 1.55;
+      padding: 2rem 1.25rem 4rem;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+    a { color: var(--accent-a); }
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--accent-a);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .nav-back {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      text-decoration: none;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+    .nav-back:hover { color: var(--accent-a); }
+    h1 { font-size: 1.9rem; line-height: 1.2; margin-bottom: 0.6rem; }
+    .subtitle { color: var(--text-dim); margin-bottom: 1.5rem; max-width: 62ch; }
+
+    /* complexity-ramp chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2.5rem; }
+    .chip {
+      display: inline-flex; align-items: baseline; gap: 0.45rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    .chip:hover { border-color: var(--accent-a); }
+    .chip code {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      color: var(--accent-a);
+    }
+    .chip span { color: var(--text-dim); }
+
+    section.example {
+      margin-bottom: 3rem;
+      scroll-margin-top: 1rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.75rem;
+    }
+    h2 { font-size: 1.25rem; margin-bottom: 0.35rem; }
+    h2 code { font-family: 'DM Mono', monospace; color: var(--accent-a); margin-right: 0.4rem; }
+    .task { margin-bottom: 0.4rem; max-width: 68ch; }
+    .why { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; max-width: 68ch; }
+    .source { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem; }
+
+    /* diagrams */
+    .diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .band-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 0.45rem;
+    }
+    .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+    .unit { display: flex; align-items: center; gap: 0.6rem; }
+    .box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.9rem;
+      max-width: 24ch;
+    }
+    .box.io { font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--surface); }
+    .box.artifact { border-color: var(--accent-a); }
+    .arrow { color: var(--text-dim); font-size: 1.15rem; display: inline-block; }
+    .boundary {
+      border: 2px dashed var(--accent-a);
+      border-radius: 10px;
+      padding: 0.7rem 0.8rem;
+    }
+    .boundary-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent-a);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .boundary-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
+    /* code */
+    pre {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      max-width: 100%;
+      overflow-x: auto;
+      margin-bottom: 1.2rem;
+    }
+
+    /* fact sheets */
+    dl.facts {
+      display: grid;
+      grid-template-columns: 9.5rem 1fr;
+      gap: 0.4rem 1.2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      font-size: 0.92rem;
+    }
+    dl.facts dt { font-weight: 600; }
+    dl.facts dd { color: var(--text); }
+    .tag-derived, .tag-illustrative {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.05rem 0.5rem;
+      margin-left: 0.4rem;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .note { font-size: 0.85rem; color: var(--text-dim); margin: 0.6rem 0 0; max-width: 68ch; }
+    .callout {
+      border-left: 3px solid var(--accent-a);
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+      padding: 0.7rem 1rem;
+      font-size: 0.92rem;
+      margin-bottom: 1.2rem;
+      max-width: 68ch;
+    }
+    footer {
+      margin-top: 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    @media (max-width: 640px) {
+      .flow { flex-direction: column; align-items: stretch; }
+      .unit { flex-direction: column; align-items: center; gap: 0.4rem; }
+      .unit .box { max-width: 100%; }
+      .arrow { transform: rotate(90deg); }
+      dl.facts { grid-template-columns: 1fr; gap: 0.1rem; }
+      dl.facts dd { margin-bottom: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <a class="nav-back" href="../index.html">&larr; All playgrounds</a>
+
+  <h1>The five running examples</h1>
+  <p class="subtitle">Five systems — E1 to E5 — that the course evaluates over and over, introduced in Lesson&nbsp;3, <em>The Dimensions of Experiment Design</em>. They form a complexity ramp: from a deterministic two-input function, where evaluation looks like unit testing, to systems where even &ldquo;correct&rdquo; is a judgment call. The lesson walks E2 and E4 through the design dimensions in depth.</p>
+
+  <nav class="chips" aria-label="The five examples">
+    <a class="chip" href="#e1"><code>E1</code><span>deterministic function</span></a>
+    <a class="chip" href="#e2"><code>E2</code><span>trained model</span></a>
+    <a class="chip" href="#e3"><code>E3</code><span>prompt + few-shot + LLM</span></a>
+    <a class="chip" href="#e4"><code>E4</code><span>multi-stage pipeline</span></a>
+    <a class="chip" href="#e5"><code>E5</code><span>open-ended output</span></a>
+  </nav>
+
+  <!-- ==================== E1 ==================== -->
+  <section class="example" id="e1">
+    <h2><code>E1</code>Host health anomaly score in monitoring</h2>
+    <p class="task">Compute a single anomaly-severity score for a host from its CPU and memory deviations — the Euclidean distance from &ldquo;no deviation at all&rdquo;, then threshold it to fire an alert.</p>
+    <p class="why">The degenerate case: a pure deterministic function. Exact outputs and near-zero run-to-run uncertainty once the specification and inputs are fixed — evaluation looks like unit testing. (The specification, the alert threshold, and input coverage can still be uncertain.)</p>
+
+    <div class="diagram">
+      <div class="flow">
+        <div class="unit"><div class="box io">(cpu_dev, mem_dev)<br>two floats in [0, 1]</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+        <div class="unit"><div class="box">deviation_score()</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+        <div class="unit"><div class="box io">score in [0, &radic;2]</div></div>
+      </div>
+    </div>
+
+<pre><code>def deviation_score(cpu_dev: float, mem_dev: float) -&gt; float:
+
+    if not 0.0 &lt;= cpu_dev &lt;= 1.0:
+        raise ValueError(f"cpu_dev must be in [0, 1], got {cpu_dev}")
+
+    if not 0.0 &lt;= mem_dev &lt;= 1.0:
+        raise ValueError(f"mem_dev must be in [0, 1], got {mem_dev}")
+
+    return (cpu_dev**2 + mem_dev**2) ** 0.5</code></pre>
+
+<pre><code>deviation_score(0.0, 0.0) == 0.0          # perfectly normal
+deviation_score(0.6, 0.8) == 1.0          # clean 3-4-5
+deviation_score(1.0, 1.0) == math.sqrt(2) # both metrics maxed out</code></pre>
+
+    <dl class="facts">
+      <dt>One data point</dt><dd>one <code>(cpu_dev, mem_dev)</code> pair</dd>
+      <dt>Question <span class="tag-derived">derived</span></dt><dd>Does the implementation match the specified formula and reject invalid inputs?</dd>
+      <dt>Baseline <span class="tag-derived">derived</span></dt><dd>Not applicable</dd>
+      <dt>Assumptions <span class="tag-derived">derived</span></dt><dd>Inputs represent normalized deviations in [0, 1]</dd>
+    </dl>
+    <p class="note">Entries marked <em>derived</em> follow from the function itself; the lesson&rsquo;s goals table does not cover E1.</p>
+  </section>
+
+  <!-- ==================== E2 ==================== -->
+  <section class="example" id="e2">
+    <h2><code>E2</code>ML classifier for routing tickets to groups</h2>
+    <p class="task">A classification task: classify a support ticket into ONE of five classes — <strong>account, order, refund, payment, delivery</strong>.</p>
+    <p class="why">A trained model. The function is learned from data, so uncertainty now lives in the data (sampling, labels), the training run, and the measured score — no longer in the code alone.</p>
+    <p class="source">Source: Bitext Customer Support dataset on HuggingFace.</p>
+
+    <div class="diagram">
+      <div>
+        <span class="band-label">Training time</span>
+        <div class="flow">
+          <div class="unit"><div class="box">Thousands of customer requests (with solutions)</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box">Classification ML trainer</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box artifact">Classifier</div></div>
+        </div>
+      </div>
+      <div>
+        <span class="band-label">Inference time</span>
+        <div class="flow">
+          <div class="unit"><div class="box io">&ldquo;how do I get a refund for my last payment?&rdquo;</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box artifact">Classifier</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box io">Refund</div></div>
+        </div>
+      </div>
+    </div>
+
+    <dl class="facts">
+      <dt>One data point</dt><dd>one ticket with its routing label</dd>
+      <dt>Question</dt><dd>How accurate can ticket routing be? Can we reach 90%?</dd>
+      <dt>Baseline</dt><dd>Logistic regression on TF-IDF features.</dd>
+      <dt>Assumptions</dt><dd>English tickets, under 4,000 characters.</dd>
+    </dl>
+  </section>
+
+  <!-- ==================== E3 ==================== -->
+  <section class="example" id="e3">
+    <h2><code>E3</code>GenAI few-shot classifier for routing tickets to groups</h2>
+    <p class="task">The same classification task as E2 — five classes, same dataset — but solved by prompting an LLM with a few examples per class instead of training a model.</p>
+    <p class="why">Three tunable parts — the prompt, the few-shot examples, and the model — so the boundary of the system under eval becomes a choice: are you evaluating the prompt, the examples, the model, or all three together?</p>
+    <p class="source">Source: Bitext Customer Support dataset on HuggingFace.</p>
+
+    <div class="diagram">
+      <div class="flow">
+        <div class="unit"><div class="box io">&ldquo;how do I get a refund for my last payment?&rdquo;</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+        <div class="unit">
+          <div class="boundary">
+            <span class="boundary-label">system under eval — where do you draw the line?</span>
+            <div class="boundary-row">
+              <div class="box">Prompt</div>
+              <div class="box">Few-shot examples</div>
+              <div class="box">LLM Model</div>
+            </div>
+          </div>
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </div>
+        <div class="unit"><div class="box io">Refund</div></div>
+      </div>
+    </div>
+
+    <dl class="facts">
+      <dt>One data point</dt><dd>one ticket with its routing label</dd>
+      <dt>Question</dt><dd>Can few-shot prompting match a trained model, within 2 pts?</dd>
+      <dt>Baseline</dt><dd>The same logistic regression model as E2.</dd>
+      <dt>Assumptions</dt><dd>5 examples per class; fixed model, temperature 0.</dd>
+    </dl>
+  </section>
+
+  <!-- ==================== E4 ==================== -->
+  <section class="example" id="e4">
+    <h2><code>E4</code>Self-solve via clustering</h2>
+    <p class="task">Answer support requests without a human: cluster historical requests (which come with their solutions), attach a solution to each cluster, then answer a new ticket by matching it to a cluster and extracting that cluster&rsquo;s solution.</p>
+    <p class="why">A multi-stage pipeline with both training-time and inference-time components — and no clean ground truth for &ldquo;the right solution&rdquo;.</p>
+
+    <div class="diagram">
+      <div>
+        <span class="band-label">Training time</span>
+        <div class="flow">
+          <div class="unit"><div class="box">Thousands of customer requests (with solutions)</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box">Clustering algorithm</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box artifact">Clustering of issues + solution per cluster</div></div>
+        </div>
+      </div>
+      <div>
+        <span class="band-label">Inference time</span>
+        <div class="flow">
+          <div class="unit"><div class="box io">&ldquo;how do I get a refund for my last payment?&rdquo;</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box">Cluster matching</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box">Solution extractor</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+          <div class="unit"><div class="box io">&ldquo;Apply at xyz.com&rdquo;</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">You could evaluate the <strong>clustering</strong>, the <strong>cluster matching</strong>, the <strong>solution extraction</strong> — or the pipeline <strong>end-to-end</strong>. Each is a different experiment, with a different data point and a different notion of &ldquo;correct&rdquo;. Deciding this boundary is one of the lesson&rsquo;s central ideas.</div>
+
+    <dl class="facts">
+      <dt>One data point</dt><dd>one incoming ticket and its generated/extracted solution</dd>
+      <dt>Question</dt><dd>Which themes could self-solve vs not? Do we cover at least 50% of tickets with a score of 4 or more?</dd>
+      <dt>Baseline</dt><dd>Not specified in the deck.</dd>
+      <dt>Assumptions</dt><dd>One dominant topic per ticket; English language.</dd>
+    </dl>
+  </section>
+
+  <!-- ==================== E5 ==================== -->
+  <section class="example" id="e5">
+    <h2><code>E5</code>Text summarization</h2>
+    <p class="task">Summarize a text into a short summary a reader can act on.</p>
+    <p class="why">Open-ended output: there is no single right answer, and many different summaries can all be good. Scoring needs a rubric, a human rater, or an LLM judge — the scorer becomes part of the experiment.</p>
+
+    <div class="diagram">
+      <div class="flow">
+        <div class="unit"><div class="box io">source text<br>(conversation, document&hellip;)</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+        <div class="unit"><div class="box">LLM summarizer</div><span class="arrow" aria-hidden="true">&rarr;</span></div>
+        <div class="unit"><div class="box io">summary</div></div>
+      </div>
+    </div>
+
+    <dl class="facts">
+      <dt>Input <span class="tag-illustrative">illustrative</span></dt><dd>&ldquo;Customer: I was charged twice for order #4211 — please refund one charge. Agent: I see the duplicate; I&rsquo;ve opened refund case R-812, you&rsquo;ll hear back within 3 days.&rdquo;</dd>
+      <dt>Output <span class="tag-illustrative">illustrative</span></dt><dd>&ldquo;Duplicate charge on order #4211; refund case R-812 opened, reply promised within 3 days.&rdquo;</dd>
+      <dt>One data point</dt><dd>one source text and its summary</dd>
+      <dt>Question</dt><dd>Can we achieve faithfulness of 4 or more for at least 90% of the summaries?</dd>
+      <dt>Baseline</dt><dd>Not specified in the deck.</dd>
+      <dt>Assumptions</dt><dd>text less than 1000 words.</dd>
+    </dl>
+    <p class="note">The input/output pair marked <em>illustrative</em> was written for this page — it comes from neither the lesson deck nor a course dataset.</p>
+  </section>
+
+  <footer>
+    Companion to Lesson 3 &mdash; <em>The Dimensions of Experiment Design</em>, from
+    <a href="https://reliableai.github.io/ai-ready-engineer-eval/">Experiment Design and Evaluation of AI Systems</a>.
+  </footer>
+</body>
+</html>
