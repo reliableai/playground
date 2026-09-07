@@ -17,10 +17,10 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
   :root {
-    --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
-    --text: #e2e8f0; --text-dim: #8892a4;
-    --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
-    --yellow: #eab308; --purple: #a78bfa;
+    --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --border: #e2e8f0;
+    --text: #0f172a; --text-dim: #64748b;
+    --accent-a: #2563eb; --accent-b: #ea580c; --green: #16a34a; --red: #dc2626;
+    --yellow: #ca8a04; --purple: #7c3aed;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
@@ -28,7 +28,7 @@
   .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
   .layout { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(0, 2fr); gap: 1.5rem; padding: 0 1rem; }
   @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
-  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); padding: 1.25rem; margin-bottom: 1rem; }
   .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
   .panel h2 .hint { text-transform: none; letter-spacing: 0; color: var(--text-dim); font-weight: 400; }
   label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -43,10 +43,10 @@
   select { width: 100%; }
   .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary { background: var(--accent-a); color: #fff; } .btn-primary:hover:not(:disabled) { background: #2563eb; }
-  .btn-warn { background: var(--accent-b); color: #fff; } .btn-warn:hover:not(:disabled) { background: #ea580c; }
-  .btn-green { background: var(--green); color: #000; } .btn-green:hover:not(:disabled) { background: #16a34a; }
-  .btn-purple { background: var(--purple); color: #000; } .btn-purple:hover:not(:disabled) { background: #8b5cf6; }
+  .btn-primary { background: var(--accent-a); color: #fff; } .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+  .btn-warn { background: var(--accent-b); color: #fff; } .btn-warn:hover:not(:disabled) { background: #c2410c; }
+  .btn-green { background: var(--green); color: #fff; } .btn-green:hover:not(:disabled) { background: #15803d; }
+  .btn-purple { background: var(--purple); color: #fff; } .btn-purple:hover:not(:disabled) { background: #6d28d9; }
   .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); } .btn-ghost:hover:not(:disabled) { border-color: var(--text-dim); }
   .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; }
   .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -61,8 +61,8 @@
   .explainer-content code { font-family: 'DM Mono', monospace; color: var(--accent-a); }
   .step-indicator { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
   .step { padding: 0.35rem 0.75rem; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.7rem; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); cursor: pointer; }
-  .step.active { background: rgba(59,130,246,0.1); color: var(--accent-a); border-color: var(--accent-a); }
-  .step.done { background: rgba(34,197,94,0.1); color: var(--green); border-color: var(--green); }
+  .step.active { background: rgba(37,99,235,0.08); color: var(--accent-a); border-color: var(--accent-a); }
+  .step.done { background: rgba(22,163,74,0.1); color: var(--green); border-color: var(--green); }
   .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; margin: 0.5rem 0 0.75rem; }
   .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; }
   .stat-card .label { font-size: 0.62rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
@@ -86,7 +86,7 @@
   .dim-row .lv input { width: 52px; }
   .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 0.6rem; }
   .seg button { flex: 1; background: var(--surface-2); color: var(--text-dim); border: none; padding: 0.45rem; font-family: 'DM Mono', monospace; font-size: 0.7rem; cursor: pointer; }
-  .seg button.on { background: rgba(59,130,246,0.15); color: var(--accent-a); }
+  .seg button.on { background: rgba(37,99,235,0.1); color: var(--accent-a); }
   .story { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.6rem; }
   .story .head { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.25rem; }
   .story .why { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
@@ -95,9 +95,9 @@
   .story.alive { border-left-color: var(--green); }
   .story.real { border-left-color: var(--yellow); }
   .story .verdict { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
-  .verdict.collapsed { background: rgba(239,68,68,0.15); color: var(--red); }
-  .verdict.held { background: rgba(34,197,94,0.15); color: var(--green); }
-  .verdict.truth { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .verdict.collapsed { background: rgba(220,38,38,0.12); color: var(--red); }
+  .verdict.held { background: rgba(22,163,74,0.14); color: var(--green); }
+  .verdict.truth { background: rgba(202,138,4,0.16); color: var(--yellow); }
   .roll-strip { display: flex; flex-direction: column; gap: 0.3rem; max-height: 180px; overflow: auto; margin-top: 0.5rem; }
   .roll-item { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text-dim); padding: 0.3rem 0.5rem; background: var(--surface-2); border-radius: 6px; }
   .roll-item b { color: var(--text); font-weight: 500; }
@@ -629,8 +629,8 @@ function renderGridChart() {
   const full = cellsFor('full'), ofat = cellsFor('ofat');
   const ctx = document.getElementById('grid-chart');
   const ds = [
-    { label: 'Full grid', backgroundColor: 'rgba(59,130,246,0.7)', data: [full.length, totalTokens(full, n) / 1e5, looksFor(full) * 0.05] },
-    { label: 'One at a time', backgroundColor: 'rgba(167,139,250,0.7)', data: [ofat.length, totalTokens(ofat, n) / 1e5, looksFor(ofat) * 0.05] },
+    { label: 'Full grid', backgroundColor: 'rgba(37,99,235,0.7)', data: [full.length, totalTokens(full, n) / 1e5, looksFor(full) * 0.05] },
+    { label: 'One at a time', backgroundColor: 'rgba(124,58,237,0.7)', data: [ofat.length, totalTokens(ofat, n) / 1e5, looksFor(ofat) * 0.05] },
   ];
   if (charts.grid) { charts.grid.data.datasets = ds; charts.grid.update(); return; }
   charts.grid = new Chart(ctx, { type: 'bar', data: { labels: ['Cells', 'Tokens (÷100k)', 'Chance findings'], datasets: ds },
@@ -640,9 +640,9 @@ function renderGridChart() {
 function safeChart(fn) { try { return fn(); } catch (e) { console.warn('chart unavailable', e); } }
 function chartOpts(o = {}) {
   return { responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
-    plugins: { legend: { display: !!o.legend, labels: { color: '#8892a4', font: { family: 'DM Mono', size: 10 } } }, tooltip: { bodyFont: { family: 'DM Mono', size: 11 } } },
-    scales: { x: { ticks: { color: '#8892a4', font: { family: 'DM Mono', size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { color: '#2a3040' } },
-              y: { ticks: { color: '#8892a4', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#2a3040' }, ...(o.y || {}) } } };
+    plugins: { legend: { display: !!o.legend, labels: { color: '#64748b', font: { family: 'DM Mono', size: 10 } } }, tooltip: { bodyFont: { family: 'DM Mono', size: 11 } } },
+    scales: { x: { ticks: { color: '#64748b', font: { family: 'DM Mono', size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { color: 'rgba(15,23,42,0.07)' } },
+              y: { ticks: { color: '#64748b', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(15,23,42,0.07)' }, ...(o.y || {}) } } };
 }
 
 // ============================================================
@@ -708,12 +708,12 @@ function renderExplore() {
   // chart
   const labels = view.map(f => f.cell.name);
   const vals = view.map(f => f.delta * m.scale);
-  const colors = view.map(f => f.sig ? (f.better ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)') : 'rgba(136,146,164,0.45)');
+  const colors = view.map(f => f.sig ? (f.better ? 'rgba(22,163,74,0.85)' : 'rgba(234,88,12,0.85)') : 'rgba(100,116,139,0.45)');
   const errs = view.map(f => [f.lo * m.scale, f.hi * m.scale]);
   const ctx = document.getElementById('explore-chart');
   const ds = [
     { type: 'bar', label: `Δ ${m.name} vs baseline (${m.unit || m.name})`, data: vals, backgroundColor: colors, grouped: false, order: 2 },
-    { type: 'bar', label: '95% CI', data: errs, backgroundColor: 'rgba(226,232,240,0.0)', borderColor: 'rgba(226,232,240,0.55)', borderWidth: 1, barPercentage: 0.15, grouped: false, order: 1 },
+    { type: 'bar', label: '95% CI', data: errs, backgroundColor: 'rgba(15,23,42,0.0)', borderColor: 'rgba(15,23,42,0.55)', borderWidth: 1, barPercentage: 0.15, grouped: false, order: 1 },
   ];
   if (charts.explore) { charts.explore.data.labels = labels; charts.explore.data.datasets = ds; charts.explore.update(); }
   else charts.explore = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ legend: true }) });
@@ -791,11 +791,11 @@ function renderRolls() {
   rolls.forEach(r => counts[r.cell.name] = (counts[r.cell.name] || 0) + 1);
   const labels = Object.keys(counts), vals = labels.map(l => counts[l]);
   const ps = plantedSpec();
-  const colors = labels.map(l => { const c = data.cells.find(x => x.name === l); return cellHasEffect(c) ? 'rgba(234,179,8,0.85)' : 'rgba(249,115,22,0.75)'; });
+  const colors = labels.map(l => { const c = data.cells.find(x => x.name === l); return cellHasEffect(c) ? 'rgba(202,138,4,0.85)' : 'rgba(234,88,12,0.75)'; });
   const ds = [{ label: 'Times this cell produced the roll\'s best story', data: vals, backgroundColor: colors }];
   const ctx = document.getElementById('roll-chart');
   if (charts.roll) { charts.roll.data.labels = labels; charts.roll.data.datasets = ds; charts.roll.update(); }
-  else charts.roll = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ y: { beginAtZero: true, ticks: { stepSize: 1, color: '#8892a4' } } }) });
+  else charts.roll = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ y: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748b' } } }) });
 }
 
 // ============================================================
@@ -841,8 +841,8 @@ function challenge() {
   const labels = stories.map((s, i) => `#${i + 1}`);
   const d0 = stories.map(s => s.delta0 * s.metric.scale), d1 = stories.map(s => s.fresh.delta * s.metric.scale);
   const ds = [
-    { label: 'Effect where found (exploration)', data: d0, backgroundColor: 'rgba(34,197,94,0.75)' },
-    { label: 'Effect on fresh data', data: d1, backgroundColor: 'rgba(59,130,246,0.75)' },
+    { label: 'Effect where found (exploration)', data: d0, backgroundColor: 'rgba(22,163,74,0.75)' },
+    { label: 'Effect on fresh data', data: d1, backgroundColor: 'rgba(37,99,235,0.75)' },
   ];
   const ctx = document.getElementById('challenge-chart');
   if (charts.ch) { charts.ch.data.labels = labels; charts.ch.data.datasets = ds; charts.ch.update(); }

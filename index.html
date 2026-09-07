@@ -161,13 +161,14 @@
       <a href="#l1" class="lesson-chip" data-lesson="1" title="The Language of Uncertainty">L1</a>
       <a href="#l2" class="lesson-chip" data-lesson="2" title="Why are evals in AI different?">L2</a>
       <a href="#l3" class="lesson-chip" data-lesson="3" title="The Dimensions of Experiment Design">L3</a>
-      <a href="#l4" class="lesson-chip" data-lesson="4" title="Objectives, System under Test, and Metrics">L4</a>
-      <a href="#l5" class="lesson-chip" data-lesson="5" title="Datasets I: Selection and Sampling">L5</a>
-      <a href="#l6" class="lesson-chip" data-lesson="6" title="Datasets II: Stratified Sampling">L6</a>
-      <a href="#l7" class="lesson-chip" data-lesson="7" title="Assessing Inferences I: Obtaining Ground Truth">L7</a>
-      <a href="#l8" class="lesson-chip" data-lesson="8" title="Assessing Inferences II: Scoring AI Outputs">L8</a>
-      <a href="#l9" class="lesson-chip" data-lesson="9" title="Additional sources of errors and uncertainty">L9</a>
-      <a href="#l10" class="lesson-chip" data-lesson="10" title="Designing Reliable Experiments">L10</a>
+      <a href="#l4" class="lesson-chip" data-lesson="4" title="Objectives and System under Test">L4</a>
+      <a href="#l5" class="lesson-chip" data-lesson="5" title="Metrics, Targets, and Credible Intervals">L5</a>
+      <a href="#l6" class="lesson-chip" data-lesson="6" title="Datasets I: Selection and Sampling">L6</a>
+      <a href="#l7" class="lesson-chip" data-lesson="7" title="Datasets II: Stratified Sampling">L7</a>
+      <a href="#l8" class="lesson-chip" data-lesson="8" title="Assessing Inferences I: Obtaining Ground Truth">L8</a>
+      <a href="#l9" class="lesson-chip" data-lesson="9" title="Assessing Inferences II: Scoring AI Outputs">L9</a>
+      <a href="#l10" class="lesson-chip" data-lesson="10" title="Additional sources of errors and uncertainty">L10</a>
+      <a href="#l11" class="lesson-chip" data-lesson="11" title="Designing Reliable Experiments">L11</a>
       <span class="lesson-label" id="lesson-label"></span>
     </nav>
 
@@ -180,14 +181,14 @@
         <span class="tag tag-stats">probability by simulation</span>
       </a>
 
-      <a class="card" href="accuracy_estimator/index.html" data-lessons="2">
+      <a class="card" href="accuracy_estimator/index.html" data-lessons="2 5">
         <h3>Beta Calculator</h3>
         <p>Enter how often an event occurred and get a posterior over the true rate: point estimate, 95% credible interval, and P(rate &gt; T). Powered by the Beta distribution with selectable priors.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-stats">beta posterior</span>
       </a>
 
-      <a class="card" href="bootstrap_calculator/index.html" data-lessons="5">
+      <a class="card" href="bootstrap_calculator/index.html" data-lessons="6">
         <h3>Bootstrap Calculator</h3>
         <p>Pick a distribution or paste your own sample, then ask <em>any</em> question &mdash; P(X &gt; T), P(mean &gt; T), P(median &gt; T) &mdash; and get the answer plus a 95% interval for how sure you can be. No formulas.</p>
         <span class="tag tag-interactive">interactive</span>
@@ -200,14 +201,14 @@
         <span class="tag tag-key">course examples</span>
       </a>
 
-      <a class="card" href="basic_classification_and_noise/index.html" data-lessons="2 5">
+      <a class="card" href="basic_classification_and_noise/index.html" data-lessons="2 6">
         <h3>Sampling Noise</h3>
         <p>A trained ML classifier over real datasets. Set a test-set size, spin the wheel, and watch accuracy, the confusion matrix, and a Beta credible interval move. Includes a companion tab for noise on multiple metrics.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">sampling noise</span>
       </a>
 
-      <a class="card" href="sampling_bias/index.html" data-lessons="6">
+      <a class="card" href="sampling_bias/index.html" data-lessons="7">
         <h3>Sampling Bias</h3>
         <p>Your test set is 70% English but production is 40%. The scorecard looks great &mdash; until you see what users actually experience. Explore biased vs. representative sampling with adjustable mixes.</p>
         <span class="tag tag-interactive">interactive</span>
@@ -221,32 +222,32 @@
         <span class="tag tag-stats">distributions</span>
       </a>
 
-      <a class="card" href="llm_as_a_judge/index.html" data-lessons="7 8">
+      <a class="card" href="llm_as_a_judge/index.html" data-lessons="8 9">
         <h3>LLM as a Judge</h3>
         <p>The LLM as the thing that judges your AI's answers. An LLM that <strong>classifies</strong> (real predictions, confusion matrix, the lean that is bias), then the <strong>scoring</strong> judge: turn the bias and noise dials and watch noise widen the interval while bias slides it off the truth.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">judge noise &amp; bias</span>
       </a>
 
-      <a class="card" href="judge_audit/index.html" data-lessons="7 8">
+      <a class="card" href="judge_audit/index.html" data-lessons="8 9">
         <h3>Judge Auditor</h3>
         <p>Audit an LLM judge against trusted human labels: measure agreement, surface systematic bias, and see how a subjective rubric shifts the score &mdash; before you trust the judge to grade anything.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">judge of judges</span>
       </a>
 
-      <a class="card" href="multiple_hypothesis_testing/index.html" data-lessons="4 10">
-        <h3>Inflated Estimates in Multiple Hypotheses Testing</h3>
-        <p>You try 10 classifiers on the same test set and keep the best. Its score is inflated &mdash; by how much? All ten had the same true quality; the &ldquo;winner&rdquo; was just the luckiest. See the inflation grow with the number of things you try, and shrink back on fresh data.</p>
-        <span class="tag tag-interactive">interactive</span>
-        <span class="tag tag-stats">selection bias</span>
-      </a>
-
-      <a class="card" href="story_finder/index.html" data-lessons="4 10">
+      <a class="card" href="story_finder/index.html" data-lessons="4 11">
         <h3>Story Finder</h3>
         <p>Nothing is real, yet every run finds a &ldquo;significant&rdquo; story with a plausible explanation. Roll again and a different story is true almost every time. See how the grid of conditions and the freedom to pick metric and slice multiply your comparisons, then explore &rarr; claim &rarr; challenge on fresh data, and compare with a pre-registered test.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">pre-registration</span>
+      </a>
+
+      <a class="card" href="multiple_hypothesis_testing/index.html" data-lessons="4 11">
+        <h3>Inflated Estimates in Multiple Hypotheses Testing</h3>
+        <p>You try 10 classifiers on the same test set and keep the best. Its score is inflated &mdash; by how much? All ten had the same true quality; the &ldquo;winner&rdquo; was just the luckiest. See the inflation grow with the number of things you try, and shrink back on fresh data.</p>
+        <span class="tag tag-interactive">interactive</span>
+        <span class="tag tag-stats">selection bias</span>
       </a>
 
       <a class="card" href="holdout_simulator/index.html">
@@ -256,42 +257,42 @@
         <span class="tag tag-key">process discipline</span>
       </a>
 
-      <a class="card" href="domain_variance/index.html" data-lessons="6">
+      <a class="card" href="domain_variance/index.html" data-lessons="7">
         <h3>Variance Across Domains</h3>
         <p>Aggregate says 4.0, but Client A sees 4.5 and Client B sees 3.0 &mdash; the aggregate hides the story. Includes a Simpson&rsquo;s Paradox demo where the &ldquo;winning&rdquo; system actually loses everywhere.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">property of the world</span>
       </a>
 
-      <a class="card" href="metric_choice/index.html" data-lessons="4">
+      <a class="card" href="metric_choice/index.html" data-lessons="5">
         <h3>Choice of Metric</h3>
         <p>Mean says A wins. Threshold rate says B wins. Worst-case says B wins clearly. The winner changes with every tab click &mdash; the data didn&rsquo;t change, the question did.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">design decision</span>
       </a>
 
-      <a class="card" href="llm_evolution/index.html" data-lessons="9">
+      <a class="card" href="llm_evolution/index.html" data-lessons="10">
         <h3>LLM Evolution</h3>
         <p>GPT-4: 97.6% &rarr; 2.4% in 3 months. Same prompt, same task &mdash; the model changed under you. Real documented cases plus a simulated version timeline.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">version discipline</span>
       </a>
 
-      <a class="card" href="temporal_drift/index.html" data-lessons="9">
+      <a class="card" href="temporal_drift/index.html" data-lessons="10">
         <h3>Temporal Drift Lab</h3>
         <p>Your January eval says nothing about April. Simulate 12 months of gradual degradation and sudden shocks, and see how long it takes to notice without continuous monitoring.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">fresh data over time</span>
       </a>
 
-      <a class="card" href="judges_and_compounding/index.html" data-lessons="9">
+      <a class="card" href="judges_and_compounding/index.html" data-lessons="10">
         <h3>Judges &amp; Compounding</h3>
         <p>Every source applies again at the judge level. See how judge noise widens CIs, judge bias shifts scores, and stacking uncertainties makes a measurement unreliable.</p>
         <span class="tag tag-interactive">interactive</span>
         <span class="tag tag-key">cross-cutting</span>
       </a>
 
-      <a class="card" href="experiment_report/index.html" data-lessons="10">
+      <a class="card" href="experiment_report/index.html" data-lessons="11">
         <h3>Experiment-Report Evaluator</h3>
         <p>Submit an eval write-up and check whether the evidence supports the decision. The capstone tool that turns a measured result into a ship, canary, or iterate recommendation.</p>
         <span class="tag tag-interactive">interactive</span>
