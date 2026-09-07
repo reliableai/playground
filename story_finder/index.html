@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<!--
+  Content by Fabio Casati
+  https://www.linkedin.com/in/sphoebs/
+  https://x.com/sphoebs
+
+  Story Finder — explore a null experiment, collect stories, then challenge them.
+  Two multipliers of "looks": experimental conditions (the grid) and analytic
+  choices (metric × slice). Explore → Claim → Challenge → Compare (pre-registered).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story Finder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+  :root {
+    --bg: #0c0f14; --surface: #151a23; --surface-2: #1c2230; --border: #2a3040;
+    --text: #e2e8f0; --text-dim: #8892a4;
+    --accent-a: #3b82f6; --accent-b: #f97316; --green: #22c55e; --red: #ef4444;
+    --yellow: #eab308; --purple: #a78bfa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 2rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-family: 'DM Mono', monospace; }
+  .layout { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(0, 2fr); gap: 1.5rem; padding: 0 1rem; }
+  @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .panel h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+  .panel h2 .hint { text-transform: none; letter-spacing: 0; color: var(--text-dim); font-weight: 400; }
+  label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.2rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+  input[type="range"] { width: 100%; background: transparent; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; margin: 0.3rem 0 0.6rem 0; }
+  input[type="range"]::-webkit-slider-track { background: var(--border); height: 6px; border-radius: 3px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-a); cursor: pointer; margin-top: -5px; }
+  .slider-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .slider-row label { flex-shrink: 0; margin-bottom: 0; min-width: 130px; }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-row .val { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent-a); min-width: 44px; text-align: right; }
+  select, input[type="number"] { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.5rem; font-family: 'DM Mono', monospace; font-size: 0.78rem; }
+  select { width: 100%; }
+  .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent-a); color: #fff; } .btn-primary:hover:not(:disabled) { background: #2563eb; }
+  .btn-warn { background: var(--accent-b); color: #fff; } .btn-warn:hover:not(:disabled) { background: #ea580c; }
+  .btn-green { background: var(--green); color: #000; } .btn-green:hover:not(:disabled) { background: #16a34a; }
+  .btn-purple { background: var(--purple); color: #000; } .btn-purple:hover:not(:disabled) { background: #8b5cf6; }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); } .btn-ghost:hover:not(:disabled) { border-color: var(--text-dim); }
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; }
+  .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+  .insight-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-a); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+  .insight-banner strong { color: var(--text); }
+  .explainer { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+  .explainer summary { padding: 0.7rem 1rem; cursor: pointer; font-size: 0.8rem; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+  .explainer summary:hover { color: var(--text); }
+  .explainer-content { padding: 0 1rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-dim); }
+  .explainer-content strong { color: var(--text); }
+  .explainer-content p { margin-bottom: 0.5rem; }
+  .explainer-content code { font-family: 'DM Mono', monospace; color: var(--accent-a); }
+  .step-indicator { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .step { padding: 0.35rem 0.75rem; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.7rem; background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); cursor: pointer; }
+  .step.active { background: rgba(59,130,246,0.1); color: var(--accent-a); border-color: var(--accent-a); }
+  .step.done { background: rgba(34,197,94,0.1); color: var(--green); border-color: var(--green); }
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; margin: 0.5rem 0 0.75rem; }
+  .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; }
+  .stat-card .label { font-size: 0.62rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
+  .stat-card .value { font-size: 1.15rem; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .stat-card .sub { font-size: 0.62rem; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 0.15rem; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+  .stat-card .value { overflow-wrap: anywhere; }
+  .chart-wrap { height: 240px; position: relative; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 0.76rem; margin: 0.5rem 0; }
+  table.t th, table.t td { padding: 0.35rem 0.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  table.t th { color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.04em; }
+  table.t td.num { font-family: 'DM Mono', monospace; text-align: right; }
+  table.t tr.sig td { color: var(--green); }
+  table.t tr.sig-bad td { color: var(--accent-b); }
+  table.t tr.baseline td { color: var(--text-dim); font-style: italic; }
+  .table-scroll { max-height: 280px; overflow: auto; }
+  .dim-row { display: grid; grid-template-columns: 22px 1fr 110px; align-items: center; gap: 0.5rem; margin-bottom: 0.45rem; }
+  .dim-row .name { font-size: 0.8rem; }
+  .dim-row .name small { color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 0.68rem; display: block; }
+  .dim-row input[type="checkbox"] { accent-color: var(--accent-a); width: 16px; height: 16px; }
+  .dim-row .lv { display: flex; align-items: center; gap: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); }
+  .dim-row .lv input { width: 52px; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 0.6rem; }
+  .seg button { flex: 1; background: var(--surface-2); color: var(--text-dim); border: none; padding: 0.45rem; font-family: 'DM Mono', monospace; font-size: 0.7rem; cursor: pointer; }
+  .seg button.on { background: rgba(59,130,246,0.15); color: var(--accent-a); }
+  .story { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.6rem; }
+  .story .head { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.25rem; }
+  .story .why { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
+  .story .meta { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text-dim); margin-top: 0.4rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .story.dead { border-left-color: var(--red); opacity: 0.85; }
+  .story.alive { border-left-color: var(--green); }
+  .story.real { border-left-color: var(--yellow); }
+  .story .verdict { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
+  .verdict.collapsed { background: rgba(239,68,68,0.15); color: var(--red); }
+  .verdict.held { background: rgba(34,197,94,0.15); color: var(--green); }
+  .verdict.truth { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .roll-strip { display: flex; flex-direction: column; gap: 0.3rem; max-height: 180px; overflow: auto; margin-top: 0.5rem; }
+  .roll-item { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text-dim); padding: 0.3rem 0.5rem; background: var(--surface-2); border-radius: 6px; }
+  .roll-item b { color: var(--text); font-weight: 500; }
+  .empty { color: var(--text-dim); font-size: 0.8rem; font-style: italic; padding: 0.5rem 0; }
+  .hidden { display: none !important; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .form-row { margin-bottom: 0.6rem; }
+  .prereg-box { border: 2px dashed var(--purple); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+  .prereg-box h3 { font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--purple); }
+  .result-big { font-family: 'DM Mono', monospace; font-size: 1.05rem; margin: 0.5rem 0; }
+  .footer-link { font-size: 0.78rem; color: var(--text-dim); margin-top: 1rem; line-height: 1.5; }
+  .footer-link a { color: var(--accent-a); }
+  .muted { color: var(--text-dim); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; margin-top: 0.6rem; }
+  .tile { background: var(--surface-2); border: 1px solid var(--border); border-top: 3px solid var(--green); border-radius: 8px; padding: 0.7rem 0.8rem; }
+  .tile.worse { border-top-color: var(--accent-b); }
+  .tile .head { font-weight: 600; font-size: 0.82rem; line-height: 1.35; margin-bottom: 0.3rem; }
+  .tile .why { font-size: 0.72rem; color: var(--text-dim); line-height: 1.45; }
+  .tile .meta { font-family: 'DM Mono', monospace; font-size: 0.64rem; color: var(--text-dim); margin-top: 0.4rem; }
+  .tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 0.62rem; padding: 0.1rem 0.4rem; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); margin-left: 0.3rem; }
+</style>
+</head>
+<body>
+  <h1>Story Finder</h1>
+  <div class="subtitle">Look at enough numbers and a story will find you. Explore &rarr; Claim &rarr; Challenge &rarr; Compare.</div>
+
+  <details class="explainer">
+    <summary>What is this playground about? (click to expand)</summary>
+    <div class="explainer-content">
+      <p><strong>The scenario:</strong> You are evaluating a few-shot LLM classifier that routes support tickets to one of five teams (account, order, refund, payment, delivery). You can vary <strong>experimental conditions</strong> (model, prompt, temperature, dataset) and, once the numbers are in, look at them by <strong>metric</strong> (accuracy, judge score, escalation rate, latency, cost) and by <strong>slice</strong> (ticket category, channel, language).</p>
+      <p><strong>The catch:</strong> by default every condition has exactly the same true quality. Nothing is real. And yet, every time you run the experiment, the tool finds a statistically significant story, complete with a plausible explanation. <strong>Roll</strong> a few times and a different story is "true" almost every roll.</p>
+      <p><strong>Two multipliers of looks:</strong> each dimension you vary multiplies the number of runs and the tokens you pay for (the curse of dimensionality), and each metric &times; slice you inspect multiplies the number of comparisons. <code>looks = (cells &minus; 1) &times; metrics &times; slices</code>. At &alpha; = 0.05, about one look in twenty crosses the line by chance, so you can predict how many "findings" you will collect before you collect them.</p>
+      <p><strong>The distinction that matters:</strong> <em>exploring</em> (many looks, questions not yet precise, output = hypotheses) versus <em>comparing</em> (one hypothesis, decision rule fixed up front, one look). Exploring is not wrong. Shipping on an exploratory finding is. The fix is a loop: explore broadly, articulate a claim, then <strong>challenge</strong> it on fresh data with every choice fixed beforehand. Or better: <strong>pre-register</strong> the compare before looking at all.</p>
+      <p><strong>Optional reality check:</strong> switch on a planted real effect. Exploration will find it, but it will also find the fakes, and you cannot tell which is which until you challenge them.</p>
+    </div>
+  </details>
+
+  <div class="step-indicator">
+    <div class="step active" id="step1-ind" onclick="showStep(1)">1. Design the grid</div>
+    <div class="step" id="step2-ind" onclick="showStep(2)">2. Explore &amp; collect stories</div>
+    <div class="step" id="step3-ind" onclick="showStep(3)">3. Challenge on fresh data</div>
+    <div class="step" id="step4-ind" onclick="showStep(4)">4. Compare (pre-registered)</div>
+  </div>
+
+  <div class="layout">
+    <!-- ================= LEFT ================= -->
+    <div>
+      <div class="panel">
+        <h2>Experimental conditions <span class="hint">(what you vary)</span></h2>
+        <div id="dims"></div>
+        <div style="margin-top:0.8rem">
+          <label>Grid design</label>
+          <div class="seg">
+            <button id="seg-full" class="on" onclick="setDesign('full')">Full grid</button>
+            <button id="seg-ofat" onclick="setDesign('ofat')">One at a time</button>
+          </div>
+        </div>
+        <div style="margin-top:0.8rem;padding:0.6rem 0.75rem;background:var(--surface-2);border:1px solid var(--accent-a);border-radius:8px">
+          <label for="n-test" style="color:var(--text)">Test set size per cell &mdash; <span style="color:var(--accent-a)">n = <span id="n-test-val">200</span> tickets</span></label>
+          <input type="range" id="n-test" min="50" max="600" step="50" value="200" oninput="onSetupChange()" style="margin-bottom:0.2rem">
+          <div class="muted" style="font-size:0.7rem;font-family:'DM Mono',monospace">every cell classifies its own sample of n tickets: 1 ticket = 1 LLM call</div>
+        </div>
+        <div class="stat-cards">
+          <div class="stat-card"><div class="label">Cells</div><div class="value" id="sc-cells">-</div><div class="sub" id="sc-cells-sub">&nbsp;</div></div>
+          <div class="stat-card"><div class="label">Tokens sent + received</div><div class="value" id="sc-tokens">-</div><div class="sub" id="sc-runs">&nbsp;</div></div>
+          <div class="stat-card" style="grid-column: span 2"><div class="label">Comparisons available</div><div class="value" id="sc-looks">-</div><div class="sub" id="sc-looks-sub">&nbsp;</div></div>
+          <div class="stat-card" style="grid-column: span 2"><div class="label">Chance findings</div><div class="value" id="sc-expected">-</div><div class="sub" id="sc-expected-sub">&nbsp;</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Reality <span class="hint">(what is actually true)</span></h2>
+        <div class="seg">
+          <button id="seg-null" class="on" onclick="setReality('null')">Null: all conditions equal</button>
+          <button id="seg-real" onclick="setReality('real')">One real effect</button>
+        </div>
+        <div id="effect-row" class="slider-row hidden">
+          <label for="effect">True accuracy lift</label>
+          <input type="range" id="effect" min="2" max="15" step="1" value="8" oninput="onSetupChange()">
+          <span class="val" id="effect-val">+4 pts</span>
+        </div>
+        <div class="muted" style="font-size:0.74rem;line-height:1.5" id="reality-note">Every condition has the same true accuracy, judge score, latency, cost and escalation rate. Any difference you see is sampling noise.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Actions</h2>
+        <div class="btn-group" style="margin-top:0">
+          <button class="btn btn-primary" onclick="runExperiment()">Run experiment</button>
+          <button class="btn btn-warn" id="btn-roll" onclick="roll()" disabled>Roll a story</button>
+          <button class="btn btn-ghost" id="btn-roll10" onclick="roll(10)" disabled>Roll &times;10</button>
+        </div>
+        <div class="muted" style="font-size:0.74rem;line-height:1.5;margin-top:0.6rem">
+          <strong style="color:var(--text)">Run</strong> collects the data once, then you explore it by hand.
+          <strong style="color:var(--text)">Roll</strong> re-collects the data with the same reality and hands you the best story it can find.
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= RIGHT ================= -->
+    <div>
+      <div class="insight-banner" id="insight">
+        <strong>Start here:</strong> choose which conditions to vary and watch the number of cells, tokens and <em>looks</em> multiply. Then click "Run experiment".
+      </div>
+
+      <!-- STEP 1 -->
+      <div id="step1" class="panel">
+        <h2>Design the grid</h2>
+        <p class="muted" style="font-size:0.8rem;line-height:1.6">
+          Every dimension multiplies the number of runs, and every run costs tokens. A <strong style="color:var(--text)">full grid</strong> runs every combination; <strong style="color:var(--text)">one at a time</strong> holds every other dimension at its default and varies one dimension per cell (it cannot see interactions, but it is far cheaper).
+          Either way, the number of <em>looks</em> is what generates stories: each extra cell is compared with the baseline on every metric and every slice.
+        </p>
+        <div class="chart-wrap" style="height:200px;margin-top:0.75rem"><canvas id="grid-chart"></canvas></div>
+        <h2 style="margin-top:1.2rem;display:flex;justify-content:space-between;align-items:center">Stories this grid produces by chance <button class="btn btn-ghost btn-sm" onclick="renderChanceTiles()">reshuffle</button></h2>
+        <p class="muted" style="font-size:0.78rem;line-height:1.5">A silent simulation of your grid in which <strong style="color:var(--text)">nothing is real</strong>: every cell has identical true quality. These are six of the differences that still came out "significant", written up the way they would appear in a readout. Change the grid or reshuffle and a different set appears.</p>
+        <div class="tiles" id="chance-tiles"></div>
+        <p class="muted" style="font-size:0.74rem;margin-top:1rem">Cells, tokens (&divide;100k) and expected chance findings for your current selection, full grid vs one-at-a-time. Tokens, not calls, are the cost: variant 4 (a step-by-step prompt) returns ~15&times; the output tokens of variant 2 (a concise one), and Banking tickets are almost twice as long as Retail ones.</p>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="step2" class="panel hidden">
+        <h2>Explore</h2>
+        <div class="stat-cards">
+          <div class="stat-card"><div class="label">Comparisons made</div><div class="value" id="ex-looks">0</div><div class="sub">every cell vs baseline, every metric, every slice</div></div>
+          <div class="stat-card"><div class="label">Expected by chance</div><div class="value" id="ex-expected">0</div><div class="sub">0.05 &times; comparisons</div></div>
+          <div class="stat-card"><div class="label">"Significant" found</div><div class="value" id="ex-found" style="color:var(--green)">0</div><div class="sub">p &lt; 0.05</div></div>
+          <div class="stat-card"><div class="label">Stories kept</div><div class="value" id="ex-kept" style="color:var(--yellow)">0</div><div class="sub">go to step 3</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-row"><label>Metric</label><select id="sel-metric" onchange="renderExplore()"></select></div>
+          <div class="form-row"><label>Slice</label><select id="sel-slice" onchange="renderExplore()"></select></div>
+        </div>
+        <div class="chart-wrap"><canvas id="explore-chart"></canvas></div>
+        <p class="muted" style="font-size:0.72rem;margin:0.3rem 0 0.5rem">Each bar is one cell vs the baseline cell on the chosen metric within the chosen slice. Green: significantly better. Orange: significantly worse. Error bars: 95% CI of the difference.</p>
+        <div class="table-scroll"><table class="t" id="explore-table"></table></div>
+
+        <h2 style="margin-top:1rem">Best story in this view</h2>
+        <div id="best-story"></div>
+
+        <details class="explainer" style="margin-top:1rem" id="all-findings-box">
+          <summary id="all-findings-summary">All "significant" differences in this run</summary>
+          <div class="explainer-content" style="padding-top:0.5rem">
+            <p class="muted" style="font-size:0.74rem">Every comparison with p &lt; 0.05, best p first. This is the list the chance-findings card predicted. Every one of them would make a plausible slide.</p>
+            <div class="table-scroll" style="max-height:320px"><table class="t" id="all-findings"></table></div>
+          </div>
+        </details>
+
+        <h2 style="margin-top:1rem">Roll history <span class="hint">(best story across everything, per roll)</span></h2>
+        <div class="grid-2">
+          <div><div class="chart-wrap" style="height:200px"><canvas id="roll-chart"></canvas></div></div>
+          <div class="roll-strip" id="roll-strip"><div class="empty">No rolls yet. Click "Roll a story".</div></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-green" onclick="showStep(3)" id="btn-to-challenge" disabled>Challenge my stories &rarr;</button>
+          <button class="btn btn-ghost" onclick="showStep(4)">Skip to pre-registered compare &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div id="step3" class="panel hidden">
+        <h2>Challenge</h2>
+        <p class="muted" style="font-size:0.8rem;line-height:1.6">Each story you kept is now a <strong style="color:var(--text)">claim</strong>: a fixed cell, metric, slice and direction. We collect a fresh dataset and test each claim <em>once</em>, with nothing left to choose. That is the loop from the lesson: explore &rarr; form a claim &rarr; challenge it.</p>
+        <div class="btn-group" style="margin-top:0.6rem">
+          <button class="btn btn-primary" onclick="challenge()" id="btn-challenge">Test all claims on fresh data</button>
+          <button class="btn btn-ghost" onclick="revealTruth()" id="btn-reveal">Reveal what is actually true</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearStories()">Clear stories</button>
+        </div>
+        <div class="stat-cards" id="ch-cards" style="margin-top:0.8rem">
+          <div class="stat-card"><div class="label">Claims</div><div class="value" id="ch-n">0</div></div>
+          <div class="stat-card"><div class="label">Held on fresh data</div><div class="value" id="ch-held" style="color:var(--green)">-</div><div class="sub">p &lt; 0.05, same direction</div></div>
+          <div class="stat-card"><div class="label">Collapsed</div><div class="value" id="ch-dead" style="color:var(--red)">-</div></div>
+          <div class="stat-card"><div class="label">Expected to hold if all fake</div><div class="value" id="ch-exp">-</div><div class="sub">0.025 &times; claims</div></div>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="challenge-chart"></canvas></div>
+        <p class="muted" style="font-size:0.72rem;margin:0.3rem 0 0.5rem">Effect in the exploration data (where you found the story) vs on fresh data. Regression to the mean is the default outcome of a story found by looking.</p>
+        <div id="stories"></div>
+        <div id="truth" class="hidden"></div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div id="step4" class="panel hidden">
+        <h2>Compare (pre-registered)</h2>
+        <p class="muted" style="font-size:0.8rem;line-height:1.6">Now do it the other way round. Write down the hypothesis and the decision rule <strong style="color:var(--text)">before</strong> the data exists. You get exactly one look. If the target is met, that is evidence; a target chosen afterwards is a description.</p>
+        <div class="prereg-box">
+          <h3>Pre-registration</h3>
+          <div class="grid-2">
+            <div class="form-row"><label>Condition (vs baseline)</label><select id="pr-cell"></select></div>
+            <div class="form-row"><label>Metric</label><select id="pr-metric"></select></div>
+            <div class="form-row"><label>Slice</label><select id="pr-slice"></select></div>
+            <div class="form-row"><label>Ship if improvement &ge;</label><input type="number" id="pr-min" value="2" step="0.5" style="width:100%"> </div>
+          </div>
+          <div class="muted" style="font-size:0.72rem">Decision rule: ship if the improvement is at least the threshold <em>and</em> p &lt; 0.05 (two-sided). Nothing else counts, however interesting.</div>
+          <div class="btn-group">
+            <button class="btn btn-purple" onclick="runPrereg()">Commit &amp; run (one look)</button>
+            <button class="btn btn-ghost" onclick="runPrereg(20)">Repeat 20 pre-registered experiments</button>
+          </div>
+        </div>
+        <div id="pr-result"></div>
+        <div class="stat-cards">
+          <div class="stat-card"><div class="label">Pre-registered runs</div><div class="value" id="pr-n">0</div></div>
+          <div class="stat-card"><div class="label">"Ship" decisions</div><div class="value" id="pr-ship" style="color:var(--purple)">0</div></div>
+          <div class="stat-card"><div class="label">False-ship rate if null</div><div class="value">&le; 5%</div><div class="sub">by construction</div></div>
+          <div class="stat-card"><div class="label">Explore mode found</div><div class="value" id="pr-vs" style="color:var(--green)">-</div><div class="sub">"significant" stories per run</div></div>
+        </div>
+        <div class="footer-link">
+          <strong style="color:var(--text)">Three kinds of goals, one number.</strong> <em>Explore</em> is step 2: many looks, output = hypotheses. <em>Compare</em> is this step: one hypothesis, decision rule fixed up front. <em>Select</em> ("how good can the best of N get?") has its own bias, the best-of-N inflation, which is the subject of the <a href="../multiple_hypothesis_testing/">Multiple Hypothesis Testing Lab</a>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// If the Chart.js CDN is blocked (offline, restricted viewer), keep the lab working without charts.
+if (typeof Chart === 'undefined') {
+  window.Chart = class { constructor(ctx, cfg) { this.data = cfg && cfg.data || { datasets: [] }; const w = ctx && ctx.parentElement; if (w) w.innerHTML = '<div class="empty">chart unavailable offline</div>'; } update() {} };
+}
+// ============================================================
+// WORLD DEFINITION
+// ============================================================
+const DIMS = [
+  { key: 'model',   name: 'Model',       levels: ['Model A', 'Model B', 'Model C'], on: true },
+  { key: 'prompt',  name: 'Prompt',      levels: ['Prompt variant 1', 'Prompt variant 2', 'Prompt variant 3', 'Prompt variant 4'], on: true,
+    inTok: [350, 220, 520, 600], outTok: [8, 6, 10, 140] },   // instruction + few-shot tokens; output tokens per ticket
+  { key: 'temp',    name: 'Temperature', levels: ['T=0.0', 'T=0.7'], on: false },
+  { key: 'dataset', name: 'Dataset',     levels: ['Retail', 'Telco', 'Banking'], on: false, ticketTok: [180, 240, 320] },
+];
+// tokens per ticket for a cell = prompt instruction tokens + ticket tokens + output tokens
+function tokensPerCall(c) {
+  const pr = DIMS.find(d => d.key === 'prompt'), ds = DIMS.find(d => d.key === 'dataset');
+  return pr.inTok[c.prompt] + ds.ticketTok[c.dataset] + pr.outTok[c.prompt];
+}
+function totalTokens(cells, n) { return cells.reduce((a, c) => a + tokensPerCall(c) * n, 0); }
+function fmtTok(t) { return t >= 1e6 ? (t / 1e6).toFixed(2) + 'M' : t >= 1e3 ? (t / 1e3).toFixed(0) + 'k' : String(t); }
+DIMS.forEach(d => d.use = d.levels.length);
+
+const SLICES = [
+  { key: 'category', name: 'Ticket category', levels: ['account', 'order', 'refund', 'payment', 'delivery'] },
+  { key: 'channel',  name: 'Channel',         levels: ['email', 'chat', 'phone'] },
+  { key: 'lang',     name: 'Language',        levels: ['EN', 'ES', 'DE'] },
+];
+const N_SLICES = 1 + SLICES.reduce((a, s) => a + s.levels.length, 0);
+
+const METRICS = [
+  { key: 'acc',     name: 'Accuracy',        unit: 'pts', scale: 100, higherBetter: true,  fmt: v => (v * 100).toFixed(1) + '%' },
+  { key: 'judge',   name: 'Judge score',     unit: '',    scale: 1,   higherBetter: true,  fmt: v => v.toFixed(2) + '/5' },
+  { key: 'esc',     name: 'Escalation rate', unit: 'pts', scale: 100, higherBetter: false, fmt: v => (v * 100).toFixed(1) + '%' },
+  { key: 'latency', name: 'Latency',         unit: 's',   scale: 1,   higherBetter: false, fmt: v => v.toFixed(2) + 's' },
+  { key: 'cost',    name: 'Cost',            unit: '¢',   scale: 1,   higherBetter: false, fmt: v => v.toFixed(2) + '¢' },
+];
+
+const TRUE = { acc: 0.82, judge: 3.9, esc: 0.15, latency: 1.8, cost: 0.42 };
+
+// ============================================================
+// RANDOM + STATS
+// ============================================================
+function randn() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function randi(n) { return Math.floor(Math.random() * n); }
+function mean(a) { let s = 0; for (const x of a) s += x; return a.length ? s / a.length : NaN; }
+function variance(a) { const m = mean(a); let s = 0; for (const x of a) s += (x - m) * (x - m); return a.length > 1 ? s / (a.length - 1) : 0; }
+
+// regularized incomplete beta via continued fraction (Numerical Recipes)
+function betacf(a, b, x) {
+  const MAXIT = 200, EPS = 3e-12, FPMIN = 1e-300;
+  let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN; d = 1 / d; let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d;
+    const del = d * c; h *= del; if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+function lgamma(x) { const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5]; let y = x, t = x + 5.5; t -= (x + 0.5) * Math.log(t); let ser = 1.000000000190015; for (let j = 0; j < 6; j++) ser += c[j] / ++y; return -t + Math.log(2.5066282746310005 * ser / x); }
+function ibeta(a, b, x) { if (x <= 0) return 0; if (x >= 1) return 1; const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x)); return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b; }
+function tTwoSidedP(t, df) { const x = df / (df + t * t); return ibeta(df / 2, 0.5, x); }
+function tCrit975(df) { // rough inverse for CI; fine for df >= 10
+  if (df >= 200) return 1.972; if (df >= 100) return 1.984; if (df >= 60) return 2.0; if (df >= 40) return 2.021; if (df >= 30) return 2.042; if (df >= 20) return 2.086; if (df >= 15) return 2.131; if (df >= 10) return 2.228; return 2.5;
+}
+function welch(a, b) {
+  const na = a.length, nb = b.length;
+  if (na < 3 || nb < 3) return { delta: NaN, p: 1, lo: NaN, hi: NaN, na, nb };
+  const ma = mean(a), mb = mean(b), va = variance(a), vb = variance(b);
+  const se = Math.sqrt(va / na + vb / nb);
+  const delta = ma - mb;
+  if (se === 0) return { delta, p: 1, lo: delta, hi: delta, na, nb };
+  const t = delta / se;
+  const df = Math.pow(va / na + vb / nb, 2) / (Math.pow(va / na, 2) / (na - 1) + Math.pow(vb / nb, 2) / (nb - 1));
+  const p = tTwoSidedP(t, df);
+  const tc = tCrit975(df);
+  return { delta, p, lo: delta - tc * se, hi: delta + tc * se, t, df, na, nb };
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let design = 'full';
+let reality = 'null';
+let data = null;            // { cells, n, findings, byKey }
+let stories = [];           // kept claims
+let rolls = [];             // { cellIdx, metricKey, headline }
+let prereg = { n: 0, ship: 0 };
+let exploreFoundPerRun = [];
+const charts = {};
+
+// ============================================================
+// GRID
+// ============================================================
+function activeDims() { return DIMS.filter(d => d.on); }
+function buildCells() {
+  const base = {}; DIMS.forEach(d => base[d.key] = 0);
+  const cells = [];
+  const act = activeDims();
+  if (design === 'full' || act.length === 0) {
+    const rec = (i, cur) => {
+      if (i === act.length) { cells.push({ ...cur }); return; }
+      for (let l = 0; l < act[i].use; l++) { cur[act[i].key] = l; rec(i + 1, cur); }
+    };
+    rec(0, { ...base });
+  } else {
+    cells.push({ ...base });
+    for (const d of act) for (let l = 1; l < d.use; l++) cells.push({ ...base, [d.key]: l });
+  }
+  cells.forEach((c, i) => { c.idx = i; c.isBase = DIMS.every(d => c[d.key] === 0); c.name = cellName(c); });
+  return cells;
+}
+function cellName(c) {
+  const parts = activeDims().map(d => d.levels[c[d.key]]);
+  return parts.length ? parts.join(' · ') : 'default config';
+}
+function cellsFor(des) { const old = design; design = des; const c = buildCells(); design = old; return c; }
+function looksFor(cells) { return Math.max(0, cells.length - 1) * METRICS.length * N_SLICES; }
+
+// Where the planted effect lives: first active dim, its last level.
+function plantedSpec() {
+  const act = activeDims();
+  if (!act.length) return null;
+  const d = act[0];
+  return { key: d.key, level: d.use - 1, label: `${d.name} = ${d.levels[d.use - 1]}` };
+}
+function cellHasEffect(c) {
+  if (reality !== 'real') return false;
+  const ps = plantedSpec(); if (!ps) return false;
+  return c[ps.key] === ps.level;
+}
+
+// ============================================================
+// DATA GENERATION
+// ============================================================
+function genCellData(c, n) {
+  const lift = cellHasEffect(c) ? parseInt(document.getElementById('effect').value) / 100 : 0;
+  const items = { category: new Int8Array(n), channel: new Int8Array(n), lang: new Int8Array(n) };
+  const vals = {}; METRICS.forEach(m => vals[m.key] = new Float64Array(n));
+  for (let i = 0; i < n; i++) {
+    items.category[i] = randi(5); items.channel[i] = randi(3); items.lang[i] = randi(3);
+    vals.acc[i] = Math.random() < TRUE.acc + lift ? 1 : 0;
+    let j = Math.round((TRUE.judge + 0.8 * randn()) * 2) / 2; vals.judge[i] = Math.max(1, Math.min(5, j));
+    vals.esc[i] = Math.random() < TRUE.esc ? 1 : 0;
+    vals.latency[i] = Math.exp(Math.log(TRUE.latency) - 0.08 + 0.4 * randn());
+    vals.cost[i] = Math.max(0.05, TRUE.cost + 0.15 * randn());
+  }
+  return { items, vals };
+}
+function collect(cells, n) { return cells.map(c => ({ cell: c, ...genCellData(c, n) })); }
+
+function sliceFilter(d, sliceKey, level) {
+  if (!sliceKey) return null;
+  const idx = []; const arr = d.items[sliceKey];
+  for (let i = 0; i < arr.length; i++) if (arr[i] === level) idx.push(i);
+  return idx;
+}
+function pick(arr, idx) { if (!idx) return Array.from(arr); const out = new Array(idx.length); for (let i = 0; i < idx.length; i++) out[i] = arr[idx[i]]; return out; }
+
+function allSlices() {
+  const out = [{ key: null, level: null, name: 'All tickets' }];
+  SLICES.forEach(s => s.levels.forEach((l, i) => out.push({ key: s.key, level: i, name: `${s.name}: ${l}`, dimName: s.name, levelName: l })));
+  return out;
+}
+
+// compute every comparison: cell vs baseline × metric × slice
+function analyze(run) {
+  const base = run.find(r => r.cell.isBase);
+  const results = [];
+  const slices = allSlices();
+  for (const r of run) {
+    if (r === base) continue;
+    for (const s of slices) {
+      const ib = sliceFilter(base, s.key, s.level), ic = sliceFilter(r, s.key, s.level);
+      for (const m of METRICS) {
+        const w = welch(pick(r.vals[m.key], ic), pick(base.vals[m.key], ib));
+        const better = m.higherBetter ? w.delta > 0 : w.delta < 0;
+        results.push({ cell: r.cell, metric: m, slice: s, ...w, better, sig: w.p < 0.05 });
+      }
+    }
+  }
+  return results;
+}
+
+// ============================================================
+// NARRATIVE GENERATION
+// ============================================================
+const WHY_COND = {
+  model: {
+    acc: ['handles the ambiguous order/delivery boundary better', 'was likely trained on more customer-service text', 'follows the few-shot format more literally'],
+    judge: ['produces tidier, more confident justifications that the judge rewards', 'phrases its answer closer to the rubric wording'],
+    esc: ['is less prone to hedging, so fewer tickets get pushed to a human', 'commits to a class instead of asking for clarification'],
+    latency: ['has a smaller context window to process', 'is served from a less loaded endpoint at this size'],
+    cost: ['tokenizes support text more compactly', 'needs fewer output tokens to reach a decision'],
+  },
+  prompt: {
+    acc: ['makes the class definitions explicit, which reduces payment/refund confusion', 'keeps the examples close to the query so the model anchors better', 'forces a reasoning step before the label'],
+    judge: ['produces cleaner, more structured justifications that the judge reads as more decisive', 'mirrors the judge rubric vocabulary'],
+    esc: ['tells the model to always pick a class, so it escalates less', 'removes the "unsure" escape hatch'],
+    latency: ['is shorter, so prefill is faster', 'produces less verbose output'],
+    cost: ['has fewer instruction tokens', 'suppresses chain-of-thought output'],
+  },
+  temp: {
+    acc: ['reduces sampling variance so borderline tickets land consistently', 'adds just enough diversity to escape a systematic confusion'],
+    judge: ['gives more consistent phrasing that the judge rewards', 'avoids stilted, repetitive wording'],
+    esc: ['makes the model more decisive', 'reduces spurious "needs human" outputs'],
+    latency: ['shortens outputs slightly', 'changes the stop-token behaviour'],
+    cost: ['shortens outputs slightly', 'changes output length distribution'],
+  },
+  dataset: {
+    acc: ['has cleaner class boundaries', 'contains fewer multi-issue tickets', 'has less label noise'],
+    judge: ['has shorter tickets, which the judge grades more leniently', 'has more standardised language'],
+    esc: ['contains fewer genuinely ambiguous requests', 'has clearer routing conventions'],
+    latency: ['has shorter tickets', 'has less boilerplate to process'],
+    cost: ['has shorter tickets', 'has less quoted email history'],
+  },
+};
+const WHY_SLICE = {
+  category: {
+    account: 'account tickets are formulaic, so the effect shows up cleanly', order: 'order tickets are where order/delivery confusion lives', refund: 'refund requests carry strong lexical cues that this setup exploits', payment: 'payment tickets are often multi-issue, exactly where this setup shines', delivery: 'delivery tickets are short and time-sensitive',
+  },
+  channel: { email: 'email tickets are longer, so the difference compounds', chat: 'chat messages are terse, so the few-shot examples carry more weight', phone: 'phone transcripts are noisy, and this setup is more robust to noise' },
+  lang: { EN: 'English is the dominant training language, so the gain is fully realised', ES: 'Spanish tickets are shorter on average, amplifying the prompt effect', DE: 'German compound nouns make class cues harder, which this setup handles better' },
+};
+function pickOne(a) { return a[randi(a.length)]; }
+
+function storyFor(f) {
+  const c = f.cell, m = f.metric, s = f.slice;
+  // which dimension differs from baseline? pick the first that does
+  const diffs = activeDims().filter(d => c[d.key] !== 0);
+  const d = diffs.length ? diffs[randi(diffs.length)] : activeDims()[0];
+  const condLabel = d ? d.levels[c[d.key]] : c.name;
+  const dir = f.better ? (m.higherBetter ? 'raises' : 'cuts') : (m.higherBetter ? 'lowers' : 'raises');
+  const mag = Math.abs(f.delta * m.scale).toFixed(m.scale === 100 ? 1 : 2) + (m.unit ? ' ' + m.unit : '');
+  const where = s.key ? ` on ${s.levelName} tickets` : '';
+  const head = `${condLabel} ${dir} ${m.name.toLowerCase()} by ${mag}${where}`;
+  const reasonCond = d ? pickOne(WHY_COND[d.key][m.key]) : 'behaves differently';
+  const rs = s.key ? WHY_SLICE[s.key][s.levelName] : '';
+  const reasonSlice = rs ? ` ${rs.charAt(0).toUpperCase()}${rs.slice(1)}.` : '';
+  const why = f.better
+    ? `Makes sense: ${condLabel} ${reasonCond}.${reasonSlice}`
+    : `Plausible: ${condLabel} ${reasonCond}, which backfires here.${reasonSlice}`;
+  return { head, why };
+}
+
+// ============================================================
+// UI: SETUP
+// ============================================================
+function renderDims() {
+  const el = document.getElementById('dims'); el.innerHTML = '';
+  DIMS.forEach((d, i) => {
+    const row = document.createElement('div'); row.className = 'dim-row';
+    row.innerHTML = `
+      <input type="checkbox" ${d.on ? 'checked' : ''} onchange="DIMS[${i}].on=this.checked;onSetupChange()">
+      <div class="name">${d.name}<small>${d.levels.slice(0, d.use).join(', ')}</small></div>
+      <div class="lv">levels <input type="number" min="2" max="${d.levels.length}" value="${d.use}" onchange="DIMS[${i}].use=Math.max(2,Math.min(${d.levels.length},parseInt(this.value)||2));onSetupChange()"></div>`;
+    el.appendChild(row);
+  });
+}
+function setDesign(d) { design = d; document.getElementById('seg-full').classList.toggle('on', d === 'full'); document.getElementById('seg-ofat').classList.toggle('on', d === 'ofat'); onSetupChange(); }
+function setReality(r) {
+  reality = r;
+  document.getElementById('seg-null').classList.toggle('on', r === 'null');
+  document.getElementById('seg-real').classList.toggle('on', r === 'real');
+  document.getElementById('effect-row').classList.toggle('hidden', r !== 'real');
+  onSetupChange();
+}
+function onSetupChange() {
+  renderDims();
+  const n = parseInt(document.getElementById('n-test').value);
+  document.getElementById('n-test-val').textContent = n;
+  document.getElementById('effect-val').textContent = '+' + document.getElementById('effect').value + ' pts';
+  const cells = buildCells();
+  const looks = looksFor(cells);
+  document.getElementById('sc-cells').textContent = cells.length;
+  document.getElementById('sc-cells-sub').innerHTML = design === 'full' ? activeDims().map(d => d.use).join(' &times; ') || '1' : '1 + &Sigma;(levels&minus;1)';
+  document.getElementById('sc-tokens').textContent = fmtTok(totalTokens(cells, n));
+  document.getElementById('sc-runs').innerHTML = `${cells.length} cells &times; ${n} tickets = ${(cells.length * n).toLocaleString()} LLM calls`;
+  document.getElementById('sc-looks').textContent = looks.toLocaleString();
+  document.getElementById('sc-looks-sub').innerHTML = (() => { const k = Math.max(0, cells.length - 1); return `<span style="display:block;text-align:left"><b style="color:var(--text)">${k}</b> if you decide the metric and use the whole test set: each of the ${k} candidates vs the baseline, once<br>&times; ${METRICS.length} if you are free to pick any metric afterwards (${METRICS.map(m => m.name.toLowerCase()).join(', ')}) = <b style="color:var(--text)">${k * METRICS.length}</b><br>&times; ${N_SLICES} if you are also free to pick any slice (all tickets, or one of ${SLICES.map(sl => sl.levels.length + ' ' + ({category: 'categories', channel: 'channels', lang: 'languages'})[sl.key]).join(', ')}) = <b style="color:var(--text)">${looks}</b></span>`; })();
+  document.getElementById('sc-expected').innerHTML = `${looks} &times; 0.05 = ${(looks * 0.05).toFixed(1)}`;
+  document.getElementById('sc-expected-sub').innerHTML = `<span style="display:block;text-align:left">"significant" means p &lt; 0.05: a difference this big shows up in 1 of 20 samples even when the two cells are truly identical. Make ${looks} comparisons between identical cells and about ${Math.round(looks * 0.05)} of them will look significant. Each one comes with a real-looking delta and a story, for example: <i style="color:var(--text)">"Prompt variant 3 raises accuracy by 7.4 pts on chat tickets (p=0.02)"</i> or <i style="color:var(--text)">"Model B cuts latency by 0.21 s on refund tickets (p=0.04)"</i>. Run the experiment to see the real list.</span>`;
+  const ps = plantedSpec();
+  document.getElementById('reality-note').innerHTML = reality === 'null'
+    ? 'Every condition has the same true accuracy, judge score, latency, cost and escalation rate. Any difference you see is sampling noise.'
+    : `One real effect: every cell with <strong style="color:var(--yellow)">${ps ? ps.label : '(vary a dimension first)'}</strong> has truly higher accuracy, on all slices. Every other difference, on every other metric, is still noise.`;
+  renderChanceTiles();
+  try { renderGridChart(); } catch (e) { console.warn('chart unavailable', e); }
+  // data no longer matches setup
+  data = null; rolls = []; exploreFoundPerRun = [];
+  document.getElementById('btn-roll').disabled = true; document.getElementById('btn-roll10').disabled = true;
+}
+
+function renderChanceTiles() {
+  const el = document.getElementById('chance-tiles');
+  const cells = buildCells();
+  if (cells.length < 2) { el.innerHTML = '<div class="empty">Vary at least one dimension to get a grid.</div>'; return; }
+  const n = parseInt(document.getElementById('n-test').value);
+  const savedReality = reality; reality = 'null';           // always a null world here
+  const findings = analyze(collect(cells, n));
+  reality = savedReality;
+  const sig = findings.filter(f => f.sig).sort((a, b) => a.p - b.p);
+  // take a spread: best three plus three random others, distinct cells where possible
+  const chosen = []; const seen = new Set();
+  for (const f of sig) { if (chosen.length >= 3) break; if (!seen.has(f.cell.name)) { chosen.push(f); seen.add(f.cell.name); } }
+  const rest = sig.filter(f => !chosen.includes(f));
+  while (chosen.length < 6 && rest.length) chosen.push(rest.splice(randi(rest.length), 1)[0]);
+  if (!chosen.length) { el.innerHTML = '<div class="empty">This sample happened to produce no significant difference. Reshuffle.</div>'; return; }
+  el.innerHTML = chosen.map(f => { const st = storyFor(f); return `<div class="tile ${f.better ? '' : 'worse'}"><div class="head">${st.head}</div><div class="why">${st.why}</div><div class="meta">${f.metric.name} · ${f.slice.name} · n=${f.na} vs ${f.nb} · p=${f.p < 0.001 ? '<0.001' : f.p.toFixed(3)}</div></div>`; }).join('')
+    + `<div class="tile" style="border-top-color:var(--text-dim);display:flex;align-items:center"><div class="why">…and ${Math.max(0, sig.length - chosen.length)} more in this one simulated run (${sig.length} significant of ${findings.length} comparisons). Not one is real.</div></div>`;
+}
+function renderGridChart() {
+  const n = parseInt(document.getElementById('n-test').value);
+  const full = cellsFor('full'), ofat = cellsFor('ofat');
+  const ctx = document.getElementById('grid-chart');
+  const ds = [
+    { label: 'Full grid', backgroundColor: 'rgba(59,130,246,0.7)', data: [full.length, totalTokens(full, n) / 1e5, looksFor(full) * 0.05] },
+    { label: 'One at a time', backgroundColor: 'rgba(167,139,250,0.7)', data: [ofat.length, totalTokens(ofat, n) / 1e5, looksFor(ofat) * 0.05] },
+  ];
+  if (charts.grid) { charts.grid.data.datasets = ds; charts.grid.update(); return; }
+  charts.grid = new Chart(ctx, { type: 'bar', data: { labels: ['Cells', 'Tokens (÷100k)', 'Chance findings'], datasets: ds },
+    options: chartOpts({ legend: true }) });
+}
+
+function safeChart(fn) { try { return fn(); } catch (e) { console.warn('chart unavailable', e); } }
+function chartOpts(o = {}) {
+  return { responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+    plugins: { legend: { display: !!o.legend, labels: { color: '#8892a4', font: { family: 'DM Mono', size: 10 } } }, tooltip: { bodyFont: { family: 'DM Mono', size: 11 } } },
+    scales: { x: { ticks: { color: '#8892a4', font: { family: 'DM Mono', size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { color: '#2a3040' } },
+              y: { ticks: { color: '#8892a4', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#2a3040' }, ...(o.y || {}) } } };
+}
+
+// ============================================================
+// STEPS
+// ============================================================
+function showStep(k) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('step' + i).classList.toggle('hidden', i !== k);
+    const ind = document.getElementById('step' + i + '-ind');
+    ind.classList.toggle('active', i === k);
+    ind.classList.toggle('done', i < k);
+  }
+  if (k === 4) renderPreregForm();
+  if (k === 3) renderStories();
+}
+function setInsight(html) { document.getElementById('insight').innerHTML = html; }
+
+// ============================================================
+// RUN + EXPLORE
+// ============================================================
+function runExperiment() {
+  const cells = buildCells();
+  if (cells.length < 2) { setInsight('<strong>Vary at least one dimension</strong> so there is something to compare with the baseline.'); return; }
+  const n = parseInt(document.getElementById('n-test').value);
+  const run = collect(cells, n);
+  const findings = analyze(run);
+  data = { cells, n, run, findings };
+  const found = findings.filter(f => f.sig).length;
+  exploreFoundPerRun.push(found);
+  document.getElementById('btn-roll').disabled = false; document.getElementById('btn-roll10').disabled = false;
+  fillSelects();
+  showStep(2);
+  updateExploreCards();
+  renderExplore();
+  const looks = findings.length;
+  setInsight(`<strong>${cells.length} cells &times; ${n} tickets collected.</strong> The tool has already compared every cell with the baseline on every metric and every slice: <strong>${looks} looks</strong>. Expected by chance: ~${(looks * 0.05).toFixed(0)}. Found: <strong style="color:var(--green)">${found}</strong> "significant" differences. Browse them, keep the ones that make sense, or just <strong>Roll</strong>.`);
+}
+function updateExploreCards() {
+  const looks = data.findings.length, found = data.findings.filter(f => f.sig).length;
+  document.getElementById('ex-looks').textContent = looks.toLocaleString();
+  document.getElementById('ex-expected').textContent = (looks * 0.05).toFixed(1);
+  document.getElementById('ex-found').textContent = found;
+  document.getElementById('ex-kept').textContent = stories.length;
+  document.getElementById('btn-to-challenge').disabled = stories.length === 0;
+}
+function fillSelects() {
+  const sm = document.getElementById('sel-metric'), ss = document.getElementById('sel-slice');
+  const pm = sm.value, ps = ss.value;
+  sm.innerHTML = METRICS.map(m => `<option value="${m.key}">${m.name}</option>`).join('');
+  ss.innerHTML = allSlices().map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
+  if (pm) sm.value = pm; if (ps) ss.value = ps;
+}
+function currentView() {
+  const mk = document.getElementById('sel-metric').value;
+  const si = parseInt(document.getElementById('sel-slice').value || '0');
+  const s = allSlices()[si];
+  return data.findings.filter(f => f.metric.key === mk && f.slice.name === s.name);
+}
+function renderExplore() {
+  if (!data) return;
+  const view = currentView();
+  const m = METRICS.find(x => x.key === document.getElementById('sel-metric').value);
+  // chart
+  const labels = view.map(f => f.cell.name);
+  const vals = view.map(f => f.delta * m.scale);
+  const colors = view.map(f => f.sig ? (f.better ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)') : 'rgba(136,146,164,0.45)');
+  const errs = view.map(f => [f.lo * m.scale, f.hi * m.scale]);
+  const ctx = document.getElementById('explore-chart');
+  const ds = [
+    { type: 'bar', label: `Δ ${m.name} vs baseline (${m.unit || m.name})`, data: vals, backgroundColor: colors, grouped: false, order: 2 },
+    { type: 'bar', label: '95% CI', data: errs, backgroundColor: 'rgba(226,232,240,0.0)', borderColor: 'rgba(226,232,240,0.55)', borderWidth: 1, barPercentage: 0.15, grouped: false, order: 1 },
+  ];
+  if (charts.explore) { charts.explore.data.labels = labels; charts.explore.data.datasets = ds; charts.explore.update(); }
+  else charts.explore = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ legend: true }) });
+  // table
+  const base = data.run.find(r => r.cell.isBase);
+  const si = parseInt(document.getElementById('sel-slice').value || '0'); const s = allSlices()[si];
+  const ib = sliceFilter(base, s.key, s.level);
+  const bmean = mean(pick(base.vals[m.key], ib));
+  let html = `<tr><th>Cell</th><th>n</th><th>${m.name}</th><th>Δ vs baseline</th><th>95% CI</th><th>p</th><th></th></tr>`;
+  html += `<tr class="baseline"><td>${base.cell.name} (baseline)</td><td class="num">${ib ? ib.length : base.vals[m.key].length}</td><td class="num">${m.fmt(bmean)}</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>`;
+  view.forEach(f => {
+    const cls = f.sig ? (f.better ? 'sig' : 'sig-bad') : '';
+    const sign = f.delta >= 0 ? '+' : '';
+    const fx = v => (v * m.scale).toFixed(m.scale === 100 ? 1 : 2);
+    html += `<tr class="${cls}"><td>${f.cell.name}</td><td class="num">${f.na}</td><td class="num">${m.fmt(bmean + f.delta)}</td><td class="num">${sign}${fx(f.delta)}</td><td class="num">[${fx(f.lo)}, ${fx(f.hi)}]</td><td class="num">${f.p < 0.001 ? '<0.001' : f.p.toFixed(3)}</td><td>${f.sig ? `<button class="btn btn-ghost btn-sm" onclick="keepStory(${data.findings.indexOf(f)})">keep</button>` : ''}</td></tr>`;
+  });
+  document.getElementById('explore-table').innerHTML = html;
+  // all significant findings
+  const sigs = data.findings.map((f, i) => ({ f, i })).filter(x => x.f.sig).sort((a, b) => a.f.p - b.f.p);
+  document.getElementById('all-findings-summary').textContent = `All ${sigs.length} "significant" differences in this run (${data.findings.length} comparisons × 0.05 = ${(data.findings.length * 0.05).toFixed(1)} expected)`;
+  document.getElementById('all-findings').innerHTML = `<tr><th>#</th><th>Finding</th><th>p</th><th></th></tr>` + sigs.map((x, k) => {
+    if (!x.f.story) x.f.story = storyFor(x.f);
+    return `<tr class="${x.f.better ? 'sig' : 'sig-bad'}"><td class="num">${k + 1}</td><td>${x.f.story.head}</td><td class="num">${x.f.p < 0.001 ? '<0.001' : x.f.p.toFixed(3)}</td><td><button class="btn btn-ghost btn-sm" onclick="keepStory(${x.i})">keep</button></td></tr>`;
+  }).join('');
+  // best story in view
+  const best = view.filter(f => f.sig).sort((a, b) => a.p - b.p)[0];
+  const el = document.getElementById('best-story');
+  if (!best) el.innerHTML = `<div class="empty">Nothing significant in this view. Try another metric or slice; with ${data.findings.length} looks available, something is waiting.</div>`;
+  else el.innerHTML = storyCard(best, data.findings.indexOf(best));
+}
+function storyCard(f, idx) {
+  if (!f.story) f.story = storyFor(f);
+  return `<div class="story ${f.better ? '' : ''}">
+    <div class="head">${f.story.head}</div>
+    <div class="why">${f.story.why}</div>
+    <div class="meta"><span>${f.metric.name} · ${f.slice.name} · n=${f.na} vs ${f.nb} · p=${f.p < 0.001 ? '<0.001' : f.p.toFixed(3)}</span>
+      <button class="btn btn-green btn-sm" onclick="keepStory(${idx})">Keep this story</button></div></div>`;
+}
+function keepStory(idx) {
+  const f = data.findings[idx];
+  if (!f.story) f.story = storyFor(f);
+  if (stories.some(s => s.cell.name === f.cell.name && s.metric.key === f.metric.key && s.slice.name === f.slice.name)) { updateExploreCards(); return; }
+  stories.push({ cell: { ...f.cell }, metric: f.metric, slice: f.slice, better: f.better, delta0: f.delta, p0: f.p, story: f.story, rollNo: rolls.length, fresh: null });
+  updateExploreCards();
+  document.getElementById('ex-kept').textContent = stories.length;
+}
+function clearStories() { stories = []; updateExploreCards(); renderStories(); document.getElementById('truth').classList.add('hidden'); }
+
+// ============================================================
+// ROLL
+// ============================================================
+function roll(times = 1) {
+  if (!data) runExperiment();
+  for (let k = 0; k < times; k++) {
+    const run = collect(data.cells, data.n);
+    const findings = analyze(run);
+    data = { ...data, run, findings };
+    exploreFoundPerRun.push(findings.filter(f => f.sig).length);
+    const best = findings.slice().sort((a, b) => a.p - b.p)[0];
+    best.story = storyFor(best);
+    rolls.push({ cell: best.cell, metric: best.metric, slice: best.slice, p: best.p, head: best.story.head, findingIdx: findings.indexOf(best) });
+    // keep it automatically so the user has a pile to challenge in step 3
+    keepStory(findings.indexOf(best));
+  }
+  updateExploreCards(); renderExplore(); renderRolls();
+  const last = rolls[rolls.length - 1];
+  const distinctCells = new Set(rolls.map(r => r.cell.name)).size, distinctMetrics = new Set(rolls.map(r => r.metric.key)).size;
+  setInsight(`<strong>Roll ${rolls.length}:</strong> "${last.head}" (p=${last.p < 0.001 ? '<0.001' : last.p.toFixed(3)}). ${rolls.length > 1 ? `Across ${rolls.length} rolls the winning story has involved <strong>${distinctCells} different cells</strong> and <strong>${distinctMetrics} different metrics</strong>. Same reality every time.` : 'Roll again. Same reality, same setup, new sample.'} Kept stories go to step 3.`);
+}
+function renderRolls() {
+  const strip = document.getElementById('roll-strip');
+  strip.innerHTML = rolls.slice().reverse().map((r, i) => `<div class="roll-item"><b>#${rolls.length - i}</b> ${r.head} <span class="muted">p=${r.p < 0.001 ? '<0.001' : r.p.toFixed(3)}</span></div>`).join('');
+  // chart: which cell won
+  const counts = {}; data.cells.forEach(c => { if (!c.isBase) counts[c.name] = 0; });
+  rolls.forEach(r => counts[r.cell.name] = (counts[r.cell.name] || 0) + 1);
+  const labels = Object.keys(counts), vals = labels.map(l => counts[l]);
+  const ps = plantedSpec();
+  const colors = labels.map(l => { const c = data.cells.find(x => x.name === l); return cellHasEffect(c) ? 'rgba(234,179,8,0.85)' : 'rgba(249,115,22,0.75)'; });
+  const ds = [{ label: 'Times this cell produced the roll\'s best story', data: vals, backgroundColor: colors }];
+  const ctx = document.getElementById('roll-chart');
+  if (charts.roll) { charts.roll.data.labels = labels; charts.roll.data.datasets = ds; charts.roll.update(); }
+  else charts.roll = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ y: { beginAtZero: true, ticks: { stepSize: 1, color: '#8892a4' } } }) });
+}
+
+// ============================================================
+// CHALLENGE
+// ============================================================
+function renderStories() {
+  const el = document.getElementById('stories');
+  document.getElementById('ch-n').textContent = stories.length;
+  if (!stories.length) { el.innerHTML = '<div class="empty">No stories kept yet. Go back to step 2 and keep some, or roll.</div>'; return; }
+  el.innerHTML = stories.map((s, i) => {
+    let cls = '', verdict = '';
+    if (s.fresh) {
+      const held = s.fresh.p < 0.05 && ((s.fresh.delta > 0) === (s.delta0 > 0));
+      cls = held ? 'alive' : 'dead';
+      verdict = held ? '<span class="verdict held">held on fresh data</span>' : '<span class="verdict collapsed">collapsed</span>';
+    }
+    if (s.truth !== undefined) { verdict += s.truth ? ' <span class="verdict truth">actually real</span>' : ' <span class="verdict truth" style="color:var(--text-dim)">noise</span>'; if (s.truth) cls += ' real'; }
+    const m = s.metric, fx = v => (v >= 0 ? '+' : '') + (v * m.scale).toFixed(m.scale === 100 ? 1 : 2);
+    return `<div class="story ${cls}">
+      <div class="head">${s.story.head}</div>
+      <div class="why">${s.story.why}</div>
+      <div class="meta"><span>found: Δ=${fx(s.delta0)} p=${s.p0 < 0.001 ? '<0.001' : s.p0.toFixed(3)}${s.fresh ? ` &nbsp;|&nbsp; fresh: Δ=${fx(s.fresh.delta)} p=${s.fresh.p < 0.001 ? '<0.001' : s.fresh.p.toFixed(3)}` : ''}</span><span>${verdict}</span></div></div>`;
+  }).join('');
+}
+function challenge() {
+  if (!stories.length) { renderStories(); return; }
+  // one fresh dataset for all claims (baseline + each claimed cell), same n
+  const needed = [data.cells.find(c => c.isBase), ...stories.map(s => data.cells.find(c => c.name === s.cell.name))];
+  const uniq = [...new Map(needed.map(c => [c.name, c])).values()];
+  const fresh = collect(uniq, data.n);
+  const base = fresh.find(r => r.cell.isBase);
+  stories.forEach(s => {
+    const r = fresh.find(x => x.cell.name === s.cell.name);
+    const ib = sliceFilter(base, s.slice.key, s.slice.level), ic = sliceFilter(r, s.slice.key, s.slice.level);
+    s.fresh = welch(pick(r.vals[s.metric.key], ic), pick(base.vals[s.metric.key], ib));
+  });
+  const held = stories.filter(s => s.fresh.p < 0.05 && ((s.fresh.delta > 0) === (s.delta0 > 0))).length;
+  document.getElementById('ch-held').textContent = held;
+  document.getElementById('ch-dead').textContent = stories.length - held;
+  document.getElementById('ch-exp').textContent = (stories.length * 0.025).toFixed(1);
+  renderStories();
+  // chart
+  const labels = stories.map((s, i) => `#${i + 1}`);
+  const d0 = stories.map(s => s.delta0 * s.metric.scale), d1 = stories.map(s => s.fresh.delta * s.metric.scale);
+  const ds = [
+    { label: 'Effect where found (exploration)', data: d0, backgroundColor: 'rgba(34,197,94,0.75)' },
+    { label: 'Effect on fresh data', data: d1, backgroundColor: 'rgba(59,130,246,0.75)' },
+  ];
+  const ctx = document.getElementById('challenge-chart');
+  if (charts.ch) { charts.ch.data.labels = labels; charts.ch.data.datasets = ds; charts.ch.update(); }
+  else charts.ch = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: chartOpts({ legend: true }) });
+  setInsight(`<strong>Challenge:</strong> ${held} of ${stories.length} stories held on fresh data. ${reality === 'null' ? 'Reality is null, so anything that held is a second coincidence (expected ~2.5% of claims: half of the 5% land in the same direction).' : 'Some may be the planted effect. Reveal the truth to see which; note that you could not tell before challenging.'} Units on the chart mix metrics (pts, s, ¢); the point is the shrinkage, not the scale.`);
+}
+function revealTruth() {
+  const ps = plantedSpec();
+  stories.forEach(s => { s.truth = cellHasEffect(s.cell) && s.metric.key === 'acc' && s.better; });
+  const real = stories.filter(s => s.truth).length;
+  const el = document.getElementById('truth'); el.classList.remove('hidden');
+  el.innerHTML = `<div class="insight-banner" style="border-left-color:var(--yellow);margin-top:1rem">
+    <strong>What is actually true:</strong> ${reality === 'null'
+      ? 'nothing. All conditions share identical true accuracy, judge score, escalation rate, latency and cost. Every story you kept, and every explanation that came with it, was generated from noise.'
+      : `exactly one thing. Cells with <strong>${ps.label}</strong> have +${document.getElementById('effect').value} pts true accuracy, on all slices. Every other metric and every other condition is noise. Of your ${stories.length} stories, <strong>${real}</strong> ${real === 1 ? 'is' : 'are'} the real effect${real ? ' (or a slice of it)' : ''}. Exploration found it; it also found the fakes, and they looked the same until you challenged them.`}
+    </div>`;
+  renderStories();
+}
+
+// ============================================================
+// PRE-REGISTERED COMPARE
+// ============================================================
+function renderPreregForm() {
+  const cells = data ? data.cells : buildCells();
+  const pc = document.getElementById('pr-cell');
+  const prev = pc.value;
+  pc.innerHTML = cells.filter(c => !c.isBase).map(c => `<option value="${c.idx}">${c.name}</option>`).join('');
+  if (prev) pc.value = prev;
+  const pm = document.getElementById('pr-metric'); if (!pm.options.length) pm.innerHTML = METRICS.map(m => `<option value="${m.key}">${m.name}</option>`).join('');
+  const psl = document.getElementById('pr-slice'); if (!psl.options.length) psl.innerHTML = allSlices().map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
+  const avg = exploreFoundPerRun.length ? mean(exploreFoundPerRun).toFixed(1) : '-';
+  document.getElementById('pr-vs').textContent = avg;
+}
+function runPrereg(times = 1) {
+  const cells = data ? data.cells : buildCells();
+  const c = cells.find(x => x.idx === parseInt(document.getElementById('pr-cell').value));
+  const m = METRICS.find(x => x.key === document.getElementById('pr-metric').value);
+  const s = allSlices()[parseInt(document.getElementById('pr-slice').value)];
+  const minDelta = parseFloat(document.getElementById('pr-min').value) || 0;
+  const n = parseInt(document.getElementById('n-test').value);
+  if (!c) { document.getElementById('pr-result').innerHTML = '<div class="empty">Vary at least one dimension first.</div>'; return; }
+  let lastHtml = '';
+  for (let k = 0; k < times; k++) {
+    const base = cells.find(x => x.isBase);
+    const fresh = collect([base, c], n);
+    const rb = fresh[0], rc = fresh[1];
+    const ib = sliceFilter(rb, s.key, s.level), ic = sliceFilter(rc, s.key, s.level);
+    const w = welch(pick(rc.vals[m.key], ic), pick(rb.vals[m.key], ib));
+    const improvement = (m.higherBetter ? w.delta : -w.delta) * m.scale;
+    const ship = w.p < 0.05 && improvement >= minDelta;
+    prereg.n++; if (ship) prereg.ship++;
+    const fx = v => (v * m.scale).toFixed(m.scale === 100 ? 1 : 2);
+    lastHtml = `<div class="story" style="border-left-color:var(--purple)">
+      <div class="head">${ship ? 'SHIP' : 'DO NOT SHIP'}: ${c.name} vs baseline on ${m.name.toLowerCase()}, ${s.name.toLowerCase()}</div>
+      <div class="why">Improvement ${improvement >= 0 ? '+' : ''}${improvement.toFixed(m.scale === 100 ? 1 : 2)} ${m.unit} (95% CI of Δ: [${fx(w.lo)}, ${fx(w.hi)}]), p=${w.p < 0.001 ? '<0.001' : w.p.toFixed(3)}. Rule was: improvement &ge; ${minDelta} ${m.unit} and p &lt; 0.05. ${ship ? 'Target met: this is evidence.' : 'Target not met. Note that the same dataset almost certainly contains other "significant" differences; they do not count, because they were not the question.'}</div></div>`;
+  }
+  document.getElementById('pr-result').innerHTML = lastHtml;
+  document.getElementById('pr-n').textContent = prereg.n;
+  document.getElementById('pr-ship').textContent = prereg.ship;
+  const truly = cellHasEffect(c) && m.key === 'acc';
+  setInsight(`<strong>Pre-registered compare:</strong> ${prereg.ship} ship decisions in ${prereg.n} runs. ${truly ? 'This condition really is better on accuracy, so ship decisions here are correct calls.' : 'This condition is not truly better on this metric, so every ship decision is a false positive, and they occur at most 5% of the time by construction.'} Compare with explore mode, which found on average ${document.getElementById('pr-vs').textContent} "significant" stories per run of the same experiment.`);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderDims();
+onSetupChange();
+</script>
+</body>
+</html>
