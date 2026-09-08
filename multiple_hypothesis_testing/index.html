@@ -87,6 +87,8 @@
   .verdict-box .why { font-size: 0.9rem; line-height: 1.55; color: var(--text-dim); }
   .verdict-box.ok { border-left-color: var(--green); }
   .muted { color: var(--text-dim); }
+  .ex { color: var(--accent-a); font-weight: 600; }
+  .ex:empty::before { content: "(numbers appear here once you analyze a leaderboard)"; color: var(--text-dim); font-weight: 400; font-style: italic; }
   .empty { color: var(--text-dim); font-size: 0.8rem; font-style: italic; padding: 0.5rem 0; }
   .hidden { display: none !important; }
   .setup-cards { grid-template-columns: 1fr 1.4fr 1.2fr; }
@@ -115,6 +117,7 @@
   <div class="tabs">
     <button id="tab-sim" class="on" onclick="showTab('sim')">Simulate: pick the best of N, then check it</button>
     <button id="tab-calc" onclick="showTab('calc')">Point it at your own leaderboard</button>
+    <button id="tab-base" onclick="showTab('base')">Is my winner really better than the baseline?</button>
   </div>
 
   <!-- ================================================================ SIM TAB -->
@@ -267,6 +270,58 @@ variant 10, 170, 200</textarea>
     <div class="panel">
       <h2>How this is computed</h2>
       <p class="muted" style="font-size:0.82rem;line-height:1.6;max-width:900px">Each variant gets a posterior on its true accuracy from its own count: Beta(correct + 1, wrong + 1). <strong style="color:var(--text)">Probability of being best</strong>: draw one true accuracy per variant from these posteriors, note which is highest, repeat 20,000 times; the share of draws each variant wins is its probability. <strong style="color:var(--text)">Shrinkage</strong>: the N variants are attempts at the same task, so their true accuracies cluster. From the spread of the measured scores we estimate how much of that spread is real (between-variant variance &tau;&sup2;) and how much is noise; each score is then pulled toward the group mean by the factor noise / (noise + &tau;&sup2;). The winner, being the most extreme, is pulled the most. The gap between its measured score and its shrunk estimate is the expected inflation. When the scores are all within noise of each other, &tau;&sup2; is about zero and the winner is pulled all the way to the group mean, which is the honest answer.</p>
+    </div>
+  </div>
+  </div>
+
+  <!-- ================================================================ BASELINE TAB -->
+  <div id="tab-base-body" class="hidden">
+  <div class="wrap">
+    <div class="insight-banner"><strong>The question a team actually has.</strong> You tried N variants against a baseline, on the same tickets, and one of them came out ahead. Is it really better, given that you tried N? This tab answers with your own data, no assumptions about distributions: it re-samples your tickets thousands of times and asks how big a lead the best of N gets by luck alone.</div>
+    <div class="grid-2" style="grid-template-columns: 1fr 1.4fr">
+      <div class="panel">
+        <h2>Paste your per-ticket results</h2>
+        <p class="muted" style="font-size:0.78rem;line-height:1.5;margin-bottom:0.5rem">First row: the names, <strong style="color:var(--text)">baseline first</strong>. Then one row per ticket, one column per system: 1 = right, 0 = wrong (or any score, higher = better). Every system must be scored on the same tickets. Comma, tab or space separated.</p>
+        <div style="margin:0 0 0.8rem;padding:0.7rem 0.8rem;background:rgba(37,99,235,0.06);border:1px dashed var(--accent-a);border-radius:8px">
+          <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.45rem">No data at hand? Load an example:</div>
+          <div class="btn-group" style="margin:0">
+            <button class="btn btn-primary" onclick="loadExample(false)">Example A: nothing is better</button>
+            <button class="btn btn-warn" onclick="loadExample(true)">Example B: V3 truly +8 pts</button>
+          </div>
+        </div>
+        <textarea id="base-input" rows="14" style="width:100%;line-height:1.45" spellcheck="false" placeholder="baseline, V1, V2, V3
+1, 1, 0, 1
+0, 1, 1, 0
+..."></textarea>
+        <div class="btn-group"><button class="btn btn-primary" onclick="analyzeBaseline()">Analyze</button></div>
+        <p class="muted" style="font-size:0.74rem;line-height:1.5;margin-top:0.6rem">The examples simulate 400 tickets, a baseline at 82% and 8 variants scored on the same tickets. Assumes these are <em>all</em> the variants you tried; survivors of a larger search carry more inflation than the data can show.</p>
+      </div>
+      <div class="panel">
+        <h2>What we can say with "95% probability"</h2>
+        <div id="base-out"><div class="empty">Paste results, or load an example, then click Analyze.</div></div>
+        <div class="chart-wrap" style="height:250px;margin-top:0.6rem"><canvas id="base-chart"></canvas></div>
+        <p class="muted" style="font-size:0.72rem;margin-top:0.3rem" id="base-caption"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>How this is computed</h2>
+      <div style="font-size:0.95rem;line-height:1.7;max-width:920px">
+        <div style="font-weight:700;margin-bottom:0.2rem">Before the bootstrap</div>
+        <div style="margin-left:0.5rem">On your tickets, compute each variant's improvement over the baseline. The largest belongs to the <b>winner</b>: that is the number you are tempted to report. <span class="ex" id="ex-0"></span></div>
+
+        <div style="font-weight:700;margin:0.8rem 0 0.2rem">Here is what each bootstrap run does</div>
+        <div style="margin-left:0.5rem"><span style="color:var(--accent-a);font-weight:700;font-family:'DM Mono',monospace">1.</span>&nbsp; Draw a new bucket of tickets: as many as you have, picked at random with replacement (some appear twice, some not at all). Every system is scored on this same bucket, so a hard ticket is hard for everyone. <span class="ex" id="ex-1"></span></div>
+        <div style="margin-left:0.5rem"><span style="color:var(--accent-a);font-weight:700;font-family:'DM Mono',monospace">2.</span>&nbsp; For each variant, compute its improvement over the baseline on this bucket, and subtract its improvement on the original tickets. The result is how much that variant <b>moved</b> just because of the tickets drawn: luck, measured, with nothing to do with how good the variant is. <span class="ex" id="ex-2"></span></div>
+
+        <div style="font-weight:700;margin:0.8rem 0 0.2rem">Here is what we record</div>
+        <div style="margin-left:0.5rem">One number per run: the <b>largest movement among the N variants</b>. In real life you keep the winner, so the question is how far the luckiest one gets ahead, not any particular one. After 3,000 runs we have 3,000 such numbers: 3,000 answers to "how far ahead does the luckiest of N equal variants get by chance, on tickets like mine?" <span class="ex" id="ex-3"></span></div>
+
+        <div style="font-weight:700;margin:0.8rem 0 0.2rem">Here is what we do with them</div>
+        <div style="margin-left:0.5rem"><span style="color:var(--accent-a);font-weight:700;font-family:'DM Mono',monospace">1.</span>&nbsp; <b>Set the bar:</b> sort the 3,000 numbers and take the one that 95% of them are below. Luck alone stays under this bar 95% of the time. <span class="ex" id="ex-4"></span></div>
+        <div style="margin-left:0.5rem"><span style="color:var(--accent-a);font-weight:700;font-family:'DM Mono',monospace">2.</span>&nbsp; <b>Conclude:</b> compare the winner's real improvement with the bar. Above it: luck alone would produce such a lead less than 5% of the time, so with 95% probability the winner really is better than the baseline, even though you tried N. Below it: the data cannot tell the win from luck. <span class="ex" id="ex-5"></span></div>
+        <div style="margin-left:0.5rem"><span style="color:var(--accent-a);font-weight:700;font-family:'DM Mono',monospace">3.</span>&nbsp; <b>Discount:</b> the same runs also tell how much the best of N is optimistic on average; subtract it from the winner's improvement to get the lead you should expect in production. <span class="ex" id="ex-6"></span></div>
+      </div>
+      <p class="muted" style="font-size:0.78rem;line-height:1.5;margin-top:0.8rem;max-width:920px">This is a bootstrap: it uses only your tickets, assumes nothing about how scores are distributed, and keeps the pairing. The "movement" in run step 2 is the same wobble a single-system bootstrap interval measures; the difference is recording the largest of N instead of the wobble of one. Statisticians call it the max-t method, a bootstrap version of Dunnett's test.</p>
     </div>
   </div>
   </div>
@@ -509,8 +564,87 @@ function chartOpts(o = {}) {
 }
 function mk(key, id, d, opts) { const ctx = document.getElementById(id); if (!ctx) return; if (charts[key]) { charts[key].destroy(); charts[key] = null; } charts[key] = new Chart(ctx, { type: 'bar', data: d, options: opts }); }
 function showTab(t) {
-  document.getElementById('tab-sim').classList.toggle('on', t === 'sim'); document.getElementById('tab-calc').classList.toggle('on', t === 'calc');
-  document.getElementById('tab-sim-body').classList.toggle('hidden', t !== 'sim'); document.getElementById('tab-calc-body').classList.toggle('hidden', t !== 'calc');
+  ['sim', 'calc', 'base'].forEach(k => { document.getElementById('tab-' + k).classList.toggle('on', t === k); document.getElementById('tab-' + k + '-body').classList.toggle('hidden', t !== k); });
+}
+// ============================================================ baseline tab: paired bootstrap with selection bar
+function loadExample(real) {
+  const n = 400, N = 8, names = ['baseline'].concat(Array.from({ length: N }, (_, i) => 'V' + (i + 1)));
+  const rows = [names.join(', ')];
+  for (let t = 0; t < n; t++) {
+    const diff = Math.random();  // ticket difficulty shared across systems (induces pairing)
+    const row = names.map((nm, j) => { let p = 0.82 + (real && j === 3 ? 0.08 : 0); p = Math.min(0.99, Math.max(0.01, p + (diff - 0.5) * 0.5)); return Math.random() < p ? 1 : 0; });
+    rows.push(row.join(', '));
+  }
+  document.getElementById('base-input').value = rows.join('\n');
+  analyzeBaseline();
+}
+function parseGrid() {
+  const lines = document.getElementById('base-input').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 3) return null;
+  const split = l => l.split(/[,;\t ]+/).map(x => x.trim()).filter(x => x !== '');
+  let names = split(lines[0]); let start = 1;
+  if (names.every(x => !isNaN(parseFloat(x)))) { start = 0; names = names.map((_, j) => j === 0 ? 'baseline' : 'V' + j); }
+  const M = [];
+  for (let i = start; i < lines.length; i++) { const v = split(lines[i]).map(parseFloat); if (v.length !== names.length || v.some(isNaN)) continue; M.push(v); }
+  if (M.length < 5 || names.length < 2) return null;
+  return { names, M };
+}
+function analyzeBaseline() {
+  const g = parseGrid(); const out = document.getElementById('base-out');
+  if (!g) { out.innerHTML = '<div class="empty">Could not read the grid: need a name row (baseline first) and at least 5 ticket rows with one number per system.</div>'; return; }
+  const { names, M } = g; const T = M.length, K = names.length - 1;
+  const meanCol = (rows, j) => { let s = 0; for (const r of rows) s += r[j]; return s / rows.length; };
+  const base = meanCol(M, 0); const scores = names.map((_, j) => meanCol(M, j));
+  const lead = scores.slice(1).map(v => v - base);            // observed leads, K of them
+  let w = 0; lead.forEach((v, i) => { if (v > lead[w]) w = i; });
+  // paired bootstrap
+  const B = 3000; const maxC = new Array(B); const optim = new Array(B); const leadB = Array.from({ length: K }, () => new Array(B));
+  let run1 = null;
+  for (let b = 0; b < B; b++) {
+    const sums = new Array(K + 1).fill(0);
+    for (let t = 0; t < T; t++) { const r = M[randi(T)]; for (let j = 0; j <= K; j++) sums[j] += r[j]; }
+    let mx = -Infinity, mxi = 0, bw = 0, bwv = -Infinity; const moves = [];
+    for (let i = 0; i < K; i++) { const lb = (sums[i + 1] - sums[0]) / T; leadB[i][b] = lb; const c = lb - lead[i]; moves.push(c); if (c > mx) { mx = c; mxi = i; } if (lb > bwv) { bwv = lb; bw = i; } }
+    maxC[b] = mx; optim[b] = bwv - lead[bw];
+    if (b === 0) run1 = { moves, mx, mxi, leadWinner: leadB[w][0] };
+  }
+  const sorted = maxC.slice().sort((a, b) => a - b); const bar = sorted[Math.floor(0.95 * (B - 1))];
+  const pAdj = maxC.filter(v => v >= lead[w]).length / B;
+  const bias = mean(optim);
+  const wl = leadB[w].slice().sort((a, b) => a - b); const naiveLo = wl[Math.floor(0.025 * (B - 1))], naiveHi = wl[Math.floor(0.975 * (B - 1))];
+  const pNaive = leadB[w].filter(v => v - lead[w] >= lead[w]).length / B;  // centred one-sided
+  const clears = lead.map(v => v > bar);
+  const pts = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + ' pts';
+  const isBinary = M.every(r => r.every(v => v === 0 || v === 1)); const unit = isBinary ? 'pts' : 'score units';
+  const fmtv = v => isBinary ? (v * 100).toFixed(1) + '%' : v.toFixed(3);
+  const fmtl = v => isBinary ? pts(v) : (v >= 0 ? '+' : '') + v.toFixed(3);
+  const yes = lead[w] > bar;
+  out.innerHTML = `
+    <div class="verdict-box ${yes ? 'ok' : ''}"><div class="head" style="color:${yes ? 'var(--green)' : 'var(--red)'};font-size:1.35rem">${yes ? `Yes: ${names[w + 1]} beats the baseline` : (lead[w] <= 0 ? 'No variant beats the baseline' : `Not established: ${names[w + 1]}'s lead is within best-of-${K} luck`)}</div>
+      <div class="why">${lead[w] > 0 ? `${names[w + 1]} leads the baseline by <b>${fmtl(lead[w])}</b>` : `The best variant, ${names[w + 1]}, is <b>${fmtl(-lead[w]).replace('+', '')}</b> behind the baseline`} (${fmtv(scores[w + 1])} vs ${fmtv(base)} on ${T} tickets). Now suppose <em>none</em> of the ${K} variants were truly better than the baseline. The best of them would still come out ahead, simply because of which tickets happened to be in the test set: 95% of the time by up to <b>${fmtl(bar)}</b>, and only 5% of the time by more. ${yes ? `The lead you observed, ${fmtl(lead[w])}, is beyond that: luck alone would produce it less than 5% of the time. <b>With 95% probability, ${names[w + 1]} is really better than the baseline</b>, even accounting for the ${K} variants tried.` : `The lead you observed, ${fmtl(lead[w])}, is inside that range: <b>luck alone produces leads like this, so the data cannot tell whether ${names[w + 1]} is really better.</b>` + (pNaive < 0.05 ? ` Tested alone, as if you had chosen it in advance, it would have looked significant. That is the trap.` : '')}</div></div>
+    <p class="muted" style="font-size:0.85rem;line-height:1.55;margin-top:0.7rem">${yes ? `Discount the lead before you repeat it: the best of ${K} is optimistic by about ${fmtl(bias)}, so expect <b style="color:var(--purple)">${fmtl(lead[w] - bias)}</b> in production, not ${fmtl(lead[w])}.` : `To settle it, score ${names[w + 1]} alone on new tickets, or bring more tickets: the bar shrinks with the square root of their number.`}${clears.filter(Boolean).length > 1 ? ` ${clears.filter(Boolean).length} variants clear the bar (${names.slice(1).filter((_, i) => clears[i]).join(', ')}).` : ''}</p>`;
+  // fill the worked example in the explanation
+  const ex = (id, t) => { document.getElementById(id).innerHTML = t; };
+  ex('ex-0', `In this example: the winner is ${names[w + 1]}, with an improvement of ${fmtl(lead[w])} over the baseline (${fmtv(scores[w + 1])} vs ${fmtv(base)}).`);
+  ex('ex-1', `In this example: a bucket of ${T} tickets drawn from your ${T}.`);
+  ex('ex-2', `In the first run: ${names[w + 1]}'s improvement on the bucket was ${fmtl(run1.leadWinner)}, against ${fmtl(lead[w])} originally, so it moved by ${fmtl(run1.leadWinner - lead[w])}. The other variants moved by ${run1.moves.map((m, i) => i === w ? null : names[i + 1] + ' ' + fmtl(m)).filter(Boolean).join(', ')}.`);
+  ex('ex-3', `In the first run the largest movement was ${fmtl(run1.mx)} (${names[run1.mxi + 1]}); that is the number recorded for run 1. The 3,000 recorded numbers ranged from ${fmtl(sorted[0])} to ${fmtl(sorted[B - 1])}, with a middle value of ${fmtl(sorted[Math.floor(B / 2)])}.`);
+  ex('ex-4', `In this example: the bar is ${fmtl(bar)}; 95% of the 3,000 recorded movements are below it.`);
+  ex('ex-5', `In this example: ${names[w + 1]}'s real improvement, ${fmtl(lead[w])}, is ${yes ? 'above' : 'below'} the bar of ${fmtl(bar)}. ${yes ? 'With 95% probability it is really better than the baseline.' : 'The win cannot be told from luck.'}`);
+  ex('ex-6', `In this example: the best of ${K} is optimistic by ${fmtl(bias)} on average, so expect about ${fmtl(lead[w] - bias)} in production rather than ${fmtl(lead[w])}.`);
+  const labels = names.slice(1).map((nm, i) => [nm, fmtl(lead[i])]);
+  const lows = lead.map((_, i) => { const a = leadB[i].slice().sort((x, y) => x - y); return [a[Math.floor(0.025 * (B - 1))], a[Math.floor(0.975 * (B - 1))]]; });
+  const sc = isBinary ? 100 : 1;
+  const ds = [
+    { type: 'bar', label: 'lead over baseline', data: lead.map(v => v * sc), backgroundColor: lead.map((v, i) => i === w ? (yes ? 'rgba(22,163,74,0.85)' : 'rgba(220,38,38,0.7)') : (clears[i] ? 'rgba(22,163,74,0.5)' : 'rgba(100,116,139,0.5)')), stack: 'a' },
+    { type: 'bar', label: '95% interval (pre-declared)', data: lows.map(x => [x[0] * sc, x[1] * sc]), backgroundColor: 'rgba(0,0,0,0)', borderColor: 'rgba(15,23,42,0.6)', borderWidth: 1, barPercentage: 0.15, stack: 'a' },
+    { type: 'line', label: 'selection bar: luck alone, best of ' + K, data: lead.map(() => bar * sc), borderColor: 'rgba(220,38,38,0.9)', borderDash: [6, 4], pointRadius: 0, borderWidth: 2 },
+    { type: 'line', label: 'baseline', data: lead.map(() => 0), borderColor: 'rgba(15,23,42,0.6)', pointRadius: 0, borderWidth: 1 },
+  ];
+  const opts = chartOpts({ legend: true, y: { title: { display: true, text: 'lead over baseline (' + unit + ')', color: '#64748b', font: { family: 'DM Mono', size: 10 } } } });
+  opts.scales.x.stacked = true; opts.scales.y.stacked = false; opts.plugins.legend.labels.filter = i => !i.text.startsWith('95%');
+  mk('base', 'base-chart', { labels, datasets: ds }, opts);
+  document.getElementById('base-caption').innerHTML = 'Each bar: a variant\'s lead over the baseline (thin bar: 95% bootstrap interval as if it had been chosen in advance). Red dashed line: the selection bar, the lead the best of ' + K + ' reaches by luck alone. Green: clears the bar.';
 }
 onSetupChange();
 </script>
