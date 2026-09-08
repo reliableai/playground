@@ -70,7 +70,7 @@
   .step.active { background: rgba(37,99,235,0.08); color: var(--accent-a); border-color: var(--accent-a); }
   .step.done { background: rgba(22,163,74,0.1); color: var(--green); border-color: var(--green); }
   .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; margin: 0.5rem 0 0.75rem; }
-  .setup-cards { grid-template-columns: 1fr 1fr 2fr 3fr; }
+  .setup-cards { grid-template-columns: 1fr 1fr; }
   @media (max-width: 1100px) { .setup-cards { grid-template-columns: 1fr 1fr; } }
   .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; }
   .stat-card .label { font-size: 0.62rem; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
@@ -174,8 +174,6 @@
       </div>
       </div>
       <div class="stat-cards">
-        <div class="stat-card"><div class="label">Cells</div><div class="value" id="sc-cells">-</div><div class="sub" id="sc-cells-sub">&nbsp;</div></div>
-        <div class="stat-card"><div class="label">Tokens sent + received</div><div class="value" id="sc-tokens">-</div><div class="sub" id="sc-runs">&nbsp;</div></div>
         <div class="stat-card"><div class="label">Comparisons available</div><div class="value" id="sc-looks">-</div><div class="sub" id="sc-looks-sub">&nbsp;</div></div>
         <div class="stat-card"><div class="label">Expected number of false positives (theory)</div><div class="value" id="sc-expected">-</div><div class="sub" id="sc-expected-sub">&nbsp;</div></div>
       </div>
@@ -185,7 +183,7 @@
 
   <div class="layout">
     <!-- ================= CONTROLS ================= -->
-    <div class="controls-row">
+    <div class="controls-row" style="grid-template-columns:1fr">
       <div class="panel">
         <h2>Reality <span class="hint">(what is actually true)</span></h2>
         <div class="seg">
@@ -200,16 +198,6 @@
         <div class="muted" style="font-size:0.74rem;line-height:1.5" id="reality-note">Every condition has the same true accuracy, judge score, latency, cost and escalation rate. Any difference you see is sampling noise.</div>
       </div>
 
-      <div class="panel">
-        <h2>Actions</h2>
-        <div class="btn-group" style="margin-top:0">
-          <button class="btn btn-primary" style="font-size:0.95rem;padding:0.75rem 1.4rem" onclick="roll(1)">&#9654;&nbsp; Run experiment</button>
-          <button class="btn btn-ghost" id="btn-roll10" onclick="roll(10)">Run &times;10</button>
-        </div>
-        <div class="muted" style="font-size:0.74rem;line-height:1.5;margin-top:0.6rem">
-          Each run collects a fresh sample for every cell (same reality every time), makes all the comparisons, and hands you the best story it can find. Then explore the rest by hand.
-        </div>
-      </div>
     </div>
 
     <!-- ================= PLACEHOLDER (before first run) ================= -->
@@ -224,7 +212,7 @@
       <!-- STEP 1 -->
       <!-- STEP 2 -->
       <div id="step2" class="panel">
-        <h2>Results of this run</h2>
+        <h2 style="display:flex;justify-content:space-between;align-items:center">Results of this run <button class="btn btn-primary btn-sm" onclick="roll(1)">&#9654;&nbsp; Run again (new sample, same reality)</button></h2>
         <div class="stat-cards">
           <div class="stat-card"><div class="label">Comparisons made</div><div class="value" id="ex-looks">0</div><div class="sub">every cell vs baseline, every metric, every slice</div></div>
           <div class="stat-card"><div class="label">Expected number of false positives</div><div class="value" id="ex-expected">0</div><div class="sub">0.05 &times; comparisons, if nothing is real</div></div>
@@ -619,13 +607,9 @@ function onSetupChange() {
   document.getElementById('effect-val').textContent = '+' + document.getElementById('effect').value + ' pts';
   const cells = buildCells();
   const looks = looksFor(cells);
-  document.getElementById('sc-cells').textContent = cells.length;
-  document.getElementById('sc-cells-sub').innerHTML = activeDims().map(d => d.use).join(' &times; ') || '1';
-  document.getElementById('sc-tokens').textContent = fmtTok(totalTokens(cells, n));
-  document.getElementById('sc-runs').innerHTML = `${cells.length} cells &times; ${n} tickets = ${(cells.length * n).toLocaleString()} LLM calls`;
-  document.getElementById('sc-looks').textContent = looks.toLocaleString();
+  document.getElementById('sc-looks').innerHTML = `${Math.max(0, cells.length - 1)} &times; ${METRICS.length} &times; ${N_SLICES} = ${looks.toLocaleString()}`;
   document.getElementById('ph-looks').textContent = looks.toLocaleString();
-  document.getElementById('sc-looks-sub').innerHTML = (() => { const k = Math.max(0, cells.length - 1); return `<span style="display:block;text-align:left"><b style="color:var(--text)">${k}</b> if you decide the metric and use the whole test set: each of the ${k} candidates vs the baseline, once<br>&times; ${METRICS.length} if you are free to pick any metric afterwards (${METRICS.map(m => m.name.toLowerCase()).join(', ')}) = <b style="color:var(--text)">${k * METRICS.length}</b><br>&times; ${N_SLICES} if you are also free to pick any slice (all tickets, or one of ${SLICES.map(sl => sl.levels.length + ' ' + ({category: 'categories', channel: 'channels', lang: 'languages'})[sl.key]).join(', ')}) = <b style="color:var(--text)">${looks}</b></span>`; })();
+  document.getElementById('sc-looks-sub').innerHTML = (() => { const k = Math.max(0, cells.length - 1); const dims = activeDims().map(d => d.use + ' ' + d.name.toLowerCase() + 's').join(' &times; '); return `<span style="display:block;text-align:left">${cells.length} configurations (${dims || 'just the baseline'}), so <b style="color:var(--text)">${k}</b> comparisons if you decide the metric in advance and use the whole test set: each candidate vs the baseline, once<br>&times; ${METRICS.length} if you are free to pick any metric afterwards (${METRICS.map(m => m.name.toLowerCase()).join(', ')}) = <b style="color:var(--text)">${k * METRICS.length}</b><br>&times; ${N_SLICES} if you are also free to pick any slice (all tickets, or one of ${SLICES.map(sl => sl.levels.length + ' ' + ({category: 'categories', channel: 'channels', lang: 'languages'})[sl.key]).join(', ')}) = <b style="color:var(--text)">${looks}</b></span>`; })();
   document.getElementById('sc-expected').innerHTML = `${looks} &times; 0.05 = ${(looks * 0.05).toFixed(1)}`;
   const seAll = 1.96 * Math.sqrt(2 * TRUE.acc * (1 - TRUE.acc) / n) * 100, seSlice = 1.96 * Math.sqrt(2 * TRUE.acc * (1 - TRUE.acc) / (n / 5)) * 100;
   document.getElementById('sc-expected-sub').innerHTML = `1 in 20 comparisons crosses p &lt; 0.05 when nothing is real (see the assumption above). On average; a single run varies a lot.`;
@@ -810,7 +794,7 @@ function renderExamineVerdict(f) {
   const avg = mean(f.freshList.map(w => w.delta));
   const truly = cellHasEffect(f.cell) && m.key === 'acc' && f.better;
   el.innerHTML = `<div class="story ${held ? 'alive' : 'dead'}" style="padding:1.1rem 1.4rem;border-left-width:6px"><div class="head" style="font-size:1.6rem;letter-spacing:-0.02em;margin-bottom:0.5rem;color:${held ? 'var(--green)' : 'var(--red)'}">${held ? 'Held on new tickets' : 'Collapsed on new tickets'} <span class="verdict ${held ? 'held' : 'collapsed'}" style="font-size:0.9rem;vertical-align:middle">${fx(last.delta)}, p=${last.p < 0.001 ? '<0.001' : last.p.toFixed(3)}</span></div>
-    <div class="why" style="font-size:0.9rem;line-height:1.55">On the tickets from this run: ${fx(f.delta)} (p=${f.p.toFixed(3)}). On new tickets: ${fx(last.delta)} (p=${last.p.toFixed(3)}).${f.freshList.length > 1 ? ` Across <b>${f.freshList.length}</b> new batches the story held <b>${nHeld}</b> time${nHeld === 1 ? '' : 's'}; the average fresh difference is <b>${fx(avg)}</b>.` : ''}
+    <div class="why" style="font-size:0.9rem;line-height:1.55">On the tickets from this run: ${fx(f.delta)} (p=${f.p.toFixed(3)}). On new tickets: ${fx(last.delta)} (p=${last.p.toFixed(3)}).${f.freshList.length > 1 ? ` Across <b>${f.freshList.length}</b> new batches the story held <b>${nHeld}</b> time${nHeld === 1 ? '' : 's'}; the average gap on new tickets is <b>${fx(avg)}</b>.` : ''}
     ${truly ? ' This one involves the planted real effect, so it should hold more often than not.' : (reality === 'null' ? ' Nothing is real here: a story found by looking is expected to hold about 2.5% of the time, by a second coincidence in the same direction.' : ' This one does not involve the planted effect: it is noise.')}</div></div>`;
 }
 function renderExamineChart(f) {
