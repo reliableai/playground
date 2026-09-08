@@ -102,7 +102,7 @@
 </head>
 <body>
   <h1>Inflated Estimates in Multiple Hypotheses Testing</h1>
-  <div class="subtitle">Try N variants on one test set, keep the best. How inflated is its score? "You didn't peek at the data. You're still fooled."</div>
+  <div class="subtitle">Try N variants on one test set, keep the best. How inflated is its score?</div>
 
   <details class="explainer">
     <summary>What is this playground about? (click to expand)</summary>
@@ -110,13 +110,12 @@
       <p><strong>The scenario:</strong> you are building a few-shot LLM classifier that routes support tickets to one of five teams. You write N prompt variants, score every one of them on the same test set of n tickets on <strong>one metric of interest, accuracy</strong>, and keep the variant with the best score. That is what everybody does, and it is the right way to pick. The trap is in what you then <em>report</em>.</p>
       <p><strong>The catch:</strong> every score is the true accuracy plus sampling noise. If you measure one variant, its score is unbiased. If you measure N and keep the highest, you kept the one whose noise happened to be the most positive. The winner's score is <strong>inflated</strong>, and the inflation grows with N and shrinks only with &radic;n. You never looked at the test data, you did nothing wrong, and you are still fooled. This is the <em>Select</em> goal from the lesson, and its bias is called the winner's curse.</p>
       <p><strong>How much?</strong> If the per-ticket noise has standard deviation &sigma;, the winner sits about <code>(&sigma;/&radic;n) &times; &radic;(2 ln N)</code> above the truth on average (the expected maximum of N normal draws). With accuracy near 82%, n = 200 and N = 10, that is about +4.2 points.</p>
-      <p><strong>The fix:</strong> select on one set of tickets, then <em>report</em> the winner's score from a different one, tickets it has never seen. Or shrink the winner's estimate toward the group, by an amount you can compute from the leaderboard itself (second tab).</p>
+      <p><strong>The fix:</strong> select on one set of tickets, then <em>report</em> the winner's score from a different one, tickets it has never seen. If you have the per-ticket results, you can also check directly whether the winner beats the baseline once the selection is accounted for (second tab).</p>
     </div>
   </details>
 
   <div class="tabs">
     <button id="tab-sim" class="on" onclick="showTab('sim')">Simulate: pick the best of N, then check it</button>
-    <button id="tab-calc" onclick="showTab('calc')">Point it at your own leaderboard</button>
     <button id="tab-base" onclick="showTab('base')">Is my winner really better than the baseline?</button>
   </div>
 
@@ -236,40 +235,6 @@
         </div>
         </div><!-- /many-out -->
       </div>
-    </div>
-  </div>
-  </div>
-
-  <!-- ================================================================ CALC TAB -->
-  <div id="tab-calc-body" class="hidden">
-  <div class="wrap">
-    <div class="insight-banner"><strong>Your leaderboard.</strong> Paste the variants you tried, with how many tickets each was scored on and how many it got right. You get: how sure you can be that the winner is truly the best, and how much its score is probably inflated. No simulation, only your numbers.</div>
-    <div class="grid-2" style="grid-template-columns: 1fr 1.4fr">
-      <div class="panel">
-        <h2>Paste your results <span class="hint">(one variant per line: name, correct, n)</span></h2>
-        <textarea id="lb-input" rows="12" style="width:100%;line-height:1.5">variant 1, 168, 200
-variant 2, 171, 200
-variant 3, 160, 200
-variant 4, 174, 200
-variant 5, 165, 200
-variant 6, 163, 200
-variant 7, 177, 200
-variant 8, 169, 200
-variant 9, 166, 200
-variant 10, 170, 200</textarea>
-        <div class="btn-group"><button class="btn btn-primary" onclick="analyzeLeaderboard()">Analyze</button><button class="btn btn-ghost btn-sm" onclick="fillFromSim()">use the last simulated run</button></div>
-        <p class="muted" style="font-size:0.74rem;line-height:1.5;margin-top:0.6rem">Assumes each line is an independent accuracy on its own (or a shared) test set, and that these are <em>all</em> the variants you tried. If the leaderboard is the survivors of a larger search, the inflation is worse than any calculation on these lines can know.</p>
-      </div>
-      <div class="panel">
-        <h2>What your numbers say</h2>
-        <div id="calc-out"><div class="empty">Paste a leaderboard and click Analyze.</div></div>
-        <div class="chart-wrap" style="height:230px;margin-top:0.5rem"><canvas id="calc-chart"></canvas></div>
-        <p class="muted" style="font-size:0.72rem;margin-top:0.3rem">Per variant: measured accuracy (bar), 95% credible interval from a Beta posterior (thin bar), and the probability that it is truly the best (label). The shrunk estimate of the winner is the purple marker.</p>
-      </div>
-    </div>
-    <div class="panel">
-      <h2>How this is computed</h2>
-      <p class="muted" style="font-size:0.82rem;line-height:1.6;max-width:900px">Each variant gets a posterior on its true accuracy from its own count: Beta(correct + 1, wrong + 1). <strong style="color:var(--text)">Probability of being best</strong>: draw one true accuracy per variant from these posteriors, note which is highest, repeat 20,000 times; the share of draws each variant wins is its probability. <strong style="color:var(--text)">Shrinkage</strong>: the N variants are attempts at the same task, so their true accuracies cluster. From the spread of the measured scores we estimate how much of that spread is real (between-variant variance &tau;&sup2;) and how much is noise; each score is then pulled toward the group mean by the factor noise / (noise + &tau;&sup2;). The winner, being the most extreme, is pulled the most. The gap between its measured score and its shrunk estimate is the expected inflation. When the scores are all within noise of each other, &tau;&sup2; is about zero and the winner is pulled all the way to the group mean, which is the honest answer.</p>
     </div>
   </div>
   </div>
@@ -493,66 +458,7 @@ function renderStory() {
   html += `<tr style="background:rgba(37,99,235,0.06)"><td><b>Your setup above</b> (all variants equal at ${fmtPct(TRUE_ACC)})</td><td class="num">${S.N}</td><td class="num">${S.n}</td><td class="num" style="color:var(--yellow)">${fmtPct(TRUE_ACC)}</td><td class="num" style="color:var(--green);font-weight:700">${fmtPct(TRUE_ACC + g0)}</td><td class="num" style="color:var(--red);font-weight:700">${fmtPts(g0)}</td></tr>`;
   document.getElementById('story-table').innerHTML = html;
   const g60 = inflAt(60, 100, A), g60b = inflAt(60, 1000, A), g500 = inflAt(500, 200, A);
-  document.getElementById('story-close').innerHTML = `Take the 60-configuration sweep. Every one of those configurations is an honest system at about 80%. You score them all on the same 100 tickets, keep the best, and put <b>${fmtPct(A + g60)}</b> on the slide: about <b style="color:var(--red)">${(g60 * 100).toFixed(0)} points</b> that do not exist. Ten times the tickets cuts the gap to ${fmtPts(g60b)}, not to zero. And an optimizer that tries 500 candidates will report about ${fmtPct(A + g500)} for the same 80% system, and it will keep "improving" for as long as you let it run, because it is optimizing the noise of your test set. That is reward hacking with extra steps: the number you are maximizing has stopped measuring what it claims to measure. The fix is not to try fewer things. It is to <b>choose on one set of tickets and report from another</b>, or to shrink the winner's score toward the group by the amount the leaderboard implies (the second tab does that).`;
-}
-
-// ============================================================ calculator
-function parseLeaderboard() {
-  return document.getElementById('lb-input').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-    const parts = l.split(/[,;\t]+/).map(x => x.trim()); if (parts.length < 3) return null;
-    const c = parseFloat(parts[1]), n = parseFloat(parts[2]); if (!(n > 0) || !(c >= 0) || c > n) return null;
-    return { name: parts[0], correct: c, n, acc: c / n };
-  }).filter(Boolean);
-}
-function sampleGamma(shape) { if (shape < 1) return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape); const d = shape - 1 / 3, c = 1 / Math.sqrt(9 * d); for (;;) { let x, v; do { x = randn(); v = 1 + c * x; } while (v <= 0); v = v * v * v; const u = Math.random(); if (u < 1 - 0.0331 * x * x * x * x) return d * v; if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v; } }
-function sampleBeta(a, b) { const x = sampleGamma(a), y = sampleGamma(b); return x / (x + y); }
-function analyzeLeaderboard() {
-  const rows = parseLeaderboard(); const out = document.getElementById('calc-out');
-  if (rows.length < 2) { out.innerHTML = '<div class="empty">Need at least two valid lines: name, correct, n.</div>'; return; }
-  const K = rows.length;
-  // probability of being best (Beta posteriors, MC)
-  const wins = new Array(K).fill(0); const R = 20000;
-  for (let r = 0; r < R; r++) { let bi = 0, bv = -1; for (let i = 0; i < K; i++) { const v = sampleBeta(rows[i].correct + 1, rows[i].n - rows[i].correct + 1); if (v > bv) { bv = v; bi = i; } } wins[bi]++; }
-  rows.forEach((row, i) => { row.pbest = wins[i] / R; const ci = credible(row.correct, row.n); row.lo = ci[0]; row.hi = ci[1]; row.se2 = row.acc * (1 - row.acc) / row.n + 1e-9; });
-  // empirical Bayes shrinkage (normal-normal, method of moments)
-  const gm = mean(rows.map(r => r.acc)); const obsVar = variance(rows.map(r => r.acc)); const meanSe2 = mean(rows.map(r => r.se2));
-  const tau2 = Math.max(0, obsVar - meanSe2);
-  rows.forEach(r => { const B = r.se2 / (r.se2 + tau2); r.shrunk = gm + (1 - B) * (r.acc - gm); r.B = B; });
-  let w = 0; rows.forEach((r, i) => { if (r.acc > rows[w].acc) w = i; });
-  const win = rows[w]; const sorted = rows.slice().sort((a, b) => b.acc - a.acc);
-  const gumbelBound = Math.sqrt(mean(rows.map(r => r.se2))) * gumbel(K);
-  out.innerHTML = `
-    <div class="big" style="background:rgba(22,163,74,0.06);border:1px solid var(--border);border-radius:10px;padding:0.9rem">
-      <div class="lbl">${win.name} leads with ${fmtPct(win.acc)}</div>
-      <div class="num" style="font-size:2.2rem;color:var(--accent-a)">${(win.pbest * 100).toFixed(0)}%</div>
-      <div class="sub">sure that it is truly the best of these ${K}</div>
-    </div>
-    <div class="stat-cards" style="margin-top:0.7rem;grid-template-columns:1fr 1fr 1fr">
-      <div class="stat-card"><div class="label">Measured</div><div class="value" style="color:var(--green)">${fmtPct(win.acc)}</div><div class="sub">the number you have</div></div>
-      <div class="stat-card"><div class="label">Shrunk estimate</div><div class="value" style="color:var(--purple)">${fmtPct(win.shrunk)}</div><div class="sub">expected true accuracy, given all ${K}</div></div>
-      <div class="stat-card"><div class="label">Probable inflation</div><div class="value" style="color:var(--red)">${fmtPts(win.acc - win.shrunk)}</div><div class="sub">theory bound if all were equal: ${fmtPts(gumbelBound)}</div></div>
-    </div>
-    <p class="muted" style="font-size:0.8rem;line-height:1.55;margin-top:0.6rem">${tau2 < 1e-6
-      ? `The ${K} scores are within noise of each other (estimated real spread between variants: none). The honest estimate for <b>every</b> variant, the winner included, is the group mean, ${fmtPct(gm)}. The leaderboard order is luck.`
-      : `Estimated real spread between variants: &plusmn;${(Math.sqrt(tau2) * 100).toFixed(1)} pts, against noise of about &plusmn;${(Math.sqrt(meanSe2) * 100).toFixed(1)} pts per score. Each score is pulled ${(win.B * 100).toFixed(0)}% of the way toward the group mean (${fmtPct(gm)}); the winner loses the most because it stands out the most.`}
-      ${win.pbest < 0.5 ? ` With only ${(win.pbest * 100).toFixed(0)}% on the leader, this is a tie at the top, not a ranking: ${sorted.slice(0, 3).map(r => r.name + ' ' + (r.pbest * 100).toFixed(0) + '%').join(', ')}.` : ''}</p>`;
-  // chart
-  const labels = sorted.map(r => [r.name, 'P(best) ' + (r.pbest * 100).toFixed(0) + '%']);
-  const ds = [
-    { type: 'bar', label: 'measured accuracy', data: sorted.map(r => r.acc * 100), backgroundColor: sorted.map(r => r === win ? 'rgba(22,163,74,0.85)' : 'rgba(100,116,139,0.55)'), stack: 'a' },
-    { type: 'bar', label: '95% credible interval', data: sorted.map(r => [r.lo * 100, r.hi * 100]), backgroundColor: 'rgba(0,0,0,0)', borderColor: 'rgba(15,23,42,0.6)', borderWidth: 1, barPercentage: 0.15, stack: 'a' },
-    { type: 'line', label: 'shrunk estimate', data: sorted.map(r => r.shrunk * 100), borderColor: 'rgba(124,58,237,0.9)', backgroundColor: 'rgba(124,58,237,0.9)', pointRadius: 5, pointStyle: 'rectRot', showLine: false },
-    { type: 'line', label: 'group mean', data: sorted.map(() => gm * 100), borderColor: 'rgba(15,23,42,0.5)', borderDash: [5, 4], pointRadius: 0, borderWidth: 1 },
-  ];
-  const lo = Math.min(...sorted.map(r => r.lo)) * 100, hi = Math.max(...sorted.map(r => r.hi)) * 100; const pad = (hi - lo) * 0.2 || 2;
-  const opts = chartOpts({ legend: true, y: { min: Math.max(0, lo - pad), max: Math.min(100, hi + pad), title: { display: true, text: 'accuracy (%)', color: '#64748b', font: { family: 'DM Mono', size: 10 } } } });
-  opts.scales.x.stacked = true; opts.scales.y.stacked = false; opts.plugins.legend.labels.filter = i => i.text !== '95% credible interval';
-  mk('calc', 'calc-chart', { labels, datasets: ds }, opts);
-}
-function fillFromSim() {
-  if (!data) return;
-  document.getElementById('lb-input').value = data.scores.map(s => `${s.name}, ${s.correct}, ${s.n}`).join('\n');
-  analyzeLeaderboard();
+  document.getElementById('story-close').innerHTML = `Take the 60-configuration sweep. Every one of those configurations is an honest system at about 80%. You score them all on the same 100 tickets, keep the best, and put <b>${fmtPct(A + g60)}</b> on the slide: about <b style="color:var(--red)">${(g60 * 100).toFixed(0)} points</b> that do not exist. Ten times the tickets cuts the gap to ${fmtPts(g60b)}, not to zero. And an optimizer that tries 500 candidates will report about ${fmtPct(A + g500)} for the same 80% system, and it will keep "improving" for as long as you let it run, because it is optimizing the noise of your test set. That is reward hacking with extra steps: the number you are maximizing has stopped measuring what it claims to measure. The fix is not to try fewer things. It is to <b>choose on one set of tickets and report from another</b>, or, if you have the per-ticket results, to check the winner against the baseline with the selection accounted for (the second tab does that).`;
 }
 
 // ============================================================ chart helpers
@@ -564,7 +470,7 @@ function chartOpts(o = {}) {
 }
 function mk(key, id, d, opts) { const ctx = document.getElementById(id); if (!ctx) return; if (charts[key]) { charts[key].destroy(); charts[key] = null; } charts[key] = new Chart(ctx, { type: 'bar', data: d, options: opts }); }
 function showTab(t) {
-  ['sim', 'calc', 'base'].forEach(k => { document.getElementById('tab-' + k).classList.toggle('on', t === k); document.getElementById('tab-' + k + '-body').classList.toggle('hidden', t !== k); });
+  ['sim', 'base'].forEach(k => { document.getElementById('tab-' + k).classList.toggle('on', t === k); document.getElementById('tab-' + k + '-body').classList.toggle('hidden', t !== k); });
 }
 // ============================================================ baseline tab: paired bootstrap with selection bar
 function loadExample(real) {
