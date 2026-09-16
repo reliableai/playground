@@ -116,8 +116,8 @@
 
   <div class="tabbar" role="tablist">
     <button data-tab="explore" class="active">Explore one answer<span class="sub">15 judges × 5 repeats, with their reasoning</span></button>
-    <button data-tab="summary">Scorecard of the judges<span class="sub">agreement with the oracle, across all ten answers</span></button>
     <button data-tab="prompts">The five judge prompts<span class="sub">one lesson each</span></button>
+    <button data-tab="summary">Scorecard of the judges<span class="sub">agreement with the oracle, across all ten answers</span></button>
   </div>
 
   <!-- ============ EXPLORE ============ -->
@@ -130,7 +130,7 @@
           <div><div class="k">Question</div><div class="v" id="q"></div></div>
           <div><div class="k">Answer under evaluation</div><div class="v" id="a"></div></div>
         </div>
-        <div style="margin-top:.8rem"><span class="k small" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em">Why this answer is in the set</span><div class="v" id="tests" style="font-size:.9rem"></div></div>
+        <div style="margin-top:.8rem"><span class="k small" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em">What this answer tests</span><div class="v" id="tests" style="font-size:.9rem"></div></div>
         <div class="oracle" id="oracle"></div>
       </div>
 
@@ -150,13 +150,22 @@
     </section>
   </div>
 
+  <!-- ============ PROMPTS ============ -->
+  <div class="tabpane" id="tab-prompts">
+    <section class="lab-section">
+      <h2>The five judge prompts</h2>
+      <p>All five ask for the same JSON. What differs is what the judge is given and told. <code>{{question}}</code>, <code>{{answer}}</code> and <code>{{chunks}}</code> are filled in per answer; <code>{{chunks}}</code> is the policy excerpt above.</p>
+      <div id="prompts"></div>
+    </section>
+  </div>
+
   <!-- ============ SUMMARY ============ -->
   <div class="tabpane" id="tab-summary">
     <section class="lab-section">
       <h2>How close is each judge to the HR expert?</h2>
-      <p>Fifty judgments per cell (10 answers × 5 repeats). Faithfulness: share of runs whose pass/fail matches the oracle. Completeness and conciseness: mean absolute distance from the oracle score, in points on the 1–5 scale. Lower is better for the last two.</p>
+      <p>Fifty judgments per cell (10 answers × 5 repeats). Faithfulness: share of runs whose pass/fail matches the oracle (runs with no score, unparsed or abstained, are left out). Completeness and conciseness: mean absolute distance from the oracle score, in points on the 1–5 scale. Lower is better for the last two.</p>
       <div class="heatrow" id="heat"></div>
-      <div class="takeaway"><strong>Reading the table.</strong> Move down a column and the prompt changes with the model fixed; move across a row and the model changes with the prompt fixed. Both moves change the numbers, sometimes by more than the difference between two systems you might be comparing. The judge is part of the system.<br><br><strong>A trap in the first table.</strong> P5, the deliberately biased prompt, has the best faithfulness agreement. Seven of the ten answers are faithful, and P5 tells the judge to fail only on outright contradiction, so it says "pass" a lot and is right a lot. Raw agreement rewards a lenient judge whenever the base rate is lopsided; that is why the deck's kappa slide exists, and why the completeness and conciseness columns tell the opposite story about P5.</div>
+      <div class="takeaway"><strong>Reading the table.</strong> Move down a column and the prompt changes with the model fixed; move across a row and the model changes with the prompt fixed. Both moves change the numbers, sometimes by more than the difference between two systems you might be comparing. The judge is part of the system.<br><br><strong>A trap in the first table.</strong> P5, the deliberately biased prompt, is the small model's best prompt on faithfulness and ties for the large model's best. Seven of the ten answers are faithful, and P5 tells the judge to fail only on outright contradiction, so it says "pass" a lot and is right a lot. Raw agreement rewards a lenient judge whenever the base rate is lopsided; that is why the deck's kappa slide exists, and why the completeness column tells the opposite story: P5 is the worst or second-worst prompt for every model.<br><br><strong>Abstentions.</strong> Under P2 the large model often refuses to grade faithfulness at all, returning null because no policy was shown. Those runs appear as "?" in the explore tab and are left out of the agreement numbers, so a cell with many abstentions is computed on fewer runs than fifty.</div>
     </section>
 
     <section class="lab-section">
@@ -170,15 +179,6 @@
       <p>Bias is the judge being systematically off; noise is the judge disagreeing with itself. Here, for each judge, the share of (answer, metric) pairs where the five repeats did <em>not</em> all agree.</p>
       <table class="heat" id="noise"></table>
       <div class="takeaway"><strong>Why this matters.</strong> If you score a system once with a noisy judge, the number you report has an error bar you never measured. Repeats, or a larger test set, are how you find out how wide it is. See the <a href="../llm_as_a_judge/index.html">LLM as a Judge</a> dials for the simulated version of this.</div>
-    </section>
-  </div>
-
-  <!-- ============ PROMPTS ============ -->
-  <div class="tabpane" id="tab-prompts">
-    <section class="lab-section">
-      <h2>The five judge prompts</h2>
-      <p>All five ask for the same JSON. What differs is what the judge is given and told. <code>{{question}}</code>, <code>{{answer}}</code> and <code>{{chunks}}</code> are filled in per answer; <code>{{chunks}}</code> is the policy excerpt above.</p>
-      <div id="prompts"></div>
     </section>
   </div>
 
@@ -212,11 +212,28 @@ byId("meta").innerHTML = `Judgments computed ${esc(D.run_date.slice(0,10))} via 
 
 // tabs
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
-function showTab(name){
+const TABS = ["explore","prompts","summary"];
+function showTab(name, opts){
+  if (!TABS.includes(name)) name = "explore";
   document.querySelectorAll(".tabbar button").forEach(b => b.classList.toggle("active", b.dataset.tab===name));
   document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("active", p.id==="tab-"+name));
-  if (name==="explore") window.scrollTo({top: byId("tab-explore").offsetTop-40, behavior:"smooth"});
+  if (!(opts && opts.silent)) setHash(name==="explore" ? `explore/${curSample}` : name);
+  if (name==="explore" && !(opts && opts.noscroll)) window.scrollTo({top: byId("tab-explore").offsetTop-40, behavior:"smooth"});
 }
+// URL hashes: #explore, #prompts, #summary, #explore/S09 (or just #S09) select a tab / an answer
+let applyingHash = false;
+function setHash(v){ if (applyingHash) return; if (location.hash !== "#"+v) history.replaceState(null, "", "#"+v); }
+function applyHash(){
+  applyingHash = true;
+  const raw = (location.hash||"").slice(1);
+  const parts = raw.split("/");
+  let tab = parts[0], sid = parts[1];
+  if (/^S\d\d$/i.test(tab)) { sid = tab; tab = "explore"; }
+  if (sid && sampleById[sid.toUpperCase()]) selectSample(sid.toUpperCase());
+  showTab(tab || "explore", {noscroll:true});
+  applyingHash = false;
+}
+window.addEventListener("hashchange", applyHash);
 
 // ---------- scoring helpers ----------
 function cls(metric, val, oracle){
@@ -248,6 +265,7 @@ function selectSample(id, hl){
   byId("tests").textContent = s.tests;
   byId("oracle").innerHTML = `<span class="chip">oracle: faithfulness ${s.oracle.faithfulness}</span><span class="chip">completeness ${s.oracle.completeness}</span><span class="chip">conciseness ${s.oracle.conciseness}</span>`;
   renderGrid();
+  if (byId("tab-explore").classList.contains("active")) setHash(`explore/${id}`);
   byId("rationales").innerHTML = `<p class="small" style="margin-top:.8rem">Click a cell to read the judge's reasoning for each of the five runs.</p>`;
 }
 
@@ -267,7 +285,7 @@ function renderGrid(){
         const marks = rs.map(r => {
           const v = r.scores[m], c = cls(m, v, s.oracle[m]);
           return m==="faithfulness"
-            ? `<span class="dot ${c}" title="${v===null?'unparsed':v}"></span>`
+            ? `<span class="dot ${c}" title="${v===null?'no score: unparsed or abstained':v}"></span>`
             : `<span class="sq ${c}">${v===null?'?':v}</span>`;
         }).join("");
         return `<div class="row"><span class="lab">${m.slice(0,5).toUpperCase()}</span>${marks}</div>`;
@@ -344,18 +362,18 @@ function heatColor(metric, v){
 })();
 
 const STORIES = [
-  { title:"Without the policy, a wrong number sails through", sample:"S09", hl:["P1|large","P2|large","P3|large","P4|large"],
-    text:"S09 says 30 working days abroad; the policy says 20. Prompts P1 and P2 never show the judge the policy, and all three models pass it as faithful in 29 of 30 runs: it is fluent and confident. Give the same models the excerpt (P3, P4) and the mid and large models fail it every time. The judge can only check what it can see." },
-  { title:"A rubric alone does not fix a small judge", sample:"S02", hl:["P2|small","P2|mid","P2|large"],
-    text:"S02 is correct but incomplete. With rubric-but-no-policy (P2), all three models fail its faithfulness, confusing 'missing something' with 'saying something false'. The rubric text defined the difference; the judges did not apply it. Compare the P3 and P4 rows for the large model." },
-  { title:"Worked examples fix the refusal case", sample:"S07", hl:["P3|large","P4|large","P3|mid","P4|mid"],
-    text:"S07 correctly says the policy does not cover sabbaticals. Without examples (P1–P3) most judges score completeness 1–3: 'it did not answer'. P4 adds one worked example of a correct 'the policy is silent' reply, and completeness goes to 5 across all three models. One example, one bias removed." },
-  { title:"The helpfulness-flavoured prompt rewards padding", sample:"S05", hl:["P4|large","P5|large","P5|mid","P5|small"],
-    text:"S05 is correct, complete and twice as long as it needs to be; the oracle gives conciseness 2. With the strict rubric (P4) the large model agrees: 2, 2, 2, 2, 2. With P5, which asks for 'thorough and empathetic' answers and defines conciseness as 'well organised', the small and mid models give 4s and 5s; the large model mostly holds at 2. The prompt moved two judges out of three, and you would not know which two without an oracle." },
-  { title:"Only the large judge catches the invented bonus fact", sample:"S06", hl:["P3|small","P3|mid","P3|large","P4|mid"],
-    text:"S06 gets the carry-over rule right and then adds a payout rule the policy never mentions. With the policy in context (P3), the large model fails it 5/5, the mid model 4/5, the small model 0/4. Adding the worked example about exactly this case (P4) brings the mid model to 5/5. Capability and prompt both matter, and they trade off." },
-  { title:"True sentences, wrong question: nobody agrees with the oracle", sample:"S10", hl:["P4|large","P4|mid","P2|large"],
-    text:"S10 recites the parental-leave terms correctly but never answers whether a 4-month employee is eligible (no: 6 months required). The oracle says faithful, completeness 1. The mid model with examples (P4) says faithful and complete, 5/5. The large model with the same prompt gets completeness 1 but calls it unfaithful 5/5: for that judge, dodging the question is the same as being wrong. The closest to the oracle is the large model with the bare rubric (P2). This is the hardest case in the set, and the disagreement is partly the rubric's fault: it never says what to do when every sentence is true but the question is not answered. That is a rubric decision, and it has to be made before you trust any of these numbers." },
+  { title:"Without the policy, the careful judges fail everything", sample:"S09", hl:["P1|small","P1|mid","P1|large","P3|small"],
+    text:"S09 says 30 working days abroad; the policy says 20. Under the bare prompt (P1), which never shows the policy, the small model passes it as faithful 5 times out of 5: it is fluent and confident. The mid and large models fail it 5 out of 5, which looks like detection until you open S01, the perfect control, where the same two judges under P1 fail it just as often. They are not catching the wrong number; they are failing anything they cannot verify. Give them the excerpt (P3, P4) and both fail S09 and pass S01. The small model with the excerpt still passes S09 in 5 of 10 runs. The judge can only check what it can see, and a verdict is only evidence once the judge passes the controls." },
+  { title:"A judge that abstains, and a parser that has to cope", sample:"S06", hl:["P2|small","P2|mid","P2|large"],
+    text:"P2 hands the judge a rubric but no policy. On S06, which invents a payout rule, the large model returns null for faithfulness in all 5 runs and says so: it cannot grade what it cannot verify. The mid model abstains in 4 of 5. The small model passes it 4 times out of 5. Across the whole set the large model abstains in 20 of 50 P2 runs. That is the right behaviour, and it still breaks a naive pipeline: an abstention is not a pass, not a fail, and not a zero. Decide what to do with it before you compute an average." },
+  { title:"Worked examples fix the refusal case", sample:"S07", hl:["P3|small","P4|small","P3|mid","P4|mid"],
+    text:"S07 correctly says the policy does not cover sabbaticals. Without the policy (P1, P2) every judge scores completeness 1 to 3: 'it did not answer'. With the policy (P3) the large model gets to 5, the mid model wavers between 3 and 5, and the small model gives 1 five times out of 5. P4 adds one worked example of a correct 'the policy is silent' reply, and completeness goes to 5 in every run for all three models. One example, one bias removed, even for the smallest judge." },
+  { title:"The helpfulness-flavoured prompt rewards padding", sample:"S05", hl:["P4|large","P4|mid","P5|large","P5|mid","P5|small"],
+    text:"S05 is correct, complete and twice as long as it needs to be; the oracle gives conciseness 2. With the strict rubric (P4) the mid model agrees, 2 in all 5 runs, and the large model is harsher still, 1 in all 5. Switch to P5, which asks for 'thorough and empathetic' answers and defines conciseness as 'well organised', and every judge moves up: the small model to 4 and 5, the mid model to 4, the large model to 3. The prompt moved all three judges by one to two points, in the same direction, and you would not know that without an oracle. A second thing to read here: the large model fails S05 on faithfulness whenever it sees the policy. The policy says requests must be filed 4 weeks ahead; the answer says 'ideally' 4 weeks. The oracle let that pass. The judge may be right, and that is a rubric decision to make before you trust any score." },
+  { title:"The small judge never catches the invented bonus fact", sample:"S06", hl:["P3|small","P4|small","P3|large","P4|mid"],
+    text:"S06 gets the carry-over rule right and then adds a payout rule the policy never mentions. With the policy in context (P3) the mid and large models fail it 5 times out of 5. The small model passes it 5 out of 5, and still passes it 5 out of 5 under P4, whose worked example is about exactly this case. Prompting cannot fix what the judge cannot do: checking every sentence against the source, not just the main claim, is a capability question." },
+  { title:"True sentences, wrong question: three judges, three readings", sample:"S10", hl:["P4|small","P4|mid","P4|large"],
+    text:"S10 recites the parental-leave terms correctly but never answers whether a 4-month employee is eligible (no: 6 months required). The oracle says faithful, completeness 1. Under P4 the large model agrees exactly, pass and 1, in all 5 runs. The mid model calls it unfaithful 5 out of 5 under every prompt: for that judge, dodging the question is the same as being wrong. The small model passes it and gives completeness 3 to 5: it sees true sentences and calls the job done. Same rubric, three readings, and the rubric is partly at fault: it never says what to do when every sentence is true but the question is not answered. That is a rubric decision, and it has to be made before you trust any of these numbers." },
 ];
 (function renderStories(){
   const w = byId("stories");
@@ -377,7 +395,8 @@ const STORIES = [
   }
 })();
 
-selectSample(curSample);
+applyingHash = true; selectSample(curSample); applyingHash = false;  // initial render without touching the URL
+applyHash();
 </script>
 </body>
 </html>
