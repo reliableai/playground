@@ -1,8 +1,383 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><title>Coming soon</title>
-<link rel="stylesheet" href="../style.css">
-</head><body style="font-family:system-ui;max-width:560px;margin:96px auto;padding:0 24px;color:#1a1d23;">
-<h1 style="font-size:28px;font-weight:600;letter-spacing:-0.02em;">Coming soon</h1>
-<p style="color:#5b6371;">This playground is being built. Come back later.</p>
-<p style="margin-top:24px;"><a href="../index.html" style="color:#2563eb;text-decoration:none;">← All playgrounds</a></p>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Judge Auditor — who is judging? (L5 lab)</title>
+  <link rel="stylesheet" href="../course.css">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    :root{
+      --ok:   #15803d;  --okbg:  #dcfce7;
+      --warn: #b45309;  --warnbg:#fef3c7;
+      --bad:  #b91c1c;  --badbg: #fee2e2;
+      --na:   #94a3b8;  --nabg:  #f1f5f9;
+      --grid: #e5e7eb;  --muted: #64748b;
+      --oracle: #0f766e;
+    }
+    .panel{ background:#fff; border:1px solid var(--grid); border-radius:12px; padding:1.15rem 1.3rem; margin:1rem 0; }
+    .panel h3{ margin:.1rem 0 .6rem; font-size:1.05rem; }
+    .small{ font-size:.85rem; color:var(--muted); }
+    .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    pre.box{ background:#f8fafc; border:1px solid var(--grid); border-radius:8px; padding:.8rem .9rem; font-size:.78rem;
+      line-height:1.45; white-space:pre-wrap; margin:.5rem 0 0; }
+    details summary{ cursor:pointer; font-weight:600; }
+
+    /* tabs */
+    .tabbar{ display:flex; gap:.4rem; border-bottom:2px solid var(--grid); margin:1.6rem 0 0; flex-wrap:wrap; }
+    .tabbar button{ font:inherit; font-weight:600; font-size:1rem; border:none; background:none; cursor:pointer;
+      padding:.7rem 1.1rem; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-2px; text-align:left; }
+    .tabbar button .sub{ display:block; font-size:.74rem; font-weight:500; color:var(--muted); }
+    .tabbar button.active{ color:#111; border-bottom-color:#111; }
+    .tabpane{ display:none; } .tabpane.active{ display:block; }
+
+    /* sample picker */
+    .samples{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:.55rem; margin:.8rem 0; }
+    .samples button{ font:inherit; text-align:left; border:1px solid var(--grid); background:#fff; border-radius:9px;
+      padding:.55rem .7rem; cursor:pointer; line-height:1.3; }
+    .samples button:hover{ border-color:#111; }
+    .samples button.active{ border-color:#111; box-shadow:0 0 0 2px #111 inset; }
+    .samples .id{ font-size:.7rem; font-weight:700; color:var(--muted); letter-spacing:.04em; }
+    .samples .t{ font-size:.82rem; font-weight:600; display:block; }
+    .qa{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media (max-width:720px){ .qa{ grid-template-columns:1fr; } }
+    .qa .k{ font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:.25rem; }
+    .qa .v{ font-size:.95rem; }
+    .oracle{ display:inline-flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem; }
+    .chip{ display:inline-block; padding:.12rem .55rem; border-radius:999px; font-size:.78rem; font-weight:700;
+      background:#e6f4f2; color:var(--oracle); border:1px solid #99d1c8; }
+
+    /* judgment grid */
+    table.grid{ border-collapse:separate; border-spacing:0; width:100%; margin:.8rem 0; font-size:.85rem; }
+    table.grid th{ font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); text-align:left;
+      padding:.45rem .55rem; border-bottom:1px solid var(--grid); }
+    table.grid th.m{ text-align:center; }
+    table.grid td{ padding:.45rem .55rem; border-bottom:1px solid var(--grid); vertical-align:top; }
+    table.grid td.p{ width:22%; }
+    table.grid td.p b{ display:block; }
+    table.grid td.p span{ font-size:.75rem; color:var(--muted); line-height:1.3; }
+    .cell{ border:1px solid var(--grid); border-radius:8px; padding:.4rem .5rem; cursor:pointer; background:#fff; }
+    .cell:hover{ border-color:#111; }
+    .cell.sel{ border-color:#111; box-shadow:0 0 0 2px #111 inset; }
+    .cell .row{ display:flex; align-items:center; gap:.35rem; margin:.12rem 0; }
+    .cell .row .lab{ font-size:.64rem; font-weight:700; color:var(--muted); width:3.1rem; letter-spacing:.03em; }
+    .dot{ width:.95rem; height:.95rem; border-radius:999px; display:inline-block; }
+    .sq{ width:1.15rem; height:1.15rem; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;
+      font-size:.72rem; font-weight:700; font-variant-numeric:tabular-nums; }
+    .ok{ background:var(--okbg); color:var(--ok); } .warn{ background:var(--warnbg); color:var(--warn); }
+    .bad{ background:var(--badbg); color:var(--bad); } .na{ background:var(--nabg); color:var(--na); }
+    .dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); } .dot.na{ background:var(--na); }
+    .legend{ display:flex; gap:1.2rem; flex-wrap:wrap; font-size:.8rem; color:var(--muted); margin:.4rem 0 0; }
+    .legend .sw{ display:inline-block; width:.8rem; height:.8rem; border-radius:3px; vertical-align:-1px; margin-right:.3rem; }
+
+    /* rationales */
+    .rat{ margin:.6rem 0; border:1px solid var(--grid); border-radius:8px; padding:.6rem .8rem; background:#fff; }
+    .rat .h{ font-size:.75rem; font-weight:700; color:var(--muted); display:flex; gap:.8rem; flex-wrap:wrap; margin-bottom:.3rem; }
+    .rat pre{ white-space:pre-wrap; font-size:.78rem; line-height:1.45; margin:0; font-family:inherit; }
+
+    /* summary heatmap */
+    table.heat{ border-collapse:separate; border-spacing:3px; margin:.6rem 0; font-size:.85rem; }
+    table.heat th{ font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:.3rem .5rem; text-align:center; }
+    table.heat th.r{ text-align:left; }
+    table.heat td{ text-align:center; padding:.5rem .6rem; border-radius:6px; font-variant-numeric:tabular-nums; font-weight:700; min-width:4.2rem; }
+    .heatrow{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    @media (max-width:900px){ .heatrow{ grid-template-columns:1fr; } }
+    .heat-h{ font-size:.85rem; font-weight:700; margin:.4rem 0 .1rem; }
+
+    /* stories */
+    .stories{ display:grid; grid-template-columns:1fr 1fr; gap:.8rem; margin:.8rem 0; }
+    @media (max-width:760px){ .stories{ grid-template-columns:1fr; } }
+    .story{ border:1px solid var(--grid); border-radius:10px; padding:.85rem 1rem; background:#fff; }
+    .story h4{ margin:0 0 .35rem; font-size:.95rem; }
+    .story p{ margin:.3rem 0; font-size:.88rem; }
+    .story button{ font:inherit; font-size:.8rem; font-weight:600; border:1px solid #111; background:#fff; border-radius:7px;
+      padding:.3rem .7rem; cursor:pointer; margin-top:.4rem; }
+    .story button:hover{ background:#111; color:#fff; }
+    .meta{ font-size:.8rem; color:var(--muted); margin-top:1.4rem; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="nav-back" href="../index.html">← All playgrounds</a>
+
+  <div class="hero">
+    <h1>Judge Auditor: who is judging?</h1>
+    <p class="subtitle">The same ten answers from an HR-policy assistant, graded by five judge prompts × three models, five times each. 750 real judgments, precomputed. The HR expert's verdict is fixed in advance; the question is how far each judge lands from it, and whether it lands in the same place twice.</p>
+    <p class="hero-meta">Uncertainty dimension: judge bias, judge noise, and the rubric itself. Companion to <em>Metrics and measurement, Part II</em>.</p>
+  </div>
+
+  <section class="lab-section">
+    <h2>The setup</h2>
+    <p>The system under test is <strong>E4rag</strong>: an assistant that answers employee questions from a (fictional) HR handbook. Its outputs are free text, so there is no label to match. Instead each answer gets a three-row scorecard: <strong>faithfulness</strong> (pass/fail: nothing in the answer that the policy does not support), <strong>completeness</strong> (1–5) and <strong>conciseness</strong> (1–5).</p>
+    <p>Ten answers were generated and then curated so that each one exercises a specific way a judge can go wrong: a fabricated number, a correct-but-incomplete answer, a correct refusal, a verbose correct answer, a true answer to the wrong question. An HR expert graded each one before any LLM judge was run: that is the <span class="chip">oracle</span>.</p>
+    <details><summary>The policy excerpt every judge (with excerpts) sees</summary><pre class="box" id="policy"></pre></details>
+    <details><summary>The assistant's system prompt</summary><pre class="box" id="sysprompt"></pre></details>
+  </section>
+
+  <div class="tabbar" role="tablist">
+    <button data-tab="explore" class="active">Explore one answer<span class="sub">15 judges × 5 repeats, with their reasoning</span></button>
+    <button data-tab="summary">Scorecard of the judges<span class="sub">agreement with the oracle, across all ten answers</span></button>
+    <button data-tab="prompts">The five judge prompts<span class="sub">one lesson each</span></button>
+  </div>
+
+  <!-- ============ EXPLORE ============ -->
+  <div class="tabpane active" id="tab-explore">
+    <section class="lab-section">
+      <h2>Pick an answer</h2>
+      <div class="samples" id="samples"></div>
+      <div class="panel">
+        <div class="qa">
+          <div><div class="k">Question</div><div class="v" id="q"></div></div>
+          <div><div class="k">Answer under evaluation</div><div class="v" id="a"></div></div>
+        </div>
+        <div style="margin-top:.8rem"><span class="k small" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em">Why this answer is in the set</span><div class="v" id="tests" style="font-size:.9rem"></div></div>
+        <div class="oracle" id="oracle"></div>
+      </div>
+
+      <h2 style="margin-top:1.6rem">What the judges said</h2>
+      <p class="small">Each cell is one judge (prompt × model) run five times at temperature 1. Faithfulness: one dot per run, green when it matches the oracle. Completeness and conciseness: the five scores, coloured by distance from the oracle. Click a cell to read the five rationales.</p>
+      <table class="grid">
+        <thead><tr><th>Judge prompt</th><th class="m" id="th-small"></th><th class="m" id="th-mid"></th><th class="m" id="th-large"></th></tr></thead>
+        <tbody id="grid"></tbody>
+      </table>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--okbg);border:1px solid var(--ok)"></i>matches oracle</span>
+        <span><i class="sw" style="background:var(--warnbg);border:1px solid var(--warn)"></i>off by 1</span>
+        <span><i class="sw" style="background:var(--badbg);border:1px solid var(--bad)"></i>off by 2+ / wrong pass-fail</span>
+        <span><i class="sw" style="background:var(--nabg);border:1px solid var(--na)"></i>judge did not return parseable JSON</span>
+      </div>
+      <div id="rationales"></div>
+    </section>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div class="tabpane" id="tab-summary">
+    <section class="lab-section">
+      <h2>How close is each judge to the HR expert?</h2>
+      <p>Fifty judgments per cell (10 answers × 5 repeats). Faithfulness: share of runs whose pass/fail matches the oracle. Completeness and conciseness: mean absolute distance from the oracle score, in points on the 1–5 scale. Lower is better for the last two.</p>
+      <div class="heatrow" id="heat"></div>
+      <div class="takeaway"><strong>Reading the table.</strong> Move down a column and the prompt changes with the model fixed; move across a row and the model changes with the prompt fixed. Both moves change the numbers, sometimes by more than the difference between two systems you might be comparing. The judge is part of the system.<br><br><strong>A trap in the first table.</strong> P5, the deliberately biased prompt, has the best faithfulness agreement. Seven of the ten answers are faithful, and P5 tells the judge to fail only on outright contradiction, so it says "pass" a lot and is right a lot. Raw agreement rewards a lenient judge whenever the base rate is lopsided; that is why the deck's kappa slide exists, and why the completeness and conciseness columns tell the opposite story about P5.</div>
+    </section>
+
+    <section class="lab-section">
+      <h2>Six things worth noticing</h2>
+      <p class="small">Each button jumps to the answer and highlights the cells the story is about.</p>
+      <div class="stories" id="stories"></div>
+    </section>
+
+    <section class="lab-section">
+      <h2>Noise: does the same judge give the same score twice?</h2>
+      <p>Bias is the judge being systematically off; noise is the judge disagreeing with itself. Here, for each judge, the share of (answer, metric) pairs where the five repeats did <em>not</em> all agree.</p>
+      <table class="heat" id="noise"></table>
+      <div class="takeaway"><strong>Why this matters.</strong> If you score a system once with a noisy judge, the number you report has an error bar you never measured. Repeats, or a larger test set, are how you find out how wide it is. See the <a href="../llm_as_a_judge/index.html">LLM as a Judge</a> dials for the simulated version of this.</div>
+    </section>
+  </div>
+
+  <!-- ============ PROMPTS ============ -->
+  <div class="tabpane" id="tab-prompts">
+    <section class="lab-section">
+      <h2>The five judge prompts</h2>
+      <p>All five ask for the same JSON. What differs is what the judge is given and told. <code>{{question}}</code>, <code>{{answer}}</code> and <code>{{chunks}}</code> are filled in per answer; <code>{{chunks}}</code> is the policy excerpt above.</p>
+      <div id="prompts"></div>
+    </section>
+  </div>
+
+  <p class="meta" id="meta"></p>
+</main>
+
+<script>document.write('<scr' + 'ipt src="data/data.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<script>
+const D = window.JUDGE_AUDIT_DATA;
+const SIZES = ["small","mid","large"];
+const SIZE_LABEL = {small:"Small model", mid:"Mid model", large:"Large model"};
+const METRICS = ["faithfulness","completeness","conciseness"];
+const byId = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+// ---------- index results ----------
+const cells = {}; // key sample|prompt|size -> [results sorted by repeat]
+for (const r of D.results) {
+  const k = `${r.sample_id}|${r.prompt_id}|${r.model_size}`;
+  (cells[k] = cells[k] || []).push(r);
+}
+for (const k in cells) cells[k].sort((a,b)=>a.repeat-b.repeat);
+const sampleById = Object.fromEntries(D.samples.map(s=>[s.id,s]));
+const promptById = Object.fromEntries(D.prompts.map(p=>[p.id,p]));
+
+// ---------- static bits ----------
+byId("policy").textContent = D.policy;
+byId("sysprompt").textContent = D.system_prompt;
+for (const s of SIZES) byId("th-"+s).innerHTML = `${SIZE_LABEL[s]}<br><span class="mono" style="text-transform:none;letter-spacing:0;font-size:.68rem">${esc(D.models[s])}</span>`;
+byId("meta").innerHTML = `Judgments computed ${esc(D.run_date.slice(0,10))} via OpenRouter, temperature ${D.temperature}, ${D.repeats} repeats per cell, ${D.results.length} calls. Models: ${SIZES.map(s=>`<span class="mono">${esc(D.models[s])}</span>`).join(", ")}. These are snapshots: the same prompts on the same models will drift over time (see <a href="../llm_evolution/index.html">LLM Evolution</a>). Answers were generated by the assistant and then curated; the policy and company are fictional.`;
+
+// tabs
+document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+function showTab(name){
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.toggle("active", b.dataset.tab===name));
+  document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("active", p.id==="tab-"+name));
+  if (name==="explore") window.scrollTo({top: byId("tab-explore").offsetTop-40, behavior:"smooth"});
+}
+
+// ---------- scoring helpers ----------
+function cls(metric, val, oracle){
+  if (val===null || val===undefined) return "na";
+  if (metric==="faithfulness") return val===oracle ? "ok" : "bad";
+  const d = Math.abs(val-oracle);
+  return d===0 ? "ok" : d===1 ? "warn" : "bad";
+}
+
+// ---------- explore tab ----------
+const SHORT = { S09:"Subtly wrong number (30 vs 20)", S10:"True sentences, wrong question" };
+let curSample = D.samples[0].id, curCell = null, highlight = new Set();
+const sampleWrap = byId("samples");
+for (const s of D.samples) {
+  const b = document.createElement("button");
+  b.innerHTML = `<span class="id">${s.id}</span><span class="t">${esc(shortLabel(s))}</span>`;
+  b.addEventListener("click", () => selectSample(s.id));
+  b.dataset.id = s.id;
+  sampleWrap.appendChild(b);
+}
+function shortLabel(s){ return SHORT[s.id] || s.tests.split(/[:.]/)[0]; }
+
+function selectSample(id, hl){
+  curSample = id; curCell = null; highlight = new Set(hl||[]);
+  sampleWrap.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.id===id));
+  const s = sampleById[id];
+  byId("q").textContent = s.question;
+  byId("a").textContent = s.answer;
+  byId("tests").textContent = s.tests;
+  byId("oracle").innerHTML = `<span class="chip">oracle: faithfulness ${s.oracle.faithfulness}</span><span class="chip">completeness ${s.oracle.completeness}</span><span class="chip">conciseness ${s.oracle.conciseness}</span>`;
+  renderGrid();
+  byId("rationales").innerHTML = `<p class="small" style="margin-top:.8rem">Click a cell to read the judge's reasoning for each of the five runs.</p>`;
+}
+
+function renderGrid(){
+  const s = sampleById[curSample];
+  const tb = byId("grid"); tb.innerHTML = "";
+  for (const p of D.prompts) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="p"><b>${p.id} · ${esc(p.name)}</b><span>${esc(p.lesson)}</span></td>`;
+    for (const size of SIZES) {
+      const rs = cells[`${curSample}|${p.id}|${size}`] || [];
+      const key = `${p.id}|${size}`;
+      const td = document.createElement("td");
+      const div = document.createElement("div");
+      div.className = "cell" + (highlight.has(key) ? " sel" : "");
+      div.innerHTML = METRICS.map(m => {
+        const marks = rs.map(r => {
+          const v = r.scores[m], c = cls(m, v, s.oracle[m]);
+          return m==="faithfulness"
+            ? `<span class="dot ${c}" title="${v===null?'unparsed':v}"></span>`
+            : `<span class="sq ${c}">${v===null?'?':v}</span>`;
+        }).join("");
+        return `<div class="row"><span class="lab">${m.slice(0,5).toUpperCase()}</span>${marks}</div>`;
+      }).join("");
+      div.addEventListener("click", () => { curCell = key; renderGrid(); renderRationales(p, size, rs); });
+      if (curCell===key) div.classList.add("sel");
+      td.appendChild(div); tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+}
+
+function renderRationales(p, size, rs){
+  const s = sampleById[curSample];
+  const box = byId("rationales");
+  box.innerHTML = `<h3 style="margin:1.2rem 0 .3rem">${p.id} · ${esc(p.name)} — ${SIZE_LABEL[size]} <span class="mono small">(${esc(D.models[size])})</span></h3>
+    <p class="small">Oracle: faithfulness ${s.oracle.faithfulness}, completeness ${s.oracle.completeness}, conciseness ${s.oracle.conciseness}.</p>` +
+    rs.map(r => {
+      const sc = r.scores;
+      const head = METRICS.map(m => `<span class="${cls(m, sc[m], s.oracle[m])}" style="padding:.05rem .4rem;border-radius:4px">${m}: ${sc[m]===null?'?':sc[m]}</span>`).join("");
+      return `<div class="rat"><div class="h"><span>run ${r.repeat+1}</span>${head}</div><pre>${esc(r.raw.trim() || "(empty reply)")}</pre></div>`;
+    }).join("");
+  box.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+// ---------- summary tab ----------
+function agg(pid, size, metric){
+  let n=0, acc=0;
+  for (const s of D.samples) for (const r of (cells[`${s.id}|${pid}|${size}`]||[])) {
+    const v = r.scores[metric]; if (v===null||v===undefined) continue;
+    n++; acc += metric==="faithfulness" ? (v===s.oracle[metric]?1:0) : Math.abs(v-s.oracle[metric]);
+  }
+  return n ? acc/n : NaN;
+}
+function heatColor(metric, v){
+  // map to ok/warn/bad by thresholds
+  if (isNaN(v)) return "na";
+  if (metric==="faithfulness") return v>=0.85?"ok":v>=0.65?"warn":"bad";
+  return v<=0.7?"ok":v<=1.2?"warn":"bad";
+}
+(function renderHeat(){
+  const wrap = byId("heat");
+  for (const m of METRICS) {
+    const div = document.createElement("div");
+    let html = `<div class="heat-h">${m[0].toUpperCase()+m.slice(1)} — ${m==="faithfulness"?"agreement with oracle (higher is better)":"mean |score − oracle| (lower is better)"}</div><table class="heat"><tr><th class="r">prompt</th>${SIZES.map(s=>`<th>${s}</th>`).join("")}</tr>`;
+    for (const p of D.prompts) {
+      html += `<tr><th class="r">${p.id} ${esc(p.name)}</th>` + SIZES.map(s => {
+        const v = agg(p.id, s, m);
+        return `<td class="${heatColor(m,v)}">${isNaN(v)?"–":(m==="faithfulness"?Math.round(v*100)+"%":v.toFixed(2))}</td>`;
+      }).join("") + "</tr>";
+    }
+    div.innerHTML = html + "</table>";
+    wrap.appendChild(div);
+  }
+})();
+
+(function renderNoise(){
+  const t = byId("noise");
+  let html = `<tr><th class="r">prompt</th>${SIZES.map(s=>`<th>${s}</th>`).join("")}</tr>`;
+  for (const p of D.prompts) {
+    html += `<tr><th class="r">${p.id} ${esc(p.name)}</th>` + SIZES.map(size => {
+      let pairs=0, disagree=0;
+      for (const s of D.samples) for (const m of METRICS) {
+        const vals = (cells[`${s.id}|${p.id}|${size}`]||[]).map(r=>r.scores[m]).filter(v=>v!==null&&v!==undefined);
+        if (vals.length<2) continue;
+        pairs++; if (new Set(vals).size>1) disagree++;
+      }
+      const v = pairs ? disagree/pairs : NaN;
+      const c = isNaN(v)?"na":v<=0.3?"ok":v<=0.55?"warn":"bad";
+      return `<td class="${c}">${isNaN(v)?"–":Math.round(v*100)+"%"}</td>`;
+    }).join("") + "</tr>";
+  }
+  t.innerHTML = html;
+})();
+
+const STORIES = [
+  { title:"Without the policy, a wrong number sails through", sample:"S09", hl:["P1|large","P2|large","P3|large","P4|large"],
+    text:"S09 says 30 working days abroad; the policy says 20. Prompts P1 and P2 never show the judge the policy, and all three models pass it as faithful in 29 of 30 runs: it is fluent and confident. Give the same models the excerpt (P3, P4) and the mid and large models fail it every time. The judge can only check what it can see." },
+  { title:"A rubric alone does not fix a small judge", sample:"S02", hl:["P2|small","P2|mid","P2|large"],
+    text:"S02 is correct but incomplete. With rubric-but-no-policy (P2), all three models fail its faithfulness, confusing 'missing something' with 'saying something false'. The rubric text defined the difference; the judges did not apply it. Compare the P3 and P4 rows for the large model." },
+  { title:"Worked examples fix the refusal case", sample:"S07", hl:["P3|large","P4|large","P3|mid","P4|mid"],
+    text:"S07 correctly says the policy does not cover sabbaticals. Without examples (P1–P3) most judges score completeness 1–3: 'it did not answer'. P4 adds one worked example of a correct 'the policy is silent' reply, and completeness goes to 5 across all three models. One example, one bias removed." },
+  { title:"The helpfulness-flavoured prompt rewards padding", sample:"S05", hl:["P4|large","P5|large","P5|mid","P5|small"],
+    text:"S05 is correct, complete and twice as long as it needs to be; the oracle gives conciseness 2. With the strict rubric (P4) the large model agrees: 2, 2, 2, 2, 2. With P5, which asks for 'thorough and empathetic' answers and defines conciseness as 'well organised', the small and mid models give 4s and 5s; the large model mostly holds at 2. The prompt moved two judges out of three, and you would not know which two without an oracle." },
+  { title:"Only the large judge catches the invented bonus fact", sample:"S06", hl:["P3|small","P3|mid","P3|large","P4|mid"],
+    text:"S06 gets the carry-over rule right and then adds a payout rule the policy never mentions. With the policy in context (P3), the large model fails it 5/5, the mid model 4/5, the small model 0/4. Adding the worked example about exactly this case (P4) brings the mid model to 5/5. Capability and prompt both matter, and they trade off." },
+  { title:"True sentences, wrong question: nobody agrees with the oracle", sample:"S10", hl:["P4|large","P4|mid","P2|large"],
+    text:"S10 recites the parental-leave terms correctly but never answers whether a 4-month employee is eligible (no: 6 months required). The oracle says faithful, completeness 1. The mid model with examples (P4) says faithful and complete, 5/5. The large model with the same prompt gets completeness 1 but calls it unfaithful 5/5: for that judge, dodging the question is the same as being wrong. The closest to the oracle is the large model with the bare rubric (P2). This is the hardest case in the set, and the disagreement is partly the rubric's fault: it never says what to do when every sentence is true but the question is not answered. That is a rubric decision, and it has to be made before you trust any of these numbers." },
+];
+(function renderStories(){
+  const w = byId("stories");
+  for (const st of STORIES) {
+    const d = document.createElement("div"); d.className="story";
+    d.innerHTML = `<h4>${esc(st.title)}</h4><p>${esc(st.text)}</p><button>Show ${st.sample}</button>`;
+    d.querySelector("button").addEventListener("click", () => { selectSample(st.sample, st.hl); showTab("explore"); });
+    w.appendChild(d);
+  }
+})();
+
+// ---------- prompts tab ----------
+(function renderPrompts(){
+  const w = byId("prompts");
+  for (const p of D.prompts) {
+    const d = document.createElement("div"); d.className="panel";
+    d.innerHTML = `<h3>${p.id} · ${esc(p.name)}</h3><p class="small">${esc(p.lesson)}</p><pre class="box">${esc(p.template)}</pre>`;
+    w.appendChild(d);
+  }
+})();
+
+selectSample(curSample);
+</script>
+</body>
+</html>
