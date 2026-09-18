@@ -43,6 +43,13 @@
     .cover small{ display:block; font-size:.85rem; font-weight:500; color:var(--muted); }
     .err{ color:#b91c1c; font-weight:600; }
     details summary{ cursor:pointer; font-weight:600; }
+    details.howto{ border:1px solid var(--grid); border-radius:12px; padding:.6rem 1rem; margin:0 0 1rem; background:var(--color-surface); }
+    details.howto summary{ font-weight:700; list-style:none; }
+    details.howto summary::-webkit-details-marker{ display:none; }
+    details.howto summary::before{ content:'▶ '; font-size:.8em; color:var(--muted); }
+    details.howto[open] summary::before{ content:'▼ '; }
+    details.howto ol{ margin:.5rem 0 .2rem 1.2rem; padding:0; font-size:.92rem; }
+    details.howto li{ margin:.25rem 0; }
     [hidden]{ display:none !important; }
   </style>
 </head>
@@ -55,6 +62,18 @@
     <p class="subtitle">One eval gives you three numbers that people put on charts as “interval bars”. Only one of them is about your estimate, and none of them is a probability about the accuracy. Pick a true accuracy and a test-set size, run the eval once, then run it hundreds of times and count how often the 95% interval actually catches the truth.</p>
     <p class="hero-meta">Uncertainty dimension: sample size · Companion to II.1 · Slides 10–13</p>
   </div>
+
+  <details class="howto">
+    <summary>How to read and interact with this page</summary>
+    <ol>
+      <li><strong>Set the world.</strong> Choose the true accuracy and N. In real evals the truth is unknown; here you fix it so you can check what the intervals do.</li>
+      <li><strong>Run one eval.</strong> The dots are the N outcomes. The three panels show the SD of those 0/1 outcomes, the SE of the estimate, and the 95% interval from this single run, with the truth marked as inside or not.</li>
+      <li><strong>Compare the sizes.</strong> The table holds p̂ fixed and shows what happens at N = 5, 100 and 10,000: the SD does not move, the SE falls with √N, and the interval narrows.</li>
+      <li><strong>Repeat the eval.</strong> Choose how many repeats and press “Run X evals”. Left: each interval as a bar, magenta when it misses the dashed truth, with the hit count against the 95% target. Right: the histogram of observed accuracies, whose spread is what the SE predicts.</li>
+      <li><strong>Start with 20, then go to 10,000.</strong> With 20 repeats the coverage wobbles; with thousands it settles near 95%. That is the only promise a confidence interval makes.</li>
+      <li><strong>Switch to Wald at N = 5.</strong> The textbook interval runs past 100% and catches the truth far less than 95% of the time. Wilson does not.</li>
+    </ol>
+  </details>
 
   <section class="lab-section">
     <h2>The world we pretend to know</h2>

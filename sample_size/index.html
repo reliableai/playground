@@ -32,6 +32,13 @@
     svg{ width:100%; height:auto; display:block; }
     .err{ color:#b91c1c; font-weight:600; }
     details summary{ cursor:pointer; font-weight:600; }
+    details.howto{ border:1px solid var(--grid); border-radius:12px; padding:.6rem 1rem; margin:0 0 1rem; background:var(--color-surface); }
+    details.howto summary{ font-weight:700; list-style:none; }
+    details.howto summary::-webkit-details-marker{ display:none; }
+    details.howto summary::before{ content:'▶ '; font-size:.8em; color:var(--muted); }
+    details.howto[open] summary::before{ content:'▼ '; }
+    details.howto ol{ margin:.5rem 0 .2rem 1.2rem; padding:0; font-size:.92rem; }
+    details.howto li{ margin:.25rem 0; }
     [hidden]{ display:none !important; }
   </style>
 </head>
@@ -44,6 +51,18 @@
     <p class="subtitle">You ran the eval once: N examples, S of them correct. Enter the two numbers and ask a belief question. Three tools answer it side by side: a Bayesian posterior, a bootstrap, and the classic 95% confidence interval. Watch the numbers converge as N grows, and notice that the sentences under them never do.</p>
     <p class="hero-meta">Uncertainty dimension: sample size · Companion to II.1</p>
   </div>
+
+  <details class="howto">
+    <summary>How to read and interact with this page</summary>
+    <ol>
+      <li><strong>Enter what you observed.</strong> N examples in the test set and S of them correct, or click a preset. That is all the page knows; every panel below is computed from these two numbers.</li>
+      <li><strong>Ask a belief question.</strong> Pick “above T”, “below T” or “between T1 and T2” and set the threshold, or click one of the three ready-made questions.</li>
+      <li><strong>Read the three panels left to right.</strong> Each shows an interval and an answer to your question. Bayes shades the area under the posterior; bootstrap counts the resamples that satisfy the question; the confidence interval cannot answer it at all, and the panel says why.</li>
+      <li><strong>Try small N, then large N.</strong> At 4 / 5 the three intervals disagree and the bootstrap is a comb. At 8,000 / 10,000 the numbers nearly coincide. The sentences under each panel are the point: they never converge.</li>
+      <li><strong>Change the prior.</strong> Switch to Custom Beta(8, 2) on 4 / 5 and watch the Bayes answer move; then do the same on 8,000 / 10,000 and watch it not move.</li>
+      <li><strong>Press the buttons.</strong> “Resample again” redraws the bootstrap; “Repeat 20 experiments” redraws the coverage picture. Both change a little every time, which is the lesson.</li>
+    </ol>
+  </details>
 
   <section class="lab-section">
     <h2>The experiment</h2>
