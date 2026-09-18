@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimating Accuracy — Bayes, bootstrap, and the 95% CI (II.1 lab)</title>
+  <link rel="stylesheet" href="../course.css">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    :root{ --grid:#e5e7eb; --muted:#64748b; --bayes:#2563eb; --boot:#b45309; --ci:#0f766e; --miss:#be185d; --shade:rgba(37,99,235,.18); }
+    .panel{ background:#fff; border:1px solid var(--grid); border-radius:12px; padding:1rem 1.2rem; margin:1rem 0; }
+    .panel h3{ margin:.1rem 0 .5rem; font-size:1.05rem; }
+    .small{ font-size:.85rem; color:var(--muted); }
+    .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .controls{ display:flex; flex-wrap:wrap; gap:1rem 1.6rem; align-items:flex-end; }
+    .controls label{ display:flex; flex-direction:column; gap:.25rem; font-size:.85rem; font-weight:600; }
+    .controls input[type=number], .controls select{ font:inherit; font-size:1rem; padding:.4rem .55rem; border:1px solid var(--color-border-strong); border-radius:8px; width:9.5rem; }
+    .presets{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.6rem; }
+    .presets button, .action{ font:inherit; font-size:.9rem; border:1px solid var(--grid); background:#fff; border-radius:9px; padding:.45rem .8rem; cursor:pointer; }
+    .presets button:hover, .action:hover{ border-color:#111; }
+    .presets button.active{ border-color:#111; box-shadow:0 0 0 2px #111 inset; }
+    .trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    @media (max-width:980px){ .trio{ grid-template-columns:1fr; } }
+    .trio .panel{ margin:0; display:flex; flex-direction:column; }
+    .trio h3 span{ display:inline-block; width:.7em; height:.7em; border-radius:50%; margin-right:.4rem; vertical-align:baseline; }
+    .stat{ font-size:1.5rem; font-weight:700; letter-spacing:-.01em; margin:.2rem 0 0; }
+    .stat small{ font-size:.8rem; font-weight:500; color:var(--muted); display:block; }
+    .answer{ margin:.6rem 0 0; padding:.55rem .7rem; border-radius:8px; background:var(--color-surface); font-size:.95rem; }
+    .answer b{ font-size:1.25rem; }
+    .reading{ margin-top:auto; padding-top:.7rem; font-size:.88rem; border-top:1px dashed var(--grid); }
+    .reading em{ color:#111; }
+    svg{ width:100%; height:auto; display:block; }
+    .err{ color:#b91c1c; font-weight:600; }
+    details summary{ cursor:pointer; font-weight:600; }
+    [hidden]{ display:none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="nav-back" href="../index.html">← All playgrounds</a>
+
+  <div class="hero">
+    <h1>Estimating Accuracy</h1>
+    <p class="subtitle">You ran the eval once: N examples, S of them correct. Enter the two numbers and ask a belief question. Three tools answer it side by side: a Bayesian posterior, a bootstrap, and the classic 95% confidence interval. Watch the numbers converge as N grows, and notice that the sentences under them never do.</p>
+    <p class="hero-meta">Uncertainty dimension: sample size · Companion to II.1</p>
+  </div>
+
+  <section class="lab-section">
+    <h2>The experiment</h2>
+    <div class="panel">
+      <div class="controls">
+        <label>N examples in the test set <input type="number" id="N" value="5" min="1" max="1000000" step="1"></label>
+        <label>S correct <input type="number" id="S" value="4" min="0" max="1000000" step="1"></label>
+        <label>Bayes prior
+          <select id="prior">
+            <option value="flat">Flat: Beta(1, 1)</option>
+            <option value="jeffreys">Jeffreys: Beta(0.5, 0.5)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label id="customPrior" hidden>Prior Beta(a, b) <span style="display:flex;gap:.4rem"><input type="number" id="a0" value="8" min="0.01" step="0.5" style="width:4.5rem"><input type="number" id="b0" value="2" min="0.01" step="0.5" style="width:4.5rem"></span></label>
+      </div>
+      <div class="presets" id="presets">
+        <button data-n="5" data-s="4">4 / 5 correct</button>
+        <button data-n="100" data-s="80">80 / 100 correct</button>
+        <button data-n="10000" data-s="8000">8,000 / 10,000 correct</button>
+        <button data-n="12" data-s="9">9 / 12 correct</button>
+        <button data-n="218" data-s="199">199 / 218 correct</button>
+      </div>
+      <p class="small" style="margin:.7rem 0 0">Observed accuracy <span class="mono" id="phat">—</span>. Every panel starts from these two numbers and nothing else.</p>
+      <p class="err" id="err" hidden></p>
+    </div>
+
+    <h2>The question</h2>
+    <div class="panel">
+      <div class="controls">
+        <label>What do you want to know?
+          <select id="qtype">
+            <option value="gt">P(accuracy &gt; T)</option>
+            <option value="lt">P(accuracy &lt; T)</option>
+            <option value="between">P(T1 &lt; accuracy &lt; T2)</option>
+          </select>
+        </label>
+        <label id="lblT">T <input type="number" id="T" value="0.9" min="0" max="1" step="0.01"></label>
+        <label id="lblT2" hidden>T2 <input type="number" id="T2" value="0.92" min="0" max="1" step="0.01"></label>
+      </div>
+      <div class="presets">
+        <button data-q="gt" data-t="0.9">Above 90%?</button>
+        <button data-q="lt" data-t="0.85">Below 85%, the disappointment case?</button>
+        <button data-q="between" data-t="0.88" data-t2="0.92">Between 88% and 92%?</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="lab-section">
+    <h2>Three answers</h2>
+    <div class="trio">
+      <div class="panel">
+        <h3><span style="background:var(--bayes)"></span>Bayes</h3>
+        <p class="small">Prior × data = posterior <span class="mono" id="postName">Beta(5, 2)</span>. The curve is our belief about the true accuracy.</p>
+        <svg id="svgBayes" viewBox="0 0 360 200"></svg>
+        <p class="stat" id="ciBayes">—<small>95% credible interval (equal-tailed)</small></p>
+        <div class="answer" id="ansBayes">—</div>
+        <p class="reading"><em>“There is a 95% probability the true accuracy is in here”</em>, given the prior. The prior matters when N is small; try Custom Beta(8, 2) on 4 / 5.</p>
+      </div>
+
+      <div class="panel">
+        <h3><span style="background:var(--boot)"></span>Bootstrap</h3>
+        <p class="small">Resample the N results with replacement, 10,000 times; keep each accuracy. <button class="action" id="reboot" style="padding:.2rem .55rem;font-size:.8rem">Resample again</button></p>
+        <svg id="svgBoot" viewBox="0 0 360 200"></svg>
+        <p class="stat" id="ciBoot">—<small>2.5th to 97.5th percentile of the resamples</small></p>
+        <div class="answer" id="ansBoot">—</div>
+        <p class="reading"><em>“95% of resampled accuracies land in here.”</em> Needs enough data: with N = 5 there are only six possible accuracies, so the histogram is a comb, not a curve.</p>
+      </div>
+
+      <div class="panel">
+        <h3><span style="background:var(--ci)"></span>95% confidence interval</h3>
+        <p class="small">Wilson interval from p̂ and N. Below: 20 repeats of the whole experiment, assuming the true accuracy is p̂ (dashed). <button class="action" id="rerun" style="padding:.2rem .55rem;font-size:.8rem">Repeat 20 experiments</button></p>
+        <svg id="svgCI" viewBox="0 0 360 200"></svg>
+        <p class="stat" id="ciWilson">—<small>95% CI (Wilson)</small></p>
+        <div class="answer" id="ansCI">—</div>
+        <p class="reading"><em>“95% of intervals built this way cover the true accuracy.”</em> It says nothing about the probability that the accuracy is above 90%; everyone reads it as the Bayes sentence anyway.</p>
+      </div>
+    </div>
+    <div class="takeaway" id="takeaway"></div>
+  </section>
+
+  <section class="lab-section">
+    <h2>What each panel computes</h2>
+    <details><summary>Bayes</summary>
+      <p>Each test item is a Bernoulli trial. Start from a prior Beta(a, b); after S correct and F = N − S wrong, the posterior is Beta(a + S, b + F). The flat prior Beta(1, 1) says “before the eval, every accuracy was equally plausible”, so the posterior is Beta(S + 1, F + 1). The credible interval is the 2.5% and 97.5% quantiles of that curve, and any belief question is an area under it.</p>
+    </details>
+    <details><summary>Bootstrap</summary>
+      <p>The eval produced N labels, correct or wrong. Draw N of them with replacement, compute the accuracy, repeat 10,000 times. Drawing N labels with replacement from a bag with S correct is the same as drawing Binomial(N, S/N), which is what the page does. The interval is the 2.5th and 97.5th percentiles; a belief question is the share of resamples that satisfy it. The bootstrap only knows the N results it was given, so it can never propose an accuracy that the data did not already show.</p>
+    </details>
+    <details><summary>95% confidence interval</summary>
+      <p>The Wilson score interval, which behaves at small N and extreme p̂ where the textbook p̂ ± 1.96·SE interval does not (for 4 / 5 the textbook one runs from 45% to 115%). The coverage picture simulates 20 fresh evals of size N with true accuracy p̂, builds the interval each time, and marks the ones that miss. The 95% describes that procedure, not any single interval, and it is not a probability about the accuracy.</p>
+    </details>
+  </section>
+
+  <p class="meta small">Companion to the Part II session on sample size. No data leaves the page; every number is computed in your browser from N and S.</p>
+</main>
+
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const fmtPct = x => (100 * x).toFixed(1) + '%';
+const fmtProb = x => x < 0.001 ? '<0.1%' : x > 0.999 ? '>99.9%' : fmtPct(x);
+const fmtInt = n => n.toLocaleString('en-US');
+
+// ---------- Beta distribution ----------
+function logGamma(x) {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, tmp = x + 5.5; tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+function logBeta(a, b) { return logGamma(a) + logGamma(b) - logGamma(a + b); }
+function betaPDF(x, a, b) {
+  if (x <= 0 || x >= 1) return 0;
+  return Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) - logBeta(a, b));
+}
+function betacf(a, b, x) {              // continued fraction for the incomplete beta (Numerical Recipes)
+  const MAXIT = 300, EPS = 3e-14, FPMIN = 1e-300;
+  const qab = a + b, qap = a + 1, qam = a - 1;
+  let c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < FPMIN) d = FPMIN; d = 1 / d;
+  let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d;
+    const del = d * c; h *= del;
+    if (Math.abs(del - 1) < EPS) return h;
+  }
+  throw new Error('betacf did not converge for a=' + a + ' b=' + b + ' x=' + x);
+}
+function betaCDF(x, a, b) {             // regularized incomplete beta I_x(a, b)
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+function betaQuantile(p, a, b) {        // bisection on the CDF
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (betaCDF(mid, a, b) < p) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+
+// ---------- Binomial sampling (bootstrap of binary outcomes) ----------
+function randNormal() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function sampleBinomial(n, p) {
+  if (p <= 0) return 0; if (p >= 1) return n;
+  if (n * p * (1 - p) > 100) {          // large N: normal approximation with continuity correction, then clamp
+    const k = Math.round(n * p + Math.sqrt(n * p * (1 - p)) * randNormal());
+    return Math.max(0, Math.min(n, k));
+  }
+  let k = 0; for (let i = 0; i < n; i++) if (Math.random() < p) k++; return k;
+}
+
+// ---------- Wilson interval ----------
+function wilson(s, n, z = 1.959963984540054) {
+  const p = s / n, z2 = z * z, denom = 1 + z2 / n;
+  const centre = (p + z2 / (2 * n)) / denom;
+  const half = z * Math.sqrt(p * (1 - p) / n + z2 / (4 * n * n)) / denom;
+  return [Math.max(0, centre - half), Math.min(1, centre + half)];
+}
+
+// ---------- state ----------
+const RESAMPLES = 10000, REPEATS = 20;
+let boot = [], repeats = [];
+function readInputs() {
+  const N = Number(byId('N').value), S = Number(byId('S').value);
+  if (!Number.isInteger(N) || N < 1) throw new Error('N must be a whole number of at least 1.');
+  if (!Number.isInteger(S) || S < 0 || S > N) throw new Error('S must be a whole number between 0 and N.');
+  const priorSel = byId('prior').value;
+  let a0 = 1, b0 = 1;
+  if (priorSel === 'jeffreys') { a0 = 0.5; b0 = 0.5; }
+  if (priorSel === 'custom') { a0 = Number(byId('a0').value); b0 = Number(byId('b0').value); if (!(a0 > 0 && b0 > 0)) throw new Error('Prior parameters must be positive.'); }
+  const qtype = byId('qtype').value;
+  let T = Number(byId('T').value), T2 = Number(byId('T2').value);
+  if (!(T >= 0 && T <= 1) || (qtype === 'between' && !(T2 >= 0 && T2 <= 1))) throw new Error('Thresholds must be between 0 and 1.');
+  if (qtype === 'between' && T2 < T) [T, T2] = [T2, T];
+  return { N, S, a0, b0, qtype, T, T2 };
+}
+function inRange(x, q) { return q.qtype === 'gt' ? x > q.T : q.qtype === 'lt' ? x < q.T : (x > q.T && x < q.T2); }
+function questionText(q) {
+  return q.qtype === 'gt' ? `P(accuracy > ${fmtPct(q.T)})` : q.qtype === 'lt' ? `P(accuracy < ${fmtPct(q.T)})` : `P(${fmtPct(q.T)} < accuracy < ${fmtPct(q.T2)})`;
+}
+
+function drawBootstrap(q) { boot = new Array(RESAMPLES); const p = q.S / q.N; for (let i = 0; i < RESAMPLES; i++) boot[i] = sampleBinomial(q.N, p) / q.N; boot.sort((x, y) => x - y); }
+function drawRepeats(q) { repeats = []; const p = q.S / q.N; for (let i = 0; i < REPEATS; i++) { const s = sampleBinomial(q.N, p); repeats.push(wilson(s, q.N)); } }
+
+// ---------- SVG helpers ----------
+const W = 360, H = 200, ML = 28, MR = 10, MT = 12, MB = 28;
+function xScale(lo, hi) { return x => ML + (x - lo) / (hi - lo) * (W - ML - MR); }
+function axis(lo, hi, sx) {
+  const ticks = []; const span = hi - lo; const step = span > 0.5 ? 0.1 : span > 0.2 ? 0.05 : span > 0.05 ? 0.01 : span > 0.02 ? 0.005 : 0.002;
+  const first = Math.ceil(lo / step) * step;
+  for (let t = first; t <= hi + 1e-12; t += step) ticks.push(t);
+  return `<line x1="${ML}" y1="${H - MB}" x2="${W - MR}" y2="${H - MB}" stroke="#94a3b8"/>` +
+    ticks.map(t => `<line x1="${sx(t)}" y1="${H - MB}" x2="${sx(t)}" y2="${H - MB + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${H - MB + 15}" font-size="9" text-anchor="middle" fill="#64748b">${(100 * t).toFixed(step < 0.01 ? 1 : 0)}%</text>`).join('');
+}
+function shadeRect(q, sx, lo, hi, colour) {
+  let a = lo, b = hi;
+  if (q.qtype === 'gt') a = Math.max(lo, q.T); else if (q.qtype === 'lt') b = Math.min(hi, q.T); else { a = Math.max(lo, q.T); b = Math.min(hi, q.T2); }
+  if (b <= a) return '';
+  return `<rect x="${sx(a)}" y="${MT}" width="${sx(b) - sx(a)}" height="${H - MB - MT}" fill="${colour}" opacity=".18"/>`;
+}
+function thresholdLines(q, sx, lo, hi) {
+  const ts = q.qtype === 'between' ? [q.T, q.T2] : [q.T];
+  return ts.filter(t => t >= lo && t <= hi).map(t => `<line x1="${sx(t)}" y1="${MT}" x2="${sx(t)}" y2="${H - MB}" stroke="#111" stroke-dasharray="3 3"/>`).join('');
+}
+
+function renderBayes(q, lo, hi) {
+  const a = q.a0 + q.S, b = q.b0 + q.N - q.S;
+  const sx = xScale(lo, hi); const n = 240; let peak = 0; const pts = [];
+  for (let i = 0; i <= n; i++) { const x = lo + (hi - lo) * i / n; const y = betaPDF(x, a, b); pts.push([x, y]); if (y > peak) peak = y; }
+  const sy = y => H - MB - y / peak * (H - MB - MT);
+  const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ');
+  const area = `M${sx(lo).toFixed(1)},${H - MB} ` + pts.map(([x, y]) => `L${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ') + ` L${sx(hi).toFixed(1)},${H - MB} Z`;
+  const ci = [betaQuantile(0.025, a, b), betaQuantile(0.975, a, b)];
+  byId('svgBayes').innerHTML = shadeRect(q, sx, lo, hi, 'var(--bayes)') + `<path d="${area}" fill="var(--bayes)" opacity=".12"/><path d="${path}" fill="none" stroke="var(--bayes)" stroke-width="2"/>` +
+    `<line x1="${sx(Math.max(lo, ci[0]))}" y1="${H - MB - 6}" x2="${sx(Math.min(hi, ci[1]))}" y2="${H - MB - 6}" stroke="var(--bayes)" stroke-width="4" stroke-linecap="round"/>` + thresholdLines(q, sx, lo, hi) + axis(lo, hi, sx);
+  byId('postName').textContent = `Beta(${+(a.toFixed(2))}, ${+(b.toFixed(2))})`;
+  byId('ciBayes').innerHTML = `${fmtPct(ci[0])} – ${fmtPct(ci[1])}<small>95% credible interval (equal-tailed)</small>`;
+  const prob = q.qtype === 'gt' ? 1 - betaCDF(q.T, a, b) : q.qtype === 'lt' ? betaCDF(q.T, a, b) : betaCDF(q.T2, a, b) - betaCDF(q.T, a, b);
+  byId('ansBayes').innerHTML = `${questionText(q)} = <b>${fmtProb(prob)}</b><br><span class="small">the shaded area under the posterior</span>`;
+  return { ci, prob };
+}
+
+function renderBootstrap(q, lo, hi) {
+  const sx = xScale(lo, hi);
+  const possible = q.N + 1; const bins = Math.min(60, possible); const width = (hi - lo) / bins;
+  const counts = new Array(bins).fill(0);
+  for (const v of boot) { let k = Math.floor((v - lo) / width); if (k < 0 || k >= bins) continue; counts[k]++; }
+  const peak = Math.max(...counts, 1);
+  const bars = counts.map((c, i) => { const x0 = lo + i * width, x1 = x0 + width; const h = c / peak * (H - MB - MT);
+    return `<rect x="${sx(x0).toFixed(1)}" y="${(H - MB - h).toFixed(1)}" width="${Math.max(0.5, sx(x1) - sx(x0) - 0.6).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--boot)" opacity=".75"/>`; }).join('');
+  const ci = [boot[Math.floor(0.025 * RESAMPLES)], boot[Math.ceil(0.975 * RESAMPLES) - 1]];
+  byId('svgBoot').innerHTML = shadeRect(q, sx, lo, hi, 'var(--boot)') + bars +
+    `<line x1="${sx(Math.max(lo, ci[0]))}" y1="${H - MB - 6}" x2="${sx(Math.min(hi, ci[1]))}" y2="${H - MB - 6}" stroke="var(--boot)" stroke-width="4" stroke-linecap="round"/>` + thresholdLines(q, sx, lo, hi) + axis(lo, hi, sx);
+  byId('ciBoot').innerHTML = `${fmtPct(ci[0])} – ${fmtPct(ci[1])}<small>2.5th to 97.5th percentile of ${fmtInt(RESAMPLES)} resamples</small>`;
+  let hits = 0; for (const v of boot) if (inRange(v, q)) hits++;
+  const prob = hits / RESAMPLES;
+  byId('ansBoot').innerHTML = `${questionText(q)} = <b>${fmtProb(prob)}</b><br><span class="small">${fmtInt(hits)} of ${fmtInt(RESAMPLES)} resamples</span>`;
+  return { ci, prob };
+}
+
+function renderCI(q, lo, hi) {
+  const sx = xScale(lo, hi); const p = q.S / q.N; const ci = wilson(q.S, q.N);
+  const rowH = (H - MB - MT) / REPEATS; let rows = ''; let misses = 0;
+  repeats.forEach(([l, h], i) => { const miss = p < l || p > h; if (miss) misses++;
+    const y = MT + rowH * (i + 0.5);
+    rows += `<line x1="${sx(Math.max(lo, l)).toFixed(1)}" y1="${y.toFixed(1)}" x2="${sx(Math.min(hi, h)).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${miss ? 'var(--miss)' : 'var(--ci)'}" stroke-width="${Math.max(1.5, rowH * 0.55).toFixed(1)}" stroke-linecap="round" opacity="${miss ? 1 : .8}"/>`; });
+  byId('svgCI').innerHTML = rows + `<line x1="${sx(p)}" y1="${MT}" x2="${sx(p)}" y2="${H - MB}" stroke="#111" stroke-dasharray="4 3"/>` + axis(lo, hi, sx);
+  byId('ciWilson').innerHTML = `${fmtPct(ci[0])} – ${fmtPct(ci[1])}<small>95% CI (Wilson) for the observed ${q.S} / ${q.N}</small>`;
+  byId('ansCI').innerHTML = `${questionText(q)} = <b>not defined</b><br><span class="small">a confidence interval carries no probability for the accuracy. In the picture, ${misses} of ${REPEATS} intervals missed the dashed truth.</span>`;
+  return { ci, misses };
+}
+
+function render(opts = {}) {
+  let q;
+  try { q = readInputs(); byId('err').hidden = true; }
+  catch (e) { byId('err').textContent = e.message; byId('err').hidden = false; return; }
+  byId('customPrior').hidden = byId('prior').value !== 'custom';
+  byId('lblT2').hidden = byId('qtype').value !== 'between';
+  byId('lblT').firstChild.textContent = byId('qtype').value === 'between' ? 'T1 ' : 'T ';
+  byId('phat').textContent = `p̂ = ${q.S} / ${q.N} = ${fmtPct(q.S / q.N)}`;
+  document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('active', Number(b.dataset.n) === q.N && Number(b.dataset.s) === q.S));
+
+  if (opts.resample || boot.length === 0 || opts.dataChanged) drawBootstrap(q);
+  if (opts.rerun || repeats.length === 0 || opts.dataChanged) drawRepeats(q);
+
+  // shared x range: wide enough for the posterior, the resamples and the CI picture
+  const a = q.a0 + q.S, b = q.b0 + q.N - q.S; const mean = a / (a + b); const sd = Math.sqrt(a * b / ((a + b) ** 2 * (a + b + 1)));
+  let lo = Math.min(mean - 4.5 * sd, boot[0], ...repeats.map(r => r[0])), hi = Math.max(mean + 4.5 * sd, boot[boot.length - 1], ...repeats.map(r => r[1]));
+  lo = Math.max(0, lo); hi = Math.min(1, hi); if (hi - lo < 0.01) { lo = Math.max(0, mean - 0.005); hi = Math.min(1, mean + 0.005); }
+
+  const rb = renderBayes(q, lo, hi), rs = renderBootstrap(q, lo, hi), rc = renderCI(q, lo, hi);
+  const w = x => fmtPct(x[0]) + ' – ' + fmtPct(x[1]);
+  const priorNote = q.a0 === 1 && q.b0 === 1 ? 'with a flat prior' : `with prior Beta(${q.a0}, ${q.b0})`;
+  byId('takeaway').innerHTML = `<strong>Same two numbers, three intervals.</strong> Bayes ${w(rb.ci)} ${priorNote}, bootstrap ${w(rs.ci)}, Wilson ${w(rc.ci)}. ` +
+    (q.N >= 100 ? 'At this N the three nearly coincide. Their meanings do not: only the first one is a statement about the accuracy, and only the first two can answer the question you asked.'
+                : 'At small N they disagree, the bootstrap is a comb because there are only ' + (q.N + 1) + ' possible accuracies, and the prior visibly moves the Bayes answer. This is the regime where the choice of method is a choice of claim.') +
+    ` What your boss is really asking is the question above, and the answer is ${fmtProb(rb.prob)} by Bayes and ${fmtProb(rs.prob)} by bootstrap.`;
+}
+
+// ---------- wiring ----------
+['N', 'S', 'a0', 'b0'].forEach(id => byId(id).addEventListener('input', () => render({ dataChanged: true })));
+byId('prior').addEventListener('change', () => render());
+['qtype', 'T', 'T2'].forEach(id => byId(id).addEventListener('input', () => render()));
+byId('reboot').addEventListener('click', () => render({ resample: true }));
+byId('rerun').addEventListener('click', () => render({ rerun: true }));
+document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => { byId('N').value = b.dataset.n; byId('S').value = b.dataset.s; render({ dataChanged: true }); }));
+document.querySelectorAll('.presets button[data-q]').forEach(b => b.addEventListener('click', () => { byId('qtype').value = b.dataset.q; byId('T').value = b.dataset.t; if (b.dataset.t2) byId('T2').value = b.dataset.t2; render(); }));
+render({ dataChanged: true });
+</script>
+</body>
+</html>
