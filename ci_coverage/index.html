@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../course.css">
   <link rel="stylesheet" href="../style.css">
   <style>
-    :root{ --grid:#e5e7eb; --muted:#64748b; --ci:#155e75; --miss:#be185d; --ok:#15803d; --bad:#b91c1c; --se:#b45309; }
+    :root{ --grid:#e5e7eb; --muted:#64748b; --sd:#7c3aed; --se:#b45309; --ci:#155e75; --miss:#be185d; --ok:#15803d; --bad:#b91c1c; }
     .panel{ background:#fff; border:1px solid var(--grid); border-radius:12px; padding:1rem 1.2rem; margin:1rem 0; }
     .panel h3{ margin:.1rem 0 .5rem; font-size:1.05rem; }
     .small{ font-size:.85rem; color:var(--muted); }
@@ -41,6 +41,7 @@
     table.cmp th:first-child, table.cmp td:first-child{ text-align:left; }
     .cover{ font-size:2.2rem; font-weight:800; letter-spacing:-.02em; }
     .cover small{ display:block; font-size:.85rem; font-weight:500; color:var(--muted); }
+    .swatch{ display:inline-block; width:.7em; height:.7em; border-radius:50%; margin-right:.4rem; vertical-align:baseline; }
     .err{ color:#b91c1c; font-weight:600; }
     details summary{ cursor:pointer; font-weight:600; }
     details.howto{ border:1px solid var(--grid); border-radius:12px; padding:.6rem 1rem; margin:0 0 1rem; background:var(--color-surface); }
@@ -59,92 +60,97 @@
 
   <div class="hero">
     <h1>Standard deviation, standard error, and the 95% CI</h1>
-    <p class="subtitle">One eval gives you three numbers that people put on charts as “interval bars”. Only one of them is about your estimate, and none of them is a probability about the accuracy. Pick a true accuracy and a test-set size, run the eval once, then run it hundreds of times and count how often the 95% interval actually catches the truth.</p>
-    <p class="hero-meta">Uncertainty dimension: sample size · Companion to II.1 · Slides 10–13</p>
+    <p class="subtitle">You ran the eval once: N examples, S of them correct. People draw three different “error bars” from those two numbers, and they mean three different things. Enter S and N and see all three, as numbers and as bars on the same axis.</p>
+    <p class="hero-meta">Uncertainty dimension: sample size · Companion to II.1</p>
   </div>
 
   <details class="howto">
     <summary>How to read and interact with this page</summary>
     <ol>
-      <li><strong>Set the world.</strong> Choose the true accuracy and N. In real evals the truth is unknown; here you fix it so you can check what the intervals do.</li>
-      <li><strong>Run one eval.</strong> The dots are the N outcomes. The three panels show the SD of those 0/1 outcomes, the SE of the estimate, and the 95% interval from this single run, with the truth marked as inside or not.</li>
-      <li><strong>Compare the sizes.</strong> The table holds p̂ fixed and shows what happens at N = 5, 100 and 10,000: the SD does not move, the SE falls with √N, and the interval narrows.</li>
-      <li><strong>Repeat the eval.</strong> Choose how many repeats and press “Run X evals”. Left: each interval as a bar, magenta when it misses the dashed truth, with the hit count against the 95% target. Right: the histogram of observed accuracies, whose spread is what the SE predicts.</li>
-      <li><strong>Start with 20, then go to 10,000.</strong> With 20 repeats the coverage wobbles; with thousands it settles near 95%. That is the only promise a confidence interval makes.</li>
-      <li><strong>Switch to Wald at N = 5.</strong> The textbook interval runs past 100% and catches the truth far less than 95% of the time. Wilson does not.</li>
+      <li><strong>Enter what you observed.</strong> S correct out of N, or click a preset. Everything on the page follows from those two numbers; nothing is random until the last section.</li>
+      <li><strong>Read the three bars.</strong> All three sit around the same observed accuracy. The SD bar is the spread of the individual correct/wrong outcomes; the SE bar is how much the accuracy itself would wobble on a fresh test set; the 95% CI is the interval the textbook recipe produces.</li>
+      <li><strong>Read the three cards.</strong> Each gives the number, the formula and the sentence you are allowed to say about it.</li>
+      <li><strong>Grow N.</strong> Click 4 / 5, then 80 / 100, then 8,000 / 10,000, and watch which bars shrink. The SD bar does not; that is why it should not be on an accuracy chart.</li>
+      <li><strong>Test the recipe.</strong> The last section pretends the truth is your observed accuracy, repeats the eval many times, and counts how often the 95% CI catches it. Start with 20 repeats, then 10,000. Switch to Wald at N = 5 to see the textbook interval fail.</li>
     </ol>
   </details>
 
   <section class="lab-section">
-    <h2>The world we pretend to know</h2>
+    <h2>The experiment</h2>
     <div class="panel">
-      <p class="small" style="margin:0 0 .6rem">In real life the true accuracy is unknown; that is the whole point. Here we set it, so we can check what the intervals do.</p>
       <div class="controls">
-        <label>True accuracy of the system <input type="number" id="p" value="0.85" min="0.01" max="0.99" step="0.01"></label>
-        <label>N examples per eval <input type="number" id="N" value="100" min="2" max="100000" step="1"></label>
-        <label>Interval method
-          <select id="method">
-            <option value="wilson">Wilson (used in the deck)</option>
-            <option value="wald">Wald: p̂ ± 1.96·SE (textbook)</option>
-          </select>
-        </label>
+        <label>N examples in the test set <input type="number" id="N" value="100" min="2" max="1000000" step="1"></label>
+        <label>S correct <input type="number" id="S" value="85" min="0" max="1000000" step="1"></label>
       </div>
-      <div class="presets" id="presetsN">
-        <button data-n="5">N = 5</button>
-        <button data-n="100" class="active">N = 100</button>
-        <button data-n="10000">N = 10,000</button>
+      <div class="presets" id="presets">
+        <button data-n="5" data-s="4">4 / 5 correct</button>
+        <button data-n="100" data-s="85">85 / 100 correct</button>
+        <button data-n="100" data-s="80">80 / 100 correct</button>
+        <button data-n="10000" data-s="8000">8,000 / 10,000 correct</button>
       </div>
+      <p class="small" style="margin:.7rem 0 0">Observed accuracy <span class="mono" id="phat">—</span></p>
+      <div id="outcomes"></div>
       <p class="err" id="err" hidden></p>
     </div>
   </section>
 
   <section class="lab-section">
-    <h2>Run the eval once: three numbers</h2>
-    <div class="panel" style="margin-bottom:1rem">
-      <div class="controls" style="align-items:center">
-        <button class="action primary" id="runOne">Run one eval of N examples</button>
-        <span id="oneSummary" class="small">—</span>
-      </div>
-      <div id="outcomes"></div>
+    <h2>Three error bars from the same two numbers</h2>
+    <div class="panel">
+      <svg id="svgBars" viewBox="0 0 720 200"></svg>
+      <p class="small" style="margin:.4rem 0 0">Dot: observed accuracy. Bars clipped at 0% and 100% show an arrow where they run past the edge.</p>
     </div>
     <div class="trio">
       <div class="panel">
-        <h3>Standard deviation</h3>
-        <p class="small">Spread of the individual 0/1 outcomes.</p>
+        <h3><span class="swatch" style="background:var(--sd)"></span>Standard deviation</h3>
+        <p class="small">Spread of the individual correct/wrong outcomes.</p>
         <span class="formula">SD = √( p̂ (1 − p̂) )</span>
-        <p class="stat" id="sd">—<small>the same whether N is 5 or 10,000</small></p>
-        <p class="reading">It tells you nothing you did not already know from p̂: a binary outcome has no spread of its own to report. <em>An SD bar on an accuracy chart is almost always a mistake</em>, and more data never shrinks it.</p>
+        <p class="stat" id="sd">—<small></small></p>
+        <div class="small" id="sdSample"></div>
+        <p class="reading">Fixed by p̂ alone: it tells you nothing the accuracy did not already tell you, and <em>it does not shrink as N grows</em>. An SD bar on an accuracy chart is almost always a mistake. (An SD across repeated runs or folds is a different quantity and can be legitimate.)</p>
       </div>
       <div class="panel">
-        <h3>Standard error</h3>
-        <p class="small">How much p̂ would scatter if you re-ran the whole eval with N fresh examples.</p>
+        <h3><span class="swatch" style="background:var(--se)"></span>Standard error</h3>
+        <p class="small">How much the observed accuracy would scatter across fresh test sets of size N.</p>
         <span class="formula">SE = SD / √N</span>
-        <p class="stat" id="se">—<small>shrinks with √N: 100× the data buys 10× the precision</small></p>
-        <p class="reading">A statement about the <em>estimate</em>, not about individual answers. The section below makes it visible: the SE is the standard deviation of the observed accuracies across repeated evals.</p>
+        <p class="stat" id="se">—<small></small></p>
+        <div class="small" id="seNote"></div>
+        <p class="reading">A statement about the <em>estimate</em>, not about individual answers. It shrinks with √N: 100× the data buys 10× the precision. The last section shows it as the spread of a histogram.</p>
       </div>
       <div class="panel">
-        <h3>95% confidence interval</h3>
-        <p class="small" id="ciMethodNote">Wilson interval.</p>
-        <span class="formula" id="ciFormula">p̂ ± 1.96 · SE</span>
-        <p class="stat" id="ci">—<small>from this one eval</small></p>
-        <div class="small" id="ciBoth" style="margin-top:.3rem"></div>
-        <p class="reading">Not: “95% probability the true accuracy is in here”. But: <em>“repeat the eval; 95% of the intervals built this way catch the true accuracy.”</em> The 95% is a property of the recipe, not of this interval.</p>
+        <h3><span class="swatch" style="background:var(--ci)"></span>95% confidence interval</h3>
+        <p class="small">The interval the recipe produces from this one eval.</p>
+        <span class="formula" id="ciFormula">Wilson score interval</span>
+        <p class="stat" id="ci">—<small></small></p>
+        <div class="small" id="ciBoth"></div>
+        <p class="reading">Not: “95% probability the true accuracy is in here”. But: <em>“repeat the eval; 95% of the intervals built this way catch the true accuracy.”</em> A property of the recipe, not of this interval. For a probability about the accuracy you need a belief: see <a href="../sample_size/index.html">Estimating Accuracy</a>.</p>
       </div>
     </div>
+  </section>
+
+  <section class="lab-section">
+    <h2>Same accuracy, three test-set sizes</h2>
     <div class="panel">
-      <h3>Same p̂, three test-set sizes</h3>
-      <p class="small">Holding the observed accuracy at its current value, here is what each number does as N grows.</p>
+      <p class="small">Holding the observed accuracy at <span class="mono" id="phat2">—</span>, the same three bars at N = 5, 100 and 10,000.</p>
+      <svg id="svgThree" viewBox="0 0 720 230"></svg>
       <table class="cmp" id="cmp"></table>
     </div>
   </section>
 
   <section class="lab-section">
-    <h2>Repeat the eval many times: does the interval catch the truth?</h2>
+    <h2>Does the 95% CI recipe keep its promise?</h2>
     <div class="panel" style="margin-bottom:1rem">
-      <div class="controls" style="align-items:center">
+      <p class="small" style="margin:0 0 .6rem">Pretend the true accuracy is a known number, repeat the whole eval X times with N fresh examples each, build the interval each time, and count how often it contains the truth.</p>
+      <div class="controls" style="align-items:flex-end">
+        <label>Assumed true accuracy <input type="number" id="p" value="0.85" min="0.01" max="0.99" step="0.01"></label>
         <label>How many repeats? <input type="number" id="X" value="20" min="1" max="100000" step="1"></label>
+        <label>Interval method
+          <select id="method">
+            <option value="wilson">Wilson</option>
+            <option value="wald">Wald: p̂ ± 1.96·SE (textbook)</option>
+          </select>
+        </label>
         <button class="action primary" id="runMany">Run X evals</button>
-        <span class="small">Each repeat draws N fresh examples at the true accuracy, builds the interval, and checks whether the truth is inside.</span>
       </div>
       <div class="presets" id="presetsX">
         <button data-x="20" class="active">20</button>
@@ -152,21 +158,21 @@
         <button data-x="1000">1,000</button>
         <button data-x="10000">10,000</button>
       </div>
+      <p class="small" style="margin:.6rem 0 0">The assumed truth follows your observed accuracy; change it if you want to ask “what if the truth were different”.</p>
     </div>
     <div class="duo">
       <div class="panel">
         <h3>The intervals</h3>
-        <p class="small" id="pictureNote">Dashed line: the true accuracy. Magenta: intervals that miss it.</p>
+        <p class="small" id="pictureNote">Dashed line: the assumed truth. Magenta: intervals that miss it.</p>
         <svg id="svgCov" viewBox="0 0 520 320"></svg>
-        <p class="cover" id="coverage">—<small>of intervals contain the true accuracy</small></p>
+        <p class="cover" id="coverage">—<small></small></p>
         <div class="small" id="coverBoth"></div>
       </div>
       <div class="panel">
         <h3>Where the observed accuracies landed</h3>
-        <p class="small">Histogram of p̂ across the repeats. The standard deviation of this scatter is what the SE estimates.</p>
+        <p class="small">Histogram of the accuracy across the repeats. The spread of this scatter is what the SE predicts; the shaded band is truth ± 1 SE.</p>
         <svg id="svgHist" viewBox="0 0 520 320"></svg>
         <table class="cmp" id="seCheck"></table>
-        <p class="reading">This is the sampling distribution. The SE from a single eval, <span class="mono" id="seSingle">—</span>, is a prediction of the spread you see here. With enough repeats the two agree; that is what “standard error” means.</p>
       </div>
     </div>
     <div class="takeaway" id="takeaway"></div>
@@ -174,8 +180,11 @@
 
   <section class="lab-section">
     <h2>Notes</h2>
+    <details><summary>Population SD vs. sample SD</summary>
+      <p>√(p̂(1−p̂)) is the standard deviation of a correct/wrong outcome with mean p̂. A spreadsheet's STDEV on the N zeros and ones uses an n − 1 denominator and gives √(N/(N−1)) × that: 0.447 instead of 0.400 for 4 out of 5, and 0.402 for 80 out of 100. The card above shows both.</p>
+    </details>
     <details><summary>Wald vs. Wilson</summary>
-      <p>The textbook interval p̂ ± 1.96·SE (Wald) assumes the sampling distribution of p̂ is normal around p̂, which is fine at N = 100 and breaks at small N or extreme accuracy: for 4 out of 5 it runs from 45% to 115%, and its coverage falls well below 95%. The Wilson interval instead solves for the accuracies that would make the observed p̂ plausible, stays inside 0 to 100%, and keeps its coverage honest. Switch the method above with N = 5 and compare the coverage counts.</p>
+      <p>The textbook interval p̂ ± 1.96·SE (Wald) assumes the observed accuracy is normally distributed around the truth, which is fine at N = 100 and breaks at small N or extreme accuracy: for 4 out of 5 it runs from 45% to 115%, and its coverage falls well below 95%. The Wilson interval solves for the accuracies that would make the observed p̂ plausible, stays inside 0 to 100%, and keeps its coverage honest.</p>
     </details>
     <details><summary>Three misreadings of a 95% CI</summary>
       <ul>
@@ -183,7 +192,6 @@
         <li>“95% of runs will land in this range.” That treats the CI like an SD-style spread of outcomes. It is not.</li>
         <li>“Two overlapping CIs mean no significant difference.” Overlap is a much more conservative test than it looks.</li>
       </ul>
-      <p>If you want a sentence that starts “the probability that the accuracy is above 90% is…”, you need a belief, not a confidence interval: see the <a href="../sample_size/index.html">Estimating Accuracy</a> playground.</p>
     </details>
   </section>
 
@@ -213,48 +221,81 @@ function wilson(s, n) {
 function interval(method, s, n) { return method === 'wald' ? wald(s, n) : wilson(s, n); }
 const fmtIv = iv => fmtPct(iv[0]) + ' – ' + fmtPct(iv[1]);
 
-let one = null;          // {N, S}
-let many = null;         // {N, p, method, S: [...], X}
-
-function readSetup() {
-  const p = Number(byId('p').value), N = Number(byId('N').value);
-  if (!(p > 0 && p < 1)) throw new Error('True accuracy must be strictly between 0 and 1.');
-  if (!Number.isInteger(N) || N < 2 || N > 100000) throw new Error('N must be a whole number between 2 and 100,000.');
-  return { p, N, method: byId('method').value };
-}
-function readX() { const X = Number(byId('X').value); if (!Number.isInteger(X) || X < 1 || X > 100000) throw new Error('Repeats must be a whole number between 1 and 100,000.'); return X; }
-
-// ---------- one eval ----------
-function renderOne(setup) {
-  if (!one || one.N !== setup.N) one = { N: setup.N, S: sampleBinomial(setup.N, setup.p) };
-  const { N, S } = one; const phat = S / N;
-  byId('oneSummary').innerHTML = `<b>${fmtInt(S)} / ${fmtInt(N)}</b> correct, p̂ = <b>${fmtPct(phat)}</b> (true accuracy ${fmtPct(setup.p)})`;
-  if (N <= 300) {
-    const order = []; for (let i = 0; i < N; i++) order.push(i < S ? 1 : 0);
-    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    byId('outcomes').innerHTML = '<div class="dots">' + order.map(o => `<span class="${o ? '' : 'wrong'}"></span>`).join('') + '</div>';
-  } else {
-    byId('outcomes').innerHTML = `<div class="bar"><div style="width:${100 * phat}%"></div></div><p class="small" style="margin:0">${fmtInt(S)} correct (green), ${fmtInt(N - S)} wrong (red)</p>`;
-  }
-  byId('sd').innerHTML = `${sd(phat).toFixed(3)}<small>√(${phat.toFixed(3)} × ${(1 - phat).toFixed(3)}); the same whether N is 5 or 10,000</small>`;
-  byId('se').innerHTML = `${se(phat, N).toFixed(4)}<small>${sd(phat).toFixed(3)} / √${fmtInt(N)}; shrinks with √N</small>`;
-  byId('seSingle').textContent = se(phat, N).toFixed(4);
-  const wa = wald(S, N), wi = wilson(S, N); const chosen = setup.method === 'wald' ? wa : wi;
-  byId('ciMethodNote').textContent = setup.method === 'wald' ? 'Wald: the textbook normal approximation.' : 'Wilson: solves for the accuracies that make p̂ plausible.';
-  byId('ciFormula').textContent = setup.method === 'wald' ? 'p̂ ± 1.96 · SE' : 'Wilson score interval';
-  byId('ci').innerHTML = `${fmtIv(chosen)}<small>from this one eval; the truth ${setup.p > chosen[0] && setup.p < chosen[1] ? 'is inside' : 'is NOT inside'}</small>`;
-  byId('ciBoth').innerHTML = `Wald ${fmtIv(wa)} · Wilson ${fmtIv(wi)}` + (wa[0] < 0 || wa[1] > 1 ? ' <span style="color:var(--bad)">(Wald runs outside 0–100%)</span>' : '');
-  // comparison table at fixed p̂
-  const rows = [5, 100, 10000].map(n => { const s = Math.round(phat * n); const ph = s / n; const w = wald(s, n), v = wilson(s, n);
-    return `<tr><td>N = ${fmtInt(n)}</td><td>${sd(ph).toFixed(3)}</td><td>${se(ph, n).toFixed(4)}</td><td>${fmtPct(w[1] - w[0])}</td><td>${fmtIv(v)}</td></tr>`; }).join('');
-  byId('cmp').innerHTML = `<tr><th>at p̂ ≈ ${fmtPct(phat)}</th><th>SD</th><th>SE</th><th>Wald width</th><th>Wilson 95% CI</th></tr>` + rows;
+function readObserved() {
+  const N = Number(byId('N').value), S = Number(byId('S').value);
+  if (!Number.isInteger(N) || N < 2) throw new Error('N must be a whole number of at least 2.');
+  if (!Number.isInteger(S) || S < 0 || S > N) throw new Error('S must be a whole number between 0 and N.');
+  return { N, S, phat: S / N };
 }
 
-// ---------- many evals ----------
-function runMany(setup, X) {
-  const S = new Array(X); for (let i = 0; i < X; i++) S[i] = sampleBinomial(setup.N, setup.p);
-  many = { N: setup.N, p: setup.p, X, S };
+// ---------- error-bar chart ----------
+function errorBars(svgId, rows, opts) {
+  // rows: [{label, centre, lo, hi, colour, sub}] on a 0..1 axis; bars clipped with arrows
+  const W = opts.width, H = opts.height, ML = 130, MR = 16, MT = 10, MB = 28;
+  const sx = x => ML + x * (W - ML - MR);
+  const rowH = (H - MT - MB) / rows.length;
+  let out = '';
+  for (let t = 0; t <= 1.0001; t += 0.1) out += `<line x1="${sx(t)}" y1="${MT}" x2="${sx(t)}" y2="${H - MB}" stroke="#eef0f3"/><text x="${sx(t)}" y="${H - MB + 15}" font-size="10" text-anchor="middle" fill="#64748b">${Math.round(100 * t)}%</text>`;
+  out += `<line x1="${sx(0)}" y1="${H - MB}" x2="${sx(1)}" y2="${H - MB}" stroke="#94a3b8"/>`;
+  rows.forEach((r, i) => {
+    const y = MT + rowH * (i + 0.5);
+    const lo = Math.max(0, r.lo), hi = Math.min(1, r.hi);
+    out += `<text x="${ML - 10}" y="${y + 4}" font-size="12" font-weight="600" text-anchor="end" fill="#0f172a">${r.label}</text>`;
+    if (r.sub) out += `<text x="${ML - 10}" y="${y + 17}" font-size="9.5" text-anchor="end" fill="#64748b">${r.sub}</text>`;
+    out += `<line x1="${sx(lo)}" y1="${y}" x2="${sx(hi)}" y2="${y}" stroke="${r.colour}" stroke-width="6" stroke-linecap="round"/>`;
+    if (r.lo >= 0) out += `<line x1="${sx(lo)}" y1="${y - 7}" x2="${sx(lo)}" y2="${y + 7}" stroke="${r.colour}" stroke-width="2"/>`;
+    else out += `<path d="M${sx(0) + 8},${y - 6} L${sx(0) - 1},${y} L${sx(0) + 8},${y + 6}" fill="none" stroke="${r.colour}" stroke-width="2"/>`;
+    if (r.hi <= 1) out += `<line x1="${sx(hi)}" y1="${y - 7}" x2="${sx(hi)}" y2="${y + 7}" stroke="${r.colour}" stroke-width="2"/>`;
+    else out += `<path d="M${sx(1) - 8},${y - 6} L${sx(1) + 1},${y} L${sx(1) - 8},${y + 6}" fill="none" stroke="${r.colour}" stroke-width="2"/>`;
+    out += `<circle cx="${sx(r.centre)}" cy="${y}" r="4.5" fill="#0f172a"/>`;
+    out += `<text x="${sx(r.centre)}" y="${y - 10}" font-size="10" text-anchor="middle" fill="#334155">${fmtPct(r.lo)} – ${fmtPct(r.hi)}</text>`;
+  });
+  byId(svgId).innerHTML = out;
 }
+
+function renderObserved(o) {
+  const { N, S, phat } = o;
+  byId('phat').textContent = `p̂ = ${fmtInt(S)} / ${fmtInt(N)} = ${fmtPct(phat)}`;
+  byId('phat2').textContent = fmtPct(phat);
+  if (N <= 300) byId('outcomes').innerHTML = '<div class="dots">' + Array.from({ length: N }, (_, i) => `<span class="${i < S ? '' : 'wrong'}"></span>`).join('') + '</div>';
+  else byId('outcomes').innerHTML = `<div class="bar"><div style="width:${100 * phat}%"></div></div>`;
+
+  const SD = sd(phat), SE = se(phat, N), wi = wilson(S, N), wa = wald(S, N);
+  errorBars('svgBars', [
+    { label: 'Accuracy ± SD', sub: 'spread of the outcomes', centre: phat, lo: phat - SD, hi: phat + SD, colour: 'var(--sd)' },
+    { label: 'Accuracy ± SE', sub: 'scatter of the estimate', centre: phat, lo: phat - SE, hi: phat + SE, colour: 'var(--se)' },
+    { label: '95% CI (Wilson)', sub: 'the recipe’s interval', centre: phat, lo: wi[0], hi: wi[1], colour: 'var(--ci)' },
+  ], { width: 720, height: 200 });
+
+  const sdSample = N > 1 ? SD * Math.sqrt(N / (N - 1)) : NaN;
+  byId('sd').innerHTML = `${SD.toFixed(3)}<small>√(${phat.toFixed(3)} × ${(1 - phat).toFixed(3)})</small>`;
+  byId('sdSample').innerHTML = `Sample SD of the ${fmtInt(N)} outcomes (n − 1 denominator): <b>${sdSample.toFixed(3)}</b>`;
+  byId('se').innerHTML = `${SE.toFixed(4)}<small>${SD.toFixed(3)} / √${fmtInt(N)}</small>`;
+  byId('seNote').innerHTML = `Bar: ${fmtPct(phat - SE)} – ${fmtPct(phat + SE)}. Twice that, ± 1.96·SE, is the textbook CI.`;
+  byId('ci').innerHTML = `${fmtIv(wi)}<small>Wilson, from this one eval</small>`;
+  byId('ciBoth').innerHTML = `Wald p̂ ± 1.96·SE: ${fmtIv(wa)}` + (wa[0] < 0 || wa[1] > 1 ? ' <span style="color:var(--bad)">runs outside 0–100%</span>' : '');
+
+  // three sizes at fixed p-hat
+  const sizes = [5, 100, 10000];
+  const rows = [];
+  sizes.forEach(n => { const s = Math.round(phat * n); const ph = s / n; const sdn = sd(ph), sen = se(ph, n), w = wilson(s, n);
+    rows.push({ label: `N = ${fmtInt(n)}: ± SD`, centre: ph, lo: ph - sdn, hi: ph + sdn, colour: 'var(--sd)' });
+    rows.push({ label: `N = ${fmtInt(n)}: ± SE`, centre: ph, lo: ph - sen, hi: ph + sen, colour: 'var(--se)' });
+    rows.push({ label: `N = ${fmtInt(n)}: 95% CI`, centre: ph, lo: w[0], hi: w[1], colour: 'var(--ci)' }); });
+  errorBars('svgThree', rows, { width: 720, height: 230 });
+  byId('cmp').innerHTML = `<tr><th>at p̂ ≈ ${fmtPct(phat)}</th><th>SD</th><th>SE</th><th>Wald 95% CI</th><th>Wilson 95% CI</th></tr>` +
+    sizes.map(n => { const s = Math.round(phat * n); const ph = s / n; return `<tr><td>N = ${fmtInt(n)}</td><td>${sd(ph).toFixed(3)}</td><td>${se(ph, n).toFixed(4)}</td><td>${fmtIv(wald(s, n))}</td><td>${fmtIv(wilson(s, n))}</td></tr>`; }).join('');
+}
+
+// ---------- coverage experiment ----------
+let many = null;   // {N, p, X, S: [...]}
+function readSim(o) {
+  const p = Number(byId('p').value), X = Number(byId('X').value);
+  if (!(p > 0 && p < 1)) throw new Error('Assumed true accuracy must be strictly between 0 and 1.');
+  if (!Number.isInteger(X) || X < 1 || X > 100000) throw new Error('Repeats must be a whole number between 1 and 100,000.');
+  return { N: o.N, p, X, method: byId('method').value };
+}
+function runMany(sim) { const S = new Array(sim.X); for (let i = 0; i < sim.X; i++) S[i] = sampleBinomial(sim.N, sim.p); many = { N: sim.N, p: sim.p, X: sim.X, S }; }
 const W = 520, H = 320, ML = 30, MR = 12, MT = 10, MB = 30;
 function axis(lo, hi, sx) {
   const span = hi - lo; const step = span > 0.5 ? 0.1 : span > 0.2 ? 0.05 : span > 0.05 ? 0.01 : span > 0.02 ? 0.005 : 0.002;
@@ -262,9 +303,9 @@ function axis(lo, hi, sx) {
   for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-12; t += step) out += `<line x1="${sx(t)}" y1="${H - MB}" x2="${sx(t)}" y2="${H - MB + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${H - MB + 15}" font-size="10" text-anchor="middle" fill="#64748b">${(100 * t).toFixed(step < 0.01 ? 1 : 0)}%</text>`;
   return out;
 }
-function renderMany(setup) {
+function renderMany(method) {
   if (!many) return;
-  const { N, p, X, S } = many; const method = setup.method;
+  const { N, p, X, S } = many;
   const ivs = S.map(s => interval(method, s, N));
   const inside = m => S.map(s => interval(m, s, N)).filter(iv => p >= iv[0] && p <= iv[1]).length;
   const hitWald = inside('wald'), hitWilson = inside('wilson'); const hit = method === 'wald' ? hitWald : hitWilson;
@@ -277,48 +318,47 @@ function renderMany(setup) {
   const pad = (hi - lo) * 0.05 || 0.01; lo = Math.max(-0.2, lo - pad); hi = Math.min(1.2, hi + pad);
   const sx = x => ML + (x - lo) / (hi - lo) * (W - ML - MR);
 
-  // intervals picture
   const rowH = (H - MB - MT) / shown; let rows = '';
   for (let i = 0; i < shown; i++) { const [l, h] = ivs[i]; const miss = p < l || p > h; const y = MT + rowH * (i + 0.5);
     rows += `<line x1="${sx(l).toFixed(1)}" y1="${y.toFixed(1)}" x2="${sx(h).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${miss ? 'var(--miss)' : 'var(--ci)'}" stroke-width="${Math.max(1.2, rowH * 0.55).toFixed(1)}" stroke-linecap="round"/>`; }
   byId('svgCov').innerHTML = rows + `<line x1="${sx(p)}" y1="${MT}" x2="${sx(p)}" y2="${H - MB}" stroke="#111" stroke-dasharray="5 4"/>` + axis(lo, hi, sx);
-  byId('pictureNote').textContent = (X > shown ? `Showing the first ${shown} of ${fmtInt(X)} intervals. ` : '') + 'Dashed line: the true accuracy. Magenta: intervals that miss it.';
-  byId('coverage').innerHTML = `${(100 * hit / X).toFixed(X >= 1000 ? 1 : 0)}%<small>${fmtInt(hit)} of ${fmtInt(X)} ${method === 'wald' ? 'Wald' : 'Wilson'} intervals contain the true accuracy (target: 95%)</small>`;
+  byId('pictureNote').textContent = (X > shown ? `Showing the first ${shown} of ${fmtInt(X)} intervals. ` : '') + 'Dashed line: the assumed truth. Magenta: intervals that miss it.';
+  byId('coverage').innerHTML = `${(100 * hit / X).toFixed(X >= 1000 ? 1 : 0)}%<small>${fmtInt(hit)} of ${fmtInt(X)} ${method === 'wald' ? 'Wald' : 'Wilson'} intervals contain the truth (target: 95%)</small>`;
   byId('coverBoth').innerHTML = `Wilson: ${fmtInt(hitWilson)} / ${fmtInt(X)} = ${fmtPct(hitWilson / X)} · Wald: ${fmtInt(hitWald)} / ${fmtInt(X)} = ${fmtPct(hitWald / X)}`;
 
-  // histogram of p-hats
-  const possible = N + 1; const bins = Math.min(possible, X < 200 ? 15 : 50); const width = (hi - lo) / bins; const counts = new Array(bins).fill(0);
+  const bins = Math.min(N + 1, X < 200 ? 15 : 50); const width = (hi - lo) / bins; const counts = new Array(bins).fill(0);
   for (const v of phats) { const k = Math.floor((v - lo) / width); if (k >= 0 && k < bins) counts[k]++; }
-  const peak = Math.max(...counts, 1);
-  let bars = '';
+  const peak = Math.max(...counts, 1); let bars = '';
   counts.forEach((c, i) => { const x0 = lo + i * width; const h = c / peak * (H - MB - MT); bars += `<rect x="${sx(x0).toFixed(1)}" y="${(H - MB - h).toFixed(1)}" width="${Math.max(0.5, sx(x0 + width) - sx(x0) - 0.8).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--se)" opacity=".75"/>`; });
   const band = `<rect x="${sx(p - seTheory)}" y="${MT}" width="${sx(p + seTheory) - sx(p - seTheory)}" height="${H - MB - MT}" fill="var(--se)" opacity=".12"/>`;
   byId('svgHist').innerHTML = band + bars + `<line x1="${sx(p)}" y1="${MT}" x2="${sx(p)}" y2="${H - MB}" stroke="#111" stroke-dasharray="5 4"/>` + axis(lo, hi, sx);
-  byId('seCheck').innerHTML = `<tr><th></th><th>value</th></tr><tr><td>SD of the ${fmtInt(X)} observed accuracies</td><td>${isNaN(sdObs) ? '—' : sdObs.toFixed(4)}</td></tr><tr><td>SE predicted from a single eval at the true accuracy</td><td>${seTheory.toFixed(4)}</td></tr><tr><td>Shaded band</td><td>true accuracy ± 1 SE</td></tr>`;
+  byId('seCheck').innerHTML = `<tr><th></th><th>value</th></tr><tr><td>SD of the ${fmtInt(X)} observed accuracies</td><td>${isNaN(sdObs) ? '—' : sdObs.toFixed(4)}</td></tr><tr><td>SE predicted at the assumed truth</td><td>${seTheory.toFixed(4)}</td></tr>`;
 
   byId('takeaway').innerHTML = `<strong>Reading the count.</strong> ${fmtInt(hit)} of ${fmtInt(X)} intervals caught the truth. ` +
-    (X < 100 ? 'With this few repeats the count wobbles a lot; run 1,000 or 10,000 to see it settle near 95%. ' : 'With this many repeats the count settles near the nominal 95%, which is the only promise a confidence interval makes. ') +
-    (hitWald / X < 0.9 && X >= 100 ? `The Wald interval only managed ${fmtPct(hitWald / X)} here: the normal approximation is not honest at N = ${fmtInt(N)} with accuracy ${fmtPct(p)}. ` : '') +
-    `None of this tells you the probability that <em>your</em> one interval contains the truth; for that question you need a belief, which is the next playground.`;
+    (X < 100 ? 'With this few repeats the count wobbles; run 1,000 or 10,000 to see it settle near 95%. ' : 'With this many repeats the count settles near the nominal 95%, which is the only promise a confidence interval makes. ') +
+    (hitWald / X < 0.9 && X >= 100 ? `The Wald interval only managed ${fmtPct(hitWald / X)}: the normal approximation is not honest at N = ${fmtInt(N)} with accuracy ${fmtPct(p)}. ` : '') +
+    `None of this tells you the probability that <em>your</em> one interval contains the truth; for that question you need a belief, which is the <a href="../sample_size/index.html">Estimating Accuracy</a> page.`;
 }
 
 function render(opts = {}) {
-  let setup;
-  try { setup = readSetup(); byId('err').hidden = true; } catch (e) { byId('err').textContent = e.message; byId('err').hidden = false; return; }
-  document.querySelectorAll('#presetsN button').forEach(b => b.classList.toggle('active', Number(b.dataset.n) === setup.N));
-  if (opts.newOne || !one || one.N !== setup.N || opts.setupChanged) one = { N: setup.N, S: sampleBinomial(setup.N, setup.p) };
-  renderOne(setup);
-  if (opts.runMany || (many && (many.N !== setup.N || many.p !== setup.p))) { let X; try { X = readX(); } catch (e) { byId('err').textContent = e.message; byId('err').hidden = false; return; } runMany(setup, X); }
-  renderMany(setup);
+  let o;
+  try { o = readObserved(); byId('err').hidden = true; } catch (e) { byId('err').textContent = e.message; byId('err').hidden = false; return; }
+  document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('active', Number(b.dataset.n) === o.N && Number(b.dataset.s) === o.S));
+  renderObserved(o);
+  if (opts.observedChanged) byId('p').value = o.phat.toFixed(3);
+  let sim;
+  try { sim = readSim(o); } catch (e) { byId('err').textContent = e.message; byId('err').hidden = false; return; }
+  if (opts.runMany || !many || many.N !== sim.N || many.p !== sim.p) runMany(sim);
+  renderMany(sim.method);
 }
-['p', 'N'].forEach(id => byId(id).addEventListener('input', () => render({ setupChanged: true })));
+['N', 'S'].forEach(id => byId(id).addEventListener('input', () => render({ observedChanged: true })));
+byId('p').addEventListener('input', () => render());
 byId('method').addEventListener('change', () => render());
-byId('runOne').addEventListener('click', () => render({ newOne: true }));
 byId('runMany').addEventListener('click', () => render({ runMany: true }));
-document.querySelectorAll('#presetsN button').forEach(b => b.addEventListener('click', () => { byId('N').value = b.dataset.n; render({ setupChanged: true }); }));
-document.querySelectorAll('#presetsX button').forEach(b => b.addEventListener('click', () => { byId('X').value = b.dataset.x; document.querySelectorAll('#presetsX button').forEach(o => o.classList.toggle('active', o === b)); render({ runMany: true }); }));
-byId('X').addEventListener('input', () => document.querySelectorAll('#presetsX button').forEach(o => o.classList.toggle('active', Number(o.dataset.x) === Number(byId('X').value))));
-render({ setupChanged: true, runMany: true });
+document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => { byId('N').value = b.dataset.n; byId('S').value = b.dataset.s; render({ observedChanged: true }); }));
+document.querySelectorAll('#presetsX button').forEach(b => b.addEventListener('click', () => { byId('X').value = b.dataset.x; document.querySelectorAll('#presetsX button').forEach(x => x.classList.toggle('active', x === b)); render({ runMany: true }); }));
+byId('X').addEventListener('input', () => document.querySelectorAll('#presetsX button').forEach(x => x.classList.toggle('active', Number(x.dataset.x) === Number(byId('X').value))));
+render({ observedChanged: true, runMany: true });
 </script>
 </body>
 </html>
