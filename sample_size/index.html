@@ -211,12 +211,6 @@ function axis(lo, hi, sx) {
   return `<line x1="${ML}" y1="${H - MB}" x2="${W - MR}" y2="${H - MB}" stroke="#94a3b8"/>` +
     ticks.map(t => `<line x1="${sx(t)}" y1="${H - MB}" x2="${sx(t)}" y2="${H - MB + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${H - MB + 15}" font-size="9" text-anchor="middle" fill="#64748b">${(100 * t).toFixed(step < 0.01 ? 1 : 0)}%</text>`).join('');
 }
-function shadeRect(q, sx, lo, hi, colour) {
-  let a = lo, b = hi;
-  if (q.qtype === 'gt') a = Math.max(lo, q.T); else if (q.qtype === 'lt') b = Math.min(hi, q.T); else { a = Math.max(lo, q.T); b = Math.min(hi, q.T2); }
-  if (b <= a) return '';
-  return `<rect x="${sx(a)}" y="${MT}" width="${sx(b) - sx(a)}" height="${H - MB - MT}" fill="${colour}" opacity=".18"/>`;
-}
 function thresholdLines(q, sx, lo, hi) {
   const ts = q.qtype === 'between' ? [q.T, q.T2] : [q.T];
   return ts.filter(t => t >= lo && t <= hi).map(t => `<line x1="${sx(t)}" y1="${MT}" x2="${sx(t)}" y2="${H - MB}" stroke="#111" stroke-dasharray="3 3"/>`).join('');
@@ -228,9 +222,18 @@ function renderBayes(q, lo, hi) {
   for (let i = 0; i <= n; i++) { const x = lo + (hi - lo) * i / n; const y = betaPDF(x, a, b); pts.push([x, y]); if (y > peak) peak = y; }
   const sy = y => H - MB - y / peak * (H - MB - MT);
   const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ');
-  const area = `M${sx(lo).toFixed(1)},${H - MB} ` + pts.map(([x, y]) => `L${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ') + ` L${sx(hi).toFixed(1)},${H - MB} Z`;
   const ci = [betaQuantile(0.025, a, b), betaQuantile(0.975, a, b)];
-  byId('svgBayes').innerHTML = shadeRect(q, sx, lo, hi, 'var(--bayes)') + `<path d="${area}" fill="var(--bayes)" opacity=".12"/><path d="${path}" fill="none" stroke="var(--bayes)" stroke-width="2"/>` +
+  // shade only the area under the curve inside the question's bounds
+  let qa = lo, qb = hi;
+  if (q.qtype === 'gt') qa = Math.max(lo, q.T); else if (q.qtype === 'lt') qb = Math.min(hi, q.T); else { qa = Math.max(lo, q.T); qb = Math.min(hi, q.T2); }
+  let shaded = '';
+  if (qb > qa) {
+    const inside = pts.filter(([x]) => x >= qa && x <= qb);
+    const edge = x => [x, betaPDF(x, a, b)];
+    const seg = [edge(qa), ...inside, edge(qb)];
+    shaded = `<path d="M${sx(qa).toFixed(1)},${H - MB} ` + seg.map(([x, y]) => `L${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ') + ` L${sx(qb).toFixed(1)},${H - MB} Z" fill="var(--bayes)" opacity=".35"/>`;
+  }
+  byId('svgBayes').innerHTML = shaded + `<path d="${path}" fill="none" stroke="var(--bayes)" stroke-width="2"/>` +
     `<line x1="${sx(Math.max(lo, ci[0]))}" y1="${H - MB - 6}" x2="${sx(Math.min(hi, ci[1]))}" y2="${H - MB - 6}" stroke="var(--bayes)" stroke-width="4" stroke-linecap="round"/>` + thresholdLines(q, sx, lo, hi) + axis(lo, hi, sx);
   byId('postName').textContent = `Beta(${+(a.toFixed(2))}, ${+(b.toFixed(2))})`;
   byId('ciBayes').innerHTML = `${fmtPct(ci[0])} – ${fmtPct(ci[1])}<small>95% credible interval (equal-tailed)</small>`;
