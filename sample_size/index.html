@@ -59,7 +59,7 @@
     <summary>How to read and interact with this page</summary>
     <ol>
       <li><strong>Enter what you observed.</strong> N examples in the test set and S of them correct, or click a preset. That is all the page knows.</li>
-      <li><strong>Ask a belief question.</strong> Pick “above T”, “below T” or “between T1 and T2” and set the threshold, or click one of the three ready-made questions.</li>
+      <li><strong>Ask a belief question.</strong> Pick “above T”, “below T” or “between T1 and T2” and set the threshold.</li>
       <li><strong>Read the curve.</strong> It is the Beta posterior: your belief about the true accuracy after seeing the data. The shaded area is the answer to your question; the bar under the curve is the 95% credible interval.</li>
       <li><strong>Grow N.</strong> Click 4 / 5, then 80 / 100, then 8,000 / 10,000, and watch the curve sharpen and the interval narrow.</li>
       <li><strong>Change the prior.</strong> The first tile shows what you believed before the data, uniform by default. Switch to Custom Beta(8, 2) on 4 / 5 and watch the answer move; then do the same on 8,000 / 10,000 and watch it not move.</li>
@@ -114,18 +114,13 @@
         <label id="lblT">T <input type="number" id="T" value="0.9" min="0" max="1" step="0.01"></label>
         <label id="lblT2" hidden>T2 <input type="number" id="T2" value="0.92" min="0" max="1" step="0.01"></label>
       </div>
-      <div class="presets">
-        <button data-q="gt" data-t="0.9">Above 90%?</button>
-        <button data-q="lt" data-t="0.85">Below 85%?</button>
-        <button data-q="between" data-t="0.88" data-t2="0.92">Between 88% and 92%?</button>
-      </div>
     </div>
     </div>
     </div>
   </section>
 
   <section class="lab-section">
-    <h2>The answer</h2>
+    <h2>Distribution</h2>
     <div>
       <div class="panel">
         <h3>The Beta posterior</h3>
@@ -290,7 +285,6 @@ function render() {
 ['N', 'S', 'a0', 'b0', 'T', 'T2'].forEach(id => byId(id).addEventListener('input', render));
 ['prior', 'qtype'].forEach(id => byId(id).addEventListener('change', render));
 document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => { byId('N').value = b.dataset.n; byId('S').value = b.dataset.s; render(); }));
-document.querySelectorAll('.presets button[data-q]').forEach(b => b.addEventListener('click', () => { byId('qtype').value = b.dataset.q; byId('T').value = b.dataset.t; if (b.dataset.t2) byId('T2').value = b.dataset.t2; render(); }));
 render();
 </script>
 </body>
