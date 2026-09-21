@@ -217,7 +217,7 @@ function thresholdLines(q, sx, lo, hi) {
 }
 
 function renderPrior(a0, b0) {
-  const PW = 360, PH = 150, pml = 28, pmr = 10, pmt = 10, pmb = 26;
+  const PW = 360, PH = 150, pml = 4, pmr = 4, pmt = 10, pmb = 26;
   const sx = x => pml + x * (PW - pml - pmr);
   const n = 200, pts = []; let peak = 0;
   for (let i = 0; i <= n; i++) { const x = 0.004 + 0.992 * i / n; const y = betaPDF(x, a0, b0); pts.push([x, y]); if (y > peak) peak = y; }
@@ -226,7 +226,7 @@ function renderPrior(a0, b0) {
   const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ');
   const area = `M${sx(pts[0][0]).toFixed(1)},${PH - pmb} ` + pts.map(([x, y]) => `L${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ') + ` L${sx(pts[pts.length - 1][0]).toFixed(1)},${PH - pmb} Z`;
   let ax = `<line x1="${pml}" y1="${PH - pmb}" x2="${PW - pmr}" y2="${PH - pmb}" stroke="#94a3b8"/>`;
-  for (let t = 0; t <= 1.0001; t += 0.25) ax += `<line x1="${sx(t)}" y1="${PH - pmb}" x2="${sx(t)}" y2="${PH - pmb + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${PH - pmb + 15}" font-size="9" text-anchor="middle" fill="#64748b">${Math.round(100 * t)}%</text>`;
+  for (let t = 0; t <= 1.0001; t += 0.25) ax += `<line x1="${sx(t)}" y1="${PH - pmb}" x2="${sx(t)}" y2="${PH - pmb + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${PH - pmb + 15}" font-size="9" text-anchor="${t < 0.01 ? 'start' : t > 0.99 ? 'end' : 'middle'}" fill="#64748b">${Math.round(100 * t)}%</text>`;
   byId('svgPrior').innerHTML = `<path d="${area}" fill="var(--bayes)" opacity=".15"/><path d="${path}" fill="none" stroke="var(--bayes)" stroke-width="2"/>` + ax;
   byId('priorNote').textContent = a0 === 1 && b0 === 1 ? 'Uniform: every accuracy equally plausible before the data.' : a0 === 0.5 && b0 === 0.5 ? 'Jeffreys: leans toward the extremes; a common "uninformative" choice.' : `Beta(${a0}, ${b0}): as if you had already seen ${+(a0 - 1).toFixed(1)} correct and ${+(b0 - 1).toFixed(1)} wrong.`;
 }
