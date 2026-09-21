@@ -105,13 +105,13 @@
       <div class="controls">
         <label>What do you want to know?
           <select id="qtype">
+            <option value="between" selected>P(T1 &lt; accuracy &lt; T2)</option>
             <option value="gt">P(accuracy &gt; T)</option>
             <option value="lt">P(accuracy &lt; T)</option>
-            <option value="between">P(T1 &lt; accuracy &lt; T2)</option>
           </select>
         </label>
-        <label id="lblT">T <input type="number" id="T" value="0.9" min="0" max="1" step="0.01"></label>
-        <label id="lblT2" hidden>T2 <input type="number" id="T2" value="0.92" min="0" max="1" step="0.01"></label>
+        <label id="lblT">T1 <input type="number" id="T" value="0.7" min="0" max="1" step="0.01"></label>
+        <label id="lblT2">T2 <input type="number" id="T2" value="0.9" min="0" max="1" step="0.01"></label>
       </div>
       <div class="answer" id="ansBayes">—</div>
     </div>
