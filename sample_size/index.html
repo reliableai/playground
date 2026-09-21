@@ -20,9 +20,9 @@
     .presets button, .action{ font:inherit; font-size:.9rem; border:1px solid var(--grid); background:#fff; border-radius:9px; padding:.45rem .8rem; cursor:pointer; }
     .presets button:hover, .action:hover{ border-color:#111; }
     .presets button.active{ border-color:#111; box-shadow:0 0 0 2px #111 inset; }
-    .duo{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; align-items:start; }
-    .duo .panel{ margin-top:0; }
-    @media (max-width:980px){ .duo{ grid-template-columns:1fr; } }
+    .trio{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.2rem; align-items:start; }
+    .trio .panel{ margin-top:0; }
+    @media (max-width:980px){ .trio{ grid-template-columns:1fr; } }
     @media (max-width:980px){ .trio{ grid-template-columns:1fr; } }
     .trio .panel{ margin:0; display:flex; flex-direction:column; }
     .trio h3 span{ display:inline-block; width:.7em; height:.7em; border-radius:50%; margin-right:.4rem; vertical-align:baseline; }
@@ -62,26 +62,35 @@
       <li><strong>Ask a belief question.</strong> Pick “above T”, “below T” or “between T1 and T2” and set the threshold, or click one of the three ready-made questions.</li>
       <li><strong>Read the curve.</strong> It is the Beta posterior: your belief about the true accuracy after seeing the data. The shaded area is the answer to your question; the bar under the curve is the 95% credible interval.</li>
       <li><strong>Grow N.</strong> Click 4 / 5, then 80 / 100, then 8,000 / 10,000, and watch the curve sharpen and the interval narrow.</li>
-      <li><strong>Change the prior.</strong> Switch to Custom Beta(8, 2) on 4 / 5 and watch the answer move; then do the same on 8,000 / 10,000 and watch it not move.</li>
+      <li><strong>Change the prior.</strong> The first tile shows what you believed before the data, uniform by default. Switch to Custom Beta(8, 2) on 4 / 5 and watch the answer move; then do the same on 8,000 / 10,000 and watch it not move.</li>
     </ol>
   </details>
 
   <section class="lab-section">
-    <div class="duo">
+    <div class="trio">
     <div>
-    <h2>The experiment</h2>
+    <h2>Prior belief</h2>
     <div class="panel">
       <div class="controls">
-        <label>N examples in the test set <input type="number" id="N" value="5" min="1" max="1000000" step="1"></label>
-        <label>S correct <input type="number" id="S" value="4" min="0" max="1000000" step="1"></label>
-        <label>Bayes prior
+        <label>Before the experiment
           <select id="prior">
-            <option value="flat">Flat: Beta(1, 1)</option>
+            <option value="flat">Uniform: Beta(1, 1)</option>
             <option value="jeffreys">Jeffreys: Beta(0.5, 0.5)</option>
             <option value="custom">Custom</option>
           </select>
         </label>
-        <label id="customPrior" hidden>Prior Beta(a, b) <span style="display:flex;gap:.4rem"><input type="number" id="a0" value="8" min="0.01" step="0.5" style="width:4.5rem"><input type="number" id="b0" value="2" min="0.01" step="0.5" style="width:4.5rem"></span></label>
+        <label id="customPrior" hidden>Beta(a, b) <span style="display:flex;gap:.4rem"><input type="number" id="a0" value="8" min="0.01" step="0.5" style="width:4.5rem"><input type="number" id="b0" value="2" min="0.01" step="0.5" style="width:4.5rem"></span></label>
+      </div>
+      <svg id="svgPrior" viewBox="0 0 360 150"></svg>
+      <p class="small" style="margin:.4rem 0 0" id="priorNote">Every accuracy equally plausible.</p>
+    </div>
+    </div>
+    <div>
+    <h2>Experiment results</h2>
+    <div class="panel">
+      <div class="controls">
+        <label>N examples <input type="number" id="N" value="5" min="1" max="1000000" step="1"></label>
+        <label>S correct <input type="number" id="S" value="4" min="0" max="1000000" step="1"></label>
       </div>
       <div class="presets" id="presets">
         <button data-n="5" data-s="4">4 / 5 correct</button>
@@ -90,10 +99,9 @@
       </div>
       <p class="err" id="err" hidden></p>
     </div>
-
     </div>
     <div>
-    <h2>The question</h2>
+    <h2>Question</h2>
     <div class="panel">
       <div class="controls">
         <label>What do you want to know?
@@ -108,7 +116,7 @@
       </div>
       <div class="presets">
         <button data-q="gt" data-t="0.9">Above 90%?</button>
-        <button data-q="lt" data-t="0.85">Below 85%, the disappointment case?</button>
+        <button data-q="lt" data-t="0.85">Below 85%?</button>
         <button data-q="between" data-t="0.88" data-t2="0.92">Between 88% and 92%?</button>
       </div>
     </div>
@@ -222,6 +230,21 @@ function thresholdLines(q, sx, lo, hi) {
   return ts.filter(t => t >= lo && t <= hi).map(t => `<line x1="${sx(t)}" y1="${MT}" x2="${sx(t)}" y2="${H - MB}" stroke="#111" stroke-dasharray="3 3"/>`).join('');
 }
 
+function renderPrior(a0, b0) {
+  const PW = 360, PH = 150, pml = 28, pmr = 10, pmt = 10, pmb = 26;
+  const sx = x => pml + x * (PW - pml - pmr);
+  const n = 200, pts = []; let peak = 0;
+  for (let i = 0; i <= n; i++) { const x = 0.004 + 0.992 * i / n; const y = betaPDF(x, a0, b0); pts.push([x, y]); if (y > peak) peak = y; }
+  peak = Math.min(peak, 6);   // Jeffreys-type priors diverge at the edges; cap the drawing
+  const sy = y => PH - pmb - Math.min(y, peak) / peak * (PH - pmb - pmt);
+  const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ');
+  const area = `M${sx(pts[0][0]).toFixed(1)},${PH - pmb} ` + pts.map(([x, y]) => `L${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ') + ` L${sx(pts[pts.length - 1][0]).toFixed(1)},${PH - pmb} Z`;
+  let ax = `<line x1="${pml}" y1="${PH - pmb}" x2="${PW - pmr}" y2="${PH - pmb}" stroke="#94a3b8"/>`;
+  for (let t = 0; t <= 1.0001; t += 0.25) ax += `<line x1="${sx(t)}" y1="${PH - pmb}" x2="${sx(t)}" y2="${PH - pmb + 4}" stroke="#94a3b8"/><text x="${sx(t)}" y="${PH - pmb + 15}" font-size="9" text-anchor="middle" fill="#64748b">${Math.round(100 * t)}%</text>`;
+  byId('svgPrior').innerHTML = `<path d="${area}" fill="var(--bayes)" opacity=".15"/><path d="${path}" fill="none" stroke="var(--bayes)" stroke-width="2"/>` + ax;
+  byId('priorNote').textContent = a0 === 1 && b0 === 1 ? 'Uniform: every accuracy equally plausible before the data.' : a0 === 0.5 && b0 === 0.5 ? 'Jeffreys: leans toward the extremes; a common "uninformative" choice.' : `Beta(${a0}, ${b0}): as if you had already seen ${+(a0 - 1).toFixed(1)} correct and ${+(b0 - 1).toFixed(1)} wrong.`;
+}
+
 function renderBayes(q, lo, hi) {
   const a = q.a0 + q.S, b = q.b0 + q.N - q.S;
   const sx = xScale(lo, hi); const n = 240; let peak = 0; const pts = [];
@@ -259,6 +282,7 @@ function render() {
   const a = q.a0 + q.S, b = q.b0 + q.N - q.S; const mean = a / (a + b); const sd = Math.sqrt(a * b / ((a + b) ** 2 * (a + b + 1)));
   let lo = Math.max(0, mean - 4.5 * sd), hi = Math.min(1, mean + 4.5 * sd);
   if (hi - lo < 0.01) { lo = Math.max(0, mean - 0.005); hi = Math.min(1, mean + 0.005); }
+  renderPrior(q.a0, q.b0);
   renderBayes(q, lo, hi);
 }
 
