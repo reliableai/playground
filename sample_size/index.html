@@ -114,6 +114,7 @@
         <label id="lblT">T <input type="number" id="T" value="0.9" min="0" max="1" step="0.01"></label>
         <label id="lblT2" hidden>T2 <input type="number" id="T2" value="0.92" min="0" max="1" step="0.01"></label>
       </div>
+      <div class="answer" id="ansBayes">—</div>
     </div>
     </div>
     </div>
@@ -127,7 +128,6 @@
         <p class="small">Prior × data = posterior <span class="mono" id="postName">Beta(5, 2)</span>. The curve is our belief about the true accuracy.</p>
         <svg id="svgBayes" viewBox="0 0 360 200"></svg>
         <p class="stat" id="ciBayes">—<small>95% credible interval (equal-tailed)</small></p>
-        <div class="answer" id="ansBayes">—</div>
         <p class="reading"><em>“There is a 95% probability the true accuracy is in here”</em>, given the prior. This is a statement about the accuracy, which is what your boss is really asking. The prior matters when N is small; try Custom Beta(8, 2) on 4 / 5, then on 8,000 / 10,000.</p>
       </div>
 
