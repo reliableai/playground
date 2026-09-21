@@ -88,7 +88,6 @@
         <button data-n="100" data-s="80">80 / 100 correct</button>
         <button data-n="10000" data-s="8000">8,000 / 10,000 correct</button>
       </div>
-      <p class="small" style="margin:.7rem 0 0">Observed accuracy <span class="mono" id="phat">—</span>. Everything on the page starts from these two numbers and nothing else.</p>
       <p class="err" id="err" hidden></p>
     </div>
 
@@ -256,7 +255,6 @@ function render() {
   byId('customPrior').hidden = byId('prior').value !== 'custom';
   byId('lblT2').hidden = byId('qtype').value !== 'between';
   byId('lblT').firstChild.textContent = byId('qtype').value === 'between' ? 'T1 ' : 'T ';
-  byId('phat').textContent = `p̂ = ${q.S} / ${q.N} = ${fmtPct(q.S / q.N)}`;
   document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('active', Number(b.dataset.n) === q.N && Number(b.dataset.s) === q.S));
   const a = q.a0 + q.S, b = q.b0 + q.N - q.S; const mean = a / (a + b); const sd = Math.sqrt(a * b / ((a + b) ** 2 * (a + b + 1)));
   let lo = Math.max(0, mean - 4.5 * sd), hi = Math.min(1, mean + 4.5 * sd);
