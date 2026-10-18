@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climbing on Noisy Labels</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="sim.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #ffffff; --text: #1b2130; --text-dim: #5d6675; --border: #e3e6ec; --rule: #eef0f4;
+      --blue: #2563eb; --orange: #ea580c; --green: #16a34a; --red: #dc2626; --purple: #7c3aed; --slate: #475569;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; line-height: 1.6; padding: 3rem 1.25rem 5rem; }
+    main { max-width: 820px; margin: 0 auto; }
+
+    header { margin-bottom: 3rem; }
+    header .kicker { font-family: 'DM Mono', monospace; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.5rem; }
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 0.6rem; }
+    header .lede { font-size: 1.05rem; color: var(--text-dim); max-width: 640px; }
+
+    section { padding: 2.25rem 0; border-top: 1px solid var(--rule); }
+    h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.9rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; margin: 1.4rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; max-width: 680px; }
+    p.note { font-size: 0.85rem; color: var(--text-dim); }
+    strong { font-weight: 600; }
+    em { font-style: italic; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem 2rem; margin: 1.2rem 0 1rem; max-width: 680px; }
+    @media (max-width: 640px) { .controls { grid-template-columns: 1fr; } }
+    .control label { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.3rem; }
+    .control label .val { color: var(--text); }
+    input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--border); outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--blue); }
+    input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--blue); cursor: pointer; border: 2px solid #fff; }
+    .control .hint { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { background: #fff; border: none; padding: 0.45rem 0.8rem; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; color: var(--text-dim); cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button.on { background: var(--text); color: #fff; }
+
+    .btn { display: inline-block; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; background: var(--blue); color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: #1d4ed8; }
+    .btn.secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .btn.secondary:hover { border-color: var(--text-dim); }
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin: 0.5rem 0 0; }
+    .btn-row .status { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-dim); }
+
+    .result { display: none; margin-top: 1.5rem; }
+    .result.show { display: block; }
+    .chart { position: relative; height: 300px; margin: 0.75rem 0 1rem; }
+    .chart.short { height: 240px; }
+    .finding { font-size: 1rem; margin: 0.75rem 0 1rem; max-width: 680px; }
+    .legend { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.25rem; }
+    .legend span { display: inline-block; margin-right: 1rem; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 0.35rem; vertical-align: -1px; }
+    .legend i.dashed { background: none !important; border-top: 2px dashed; height: 0; width: 14px; vertical-align: 3px; border-radius: 0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0.5rem 0 1rem; }
+    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    th { font-family: 'DM Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 500; }
+    td.num { font-family: 'DM Mono', monospace; text-align: right; }
+    th.num { text-align: right; }
+    details.log summary { cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-dim); margin: 0.5rem 0; }
+
+    .sets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; max-width: 760px; margin: 1rem 0 1.2rem; }
+    @media (max-width: 640px) { .sets { grid-template-columns: 1fr; } }
+    .sets div { border-top: 3px solid var(--border); padding-top: 0.6rem; }
+    .sets h3 { margin: 0 0 0.3rem; }
+    .sets p { font-size: 0.88rem; margin-bottom: 0.3rem; }
+    .bad { color: var(--red); }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); }
+    footer a { color: var(--blue); text-decoration: none; }
+    details.howto { border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem 1rem; margin: -1.5rem 0 2rem; }
+    details.howto summary { cursor: pointer; font-weight: 700; list-style: none; }
+    details.howto summary::-webkit-details-marker { display: none; }
+    details.howto summary::before { content: '▶ '; font-size: 0.8em; color: var(--text-dim); }
+    details.howto[open] summary::before { content: '▼ '; }
+    details.howto ol { margin: 0.5rem 0 0.2rem 1.2rem; padding: 0; font-size: 0.92rem; }
+    details.howto li { margin: 0.25rem 0; }
+  </style>
+</head>
+<body>
+<main>
+
+  <header>
+    <div class="kicker">Source #4 of evaluation error</div>
+    <h1>Climbing on Noisy Labels</h1>
+    <p class="lede">The same wrong labels do three different things depending on where they sit. In the training set the climb learns them. In the validation set they mislead your checks. In the test set they move the number you report.</p>
+  </header>
+
+  <details class="howto">
+    <summary>How to read and interact with this page</summary>
+    <ol>
+      <li><strong>Each section puts the wrong labels in one set</strong>, and the other sets stay clean, so you see what each set’s labels do on their own. The fourth section puts one labeler’s habit in all three.</li>
+      <li><strong>Blue, purple and grey are scores you can see; orange is the truth</strong>: how often the router is right on new tickets, which you normally cannot see.</li>
+      <li><strong>“Run one climb”</strong> draws a new world each time. The buttons that run 200 or 500 climbs use fixed seeds, so they always give the same numbers.</li>
+      <li><strong>Try first:</strong> in the first section, run 200 climbs at every rate with the reviewer off, then read the table.</li>
+    </ol>
+  </details>
+
+  <!-- ============ 0. SETUP ============ -->
+  <section id="setup">
+    <h2>The router and its labels</h2>
+    <p>We route support tickets to one of three teams: Billing, Access or Network. The data comes in three sets: 200 training tickets, 100 validation tickets and 100 test tickets. Each ticket’s label is the team that solved it, and sometimes that was the wrong team.</p>
+    <p>Tickets come in <strong>30 patterns</strong>, a few common and many rare. The first prompt routes each pattern right 60% to 95% of the time, about 78% overall. Then an optimizer climbs on the training set. Each round it runs the prompt, reads every <em>miss</em> (a ticket where the answer differs from the label) and writes a rule for it.</p>
+    <p>A rule always fixes the ticket it was written for. With probability <em>g</em>, the fix generality, it is also a rule for the whole pattern, and it moves the pattern halfway toward the team in the label. If the label was right, the pattern improves on new tickets. If the label was wrong, the rule sends the pattern to the wrong team.</p>
+    <p>A wrong label comes in two kinds. <strong>Random slips</strong> are spread over tickets, and each goes to one of the other two teams. <strong>A labeler’s habit</strong> gets a few patterns wrong every time, always the same way.</p>
+    <div class="sets">
+      <div><h3>Training · 200</h3><p>The optimizer reads its misses and writes rules.</p></div>
+      <div><h3>Validation · 100</h3><p>Only scores come back. They check the climb and pick a strategy.</p></div>
+      <div><h3>Test · 100</h3><p>One look at the end gives the number you report.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 1. TRAINING ============ -->
+  <section id="training">
+    <h2>1 · Wrong labels in training: the climb learns them</h2>
+    <p>Here validation and test are clean, and some training labels are wrong. Each wrong label the optimizer reads looks like a miss. Patching that miss writes the label’s mistake into the prompt.</p>
+
+    <div class="controls">
+      <div class="control">
+        <label>Wrong training labels <span class="val" id="t-rate-val">10%</span></label>
+        <input type="range" id="t-rate" min="0" max="30" step="5" value="10">
+        <div class="hint">Share of training tickets with the wrong team.</div>
+      </div>
+      <div class="control">
+        <label>Kind of error</label>
+        <div class="seg" id="t-kind">
+          <button class="on" data-value="random">Random slips</button>
+          <button data-value="habit">A labeler’s habit</button>
+        </div>
+        <div class="hint" id="t-kind-hint">Any ticket can be wrong; the wrong team is one of the other two.</div>
+      </div>
+      <div class="control">
+        <label>Fix generality g <span class="val" id="t-g-val">40%</span></label>
+        <input type="range" id="t-g" min="0" max="100" step="10" value="40">
+        <div class="hint">Chance a rule covers the pattern, not just the ticket.</div>
+      </div>
+      <div class="control">
+        <label>Before patching a miss</label>
+        <div class="seg" id="t-review">
+          <button class="on" data-value="off">Patch it</button>
+          <button data-value="on">Check the label first</button>
+        </div>
+        <div class="hint" id="t-review-hint">Every miss is patched as it is.</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="runTrainingOnce()">Run one climb</button>
+      <button class="btn secondary" onclick="runTrainingSweep()">Run 200 climbs at every rate</button>
+      <span class="status" id="t-status"></span>
+    </div>
+
+    <div class="result" id="t-once">
+      <div class="legend"><span><i style="background:var(--blue)"></i>training score (what you see)</span><span><i style="background:var(--orange)"></i>true accuracy</span><span><i class="dashed" style="border-color:var(--orange)"></i>true accuracy, same climb on clean labels</span></div>
+      <div class="chart"><canvas id="t-once-chart"></canvas></div>
+      <p class="finding" id="t-once-finding"></p>
+      <details class="log">
+        <summary>round-by-round log</summary>
+        <table>
+          <thead><tr><th>Round</th><th class="num">Training score</th><th class="num">Misses read</th><th class="num">of which wrong labels</th><th class="num">Rules from right labels</th><th class="num">Rules from wrong labels</th><th class="num">Relabeled</th><th class="num">True accuracy</th></tr></thead>
+          <tbody id="t-once-log"></tbody>
+        </table>
+      </details>
+    </div>
+
+    <div class="result" id="t-sweep">
+      <div class="legend"><span><i style="background:var(--blue)"></i>training score after the climb</span><span><i style="background:var(--orange)"></i>true accuracy after the climb</span><span><i style="background:var(--green)"></i>true accuracy, labels checked first</span><span><i class="dashed" style="border-color:var(--text-dim)"></i>true accuracy before the climb</span></div>
+      <div class="chart"><canvas id="t-sweep-chart"></canvas></div>
+      <p class="finding" id="t-sweep-finding"></p>
+      <table>
+        <thead><tr><th>Wrong labels</th><th class="num">First misses that are label errors</th><th class="num">Training score after</th><th class="num">True accuracy after</th><th class="num">Real gain</th><th class="num">Rules from wrong labels</th><th class="num">Real gain, labels checked</th></tr></thead>
+        <tbody id="t-sweep-table"></tbody>
+      </table>
+      <p class="note">Averages over 200 climbs of 8 rounds on 200 training tickets, at the fix generality and kind of error set above. “First misses” are the misses read in the first round, before any patch. “Labels checked” means a reviewer looks at each miss before it is patched and catches 4 out of 5 wrong labels.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. VALIDATION ============ -->
+  <section id="validation">
+    <h2>2 · Wrong labels in validation: the check misreads</h2>
+    <p>Now training and test are clean, and some validation labels are wrong. Nobody reads validation tickets and no rule is written from them, so the climb itself is unaffected. What changes is what validation tells you about the climb.</p>
+
+    <h3>A gap that is not overfitting</h3>
+    <p>We score validation after every round to check the climb. A training score that pulls away from validation is the usual sign of overfitting. Wrong validation labels pull the two apart on their own.</p>
+    <div class="controls">
+      <div class="control">
+        <label>Wrong validation labels <span class="val" id="v-rate-val">10%</span></label>
+        <input type="range" id="v-rate" min="0" max="30" step="5" value="10">
+        <div class="hint">Random slips; training labels are clean.</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="runValidationWatch()">Run 200 climbs</button>
+      <span class="status" id="v-status"></span>
+    </div>
+    <div class="result" id="v-watch">
+      <div class="legend"><span><i style="background:var(--blue)"></i>training score</span><span><i style="background:var(--purple)"></i>validation score</span><span><i style="background:var(--orange)"></i>true accuracy</span></div>
+      <div class="chart"><canvas id="v-watch-chart"></canvas></div>
+      <p class="finding" id="v-watch-finding"></p>
+    </div>
+
+    <h3>Picking a strategy</h3>
+    <p>Before the climb we fix four strategies: four optimizers whose rules generalize 10%, 30%, 50% and 70% of the time. Each one climbs on the clean training set. Validation scores the four final prompts once, and we keep the one that scores highest. Wrong labels shrink every difference validation sees, while chance moves a 100-ticket score as much as before.</p>
+    <div class="btn-row">
+      <button class="btn" onclick="runValidationPick()">Run 500 picks at every rate</button>
+      <span class="status" id="vp-status"></span>
+    </div>
+    <div class="result" id="vp-result">
+      <div class="chart short"><canvas id="vp-chart"></canvas></div>
+      <p class="finding" id="vp-finding"></p>
+      <table>
+        <thead><tr><th>Wrong validation labels</th><th class="num">Picks the truly best strategy</th><th class="num">Average cost of the pick</th><th class="num">A real 5-point gain shows as</th></tr></thead>
+        <tbody id="vp-table"></tbody>
+      </table>
+      <p class="note">The cost of a pick is how many points of true accuracy it loses against the truly best of the four. A real difference between two prompts shows on noisy labels as that difference times 1&nbsp;&minus;&nbsp;1.5&nbsp;&times;&nbsp;(share of wrong labels), with three teams and slips spread evenly.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. TEST ============ -->
+  <section id="test">
+    <h2>3 · Wrong labels in test: the number and its band are off</h2>
+    <p>The climb is over and the prompt is frozen. We score it once on the test set and report the score with a 95% interval. Here we repeat that one look a thousand times, each on fresh test tickets with the same share of wrong labels.</p>
+    <div class="controls">
+      <div class="control">
+        <label>True accuracy of the prompt <span class="val" id="x-acc-val">85%</span></label>
+        <input type="range" id="x-acc" min="60" max="95" step="1" value="85">
+        <div class="hint">How often it is right on new tickets.</div>
+      </div>
+      <div class="control">
+        <label>Wrong test labels <span class="val" id="x-rate-val">10%</span></label>
+        <input type="range" id="x-rate" min="0" max="30" step="5" value="10">
+        <div class="hint">Random slips.</div>
+      </div>
+      <div class="control">
+        <label>Test tickets</label>
+        <div class="seg" id="x-n">
+          <button class="on" data-value="100">100</button>
+          <button data-value="400">400</button>
+          <button data-value="1000">1,000</button>
+        </div>
+        <div class="hint">More tickets narrow the interval.</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="runTestLooks()">Look 1,000 times</button>
+      <span class="status" id="x-status"></span>
+    </div>
+    <div class="result" id="x-result">
+      <div class="legend"><span><i style="background:var(--blue)"></i>reported scores</span><span><i style="background:var(--orange)"></i>the bar that holds the true accuracy</span></div>
+      <div class="chart short"><canvas id="x-chart"></canvas></div>
+      <p class="finding" id="x-finding"></p>
+      <table>
+        <thead><tr><th>Wrong test labels</th><th class="num">Average reported score</th><th class="num">Off by</th><th class="num">Interval contains the truth</th></tr></thead>
+        <tbody id="x-table"></tbody>
+      </table>
+      <p class="note">The interval is the 95% Wilson interval for the reported share. It accounts for which tickets ended up in the test set, not for wrong labels.</p>
+    </div>
+  </section>
+
+  <!-- ============ 4. SAME LABELER ============ -->
+  <section id="labeler">
+    <h2>4 · One labeler for all three sets: a habit passes every check</h2>
+    <p>Random slips in validation and test drag the score down. A habit does something worse when the same labeler labeled all three sets. The climb learns the habit on training, and validation and test reward it, because their labels share it.</p>
+    <div class="controls">
+      <div class="control">
+        <label>Traffic the habit gets wrong <span class="val" id="h-rate-val">10%</span></label>
+        <input type="range" id="h-rate" min="5" max="30" step="5" value="10">
+        <div class="hint">The labeler routes a few patterns to the same wrong team, every time.</div>
+      </div>
+      <div class="control">
+        <label>Validation and test labeled by</label>
+        <div class="seg" id="h-who">
+          <button class="on" data-value="same">The same labeler</button>
+          <button data-value="other">A second, careful labeler</button>
+        </div>
+        <div class="hint" id="h-who-hint">Their labels share the habit.</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="runHabit()">Run 200 climbs</button>
+      <span class="status" id="h-status"></span>
+    </div>
+    <div class="result" id="h-result">
+      <div class="legend"><span><i style="background:var(--blue)"></i>training score</span><span><i style="background:var(--purple)"></i>validation score</span><span><i style="background:var(--slate)"></i>test score</span><span><i style="background:var(--orange)"></i>true accuracy</span></div>
+      <div class="chart"><canvas id="h-chart"></canvas></div>
+      <p class="finding" id="h-finding"></p>
+    </div>
+  </section>
+
+  <!-- ============ 5. WHAT TO DO ============ -->
+  <section id="todo">
+    <h2>What to do, set by set</h2>
+    <table>
+      <thead><tr><th>Wrong labels in</th><th>What they do</th><th>What you see</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Training</strong></td><td>Misses that are label errors become rules. The climb learns the noise and gains less.</td><td>Nothing: the training score climbs just as high. A clean validation set shows the smaller gain.</td><td>Before patching a miss, decide whether the router or the label is wrong, and relabel. The first misses you read hold the most label errors.</td></tr>
+        <tr><td><strong>Validation</strong></td><td>Every difference shrinks and the score drops. The climb itself is untouched.</td><td>A training–validation gap that looks like overfitting. Picks closer to a coin flip.</td><td>Label validation twice and settle disagreements. Estimate its error rate before reading the gap.</td></tr>
+        <tr><td><strong>Test</strong></td><td>The number moves, usually down. The interval ignores it.</td><td>A number off by more than its ±band, and a band that is no wider than before.</td><td>Use carefully settled labels. Audit a sample to estimate the error rate, and report it with the score.</td></tr>
+        <tr><td><strong>All three, one labeler</strong></td><td>A habit is learned on training and rewarded on validation and test.</td><td>Every score agrees, and every score is too high.</td><td>Have a second, independent labeler label validation and test. Audit the labels team by team.</td></tr>
+      </tbody>
+    </table>
+    <p class="note">How the simulation works, and what it leaves out, is in <a href="https://github.com/reliableai/playground/blob/main/noisy_labels/MODEL.md">MODEL.md</a>.</p>
+  </section>
+
+  <footer>
+    Part of the <a href="../index.html">AI Evaluation Playgrounds</a>. Everything on this page runs in your browser; no data leaves it.
+  </footer>
+</main>
+
+<script>
+const S = window.NoisyLabels;
+if (!S) throw new Error('sim.js did not load');
+const $ = id => document.getElementById(id);
+const pct = x => (100 * x).toFixed(0) + '%';
+const signed = x => { const whole = Math.round(100 * x); return (whole > 0 ? '+' : whole < 0 ? '−' : '') + Math.abs(whole); };
+const points = x => Math.abs(100 * x).toFixed(0);
+const signedOneDecimal = x => { const tenths = Math.round(1000 * x); return (tenths > 0 ? '+' : tenths < 0 ? '−' : '') + (Math.abs(tenths) / 10).toFixed(1); };
+const total = (rows, key) => rows.reduce((sum, row) => sum + row[key], 0);
+const last = rows => rows[rows.length - 1];
+const PIPELINE = { trainingSize: 200, validationSize: 100, testSize: 100, rounds: 8 };
+const GENERALITY = 0.4;
+const RATES = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3];
+const roundLabels = rows => rows.map(row => (row.round === 0 ? 'start' : 'round ' + row.round));
+
+// ===== controls =====
+function slider(id, format) {
+  const update = () => { $(id + '-val').textContent = format($(id).value); };
+  $(id).oninput = update;
+  update();
+}
+slider('t-rate', v => v + '%'); slider('t-g', v => v + '%'); slider('v-rate', v => v + '%');
+slider('x-acc', v => v + '%'); slider('x-rate', v => v + '%'); slider('h-rate', v => v + '%');
+const choice = {};
+function segmented(id, hints) {
+  const buttons = $(id).querySelectorAll('button');
+  choice[id] = buttons[0].dataset.value;
+  buttons.forEach(button => button.onclick = () => {
+    choice[id] = button.dataset.value;
+    buttons.forEach(other => other.classList.toggle('on', other === button));
+    if (hints) $(id + '-hint').textContent = hints[choice[id]];
+  });
+}
+segmented('t-kind', { random: 'Any ticket can be wrong; the wrong team is one of the other two.', habit: 'A few patterns are always labeled with the same wrong team.' });
+segmented('t-review', { off: 'Every miss is patched as it is.', on: 'A reviewer catches 4 out of 5 wrong labels and relabels the ticket instead.' });
+segmented('x-n');
+segmented('h-who', { same: 'Their labels share the habit.', other: 'Their labels are right.' });
+const rate = id => +$(id).value / 100;
+
+// Lets the status text paint before a long computation.
+function later(statusId, message, work) {
+  $(statusId).textContent = message;
+  setTimeout(() => { work(); $(statusId).textContent = ''; }, 30);
+}
+
+// ===== charts =====
+const charts = {};
+const mono = { family: "'DM Mono', monospace", size: 11 };
+const axis = (title, extra = {}) => ({ title: { display: !!title, text: title, color: '#5d6675', font: mono }, grid: { color: '#eef0f4' }, ticks: { color: '#5d6675', font: mono }, ...extra });
+function makeChart(id, config) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), config); }
+Chart.defaults.color = '#5d6675';
+Chart.defaults.font = mono;
+const line = (label, data, color, extra = {}) => ({ label, data: data.map(x => 100 * x), borderColor: color, backgroundColor: color, borderWidth: 2.5, pointRadius: 3, tension: 0.25, ...extra });
+const dashed = { borderDash: [6, 5], borderWidth: 2, pointRadius: 0 };
+function lineChart(id, labels, datasets, yTitle, yRange) {
+  makeChart(id, {
+    type: 'line', data: { labels, datasets },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } } },
+      scales: { y: axis(yTitle, yRange), x: axis('', { grid: { display: false } }) } },
+  });
+}
+
+// ===== 1. training =====
+function trainingSettings() {
+  return { generality: +$('t-g').value / 100, trainingNoise: { rate: rate('t-rate'), kind: choice['t-kind'] }, reviewer: choice['t-review'] === 'on' };
+}
+
+function runTrainingOnce() {
+  const settings = trainingSettings();
+  const seed = Math.floor(Math.random() * 1e9);
+  const common = { seed, ...PIPELINE, generality: settings.generality, validationNoise: S.CLEAN, testNoise: S.CLEAN };
+  const noisy = S.pipelineRun({ ...common, reviewer: settings.reviewer, trainingNoise: settings.trainingNoise });
+  const clean = S.pipelineRun({ ...common, reviewer: false, trainingNoise: S.CLEAN });
+  $('t-once').classList.add('show');
+  lineChart('t-once-chart', roundLabels(noisy), [
+    line('training score', noisy.map(r => r.trainingScore), '#2563eb'),
+    line('true accuracy', noisy.map(r => r.trueAccuracy), '#ea580c'),
+    line('true accuracy, clean labels', clean.map(r => r.trueAccuracy), '#f3a77a', dashed),
+  ], '% right', { min: 50, max: 100 });
+  const first = noisy[0], end = last(noisy);
+  const wrongRules = total(noisy, 'rulesFromWrongLabels'), rightRules = total(noisy, 'rulesFromRightLabels');
+  $('t-once-finding').innerHTML =
+    `The training score went from ${pct(first.trainingScore)} to <b>${pct(end.trainingScore)}</b>. ` +
+    `The router’s true accuracy went from ${pct(first.trueAccuracy)} to <b>${pct(end.trueAccuracy)}</b>; on clean labels, the same tickets would have taken it to ${pct(last(clean).trueAccuracy)}. ` +
+    `Of the ${wrongRules + rightRules} rules the optimizer wrote for whole patterns, <b>${wrongRules}</b> came from a wrong label.` +
+    (settings.reviewer ? ` The reviewer relabeled ${total(noisy, 'relabeled')} tickets before they could be patched.` : '');
+  $('t-once-log').innerHTML = noisy.map((row, index) => {
+    const final = index === noisy.length - 1;
+    const cell = value => `<td class="num">${final ? '&mdash;' : value}</td>`;
+    return `<tr><td>${row.round === 0 ? 'start' : row.round}</td><td class="num">${pct(row.trainingScore)}</td>${cell(row.misses)}${cell(row.labelErrorMisses)}${cell(row.rulesFromRightLabels)}${cell(row.rulesFromWrongLabels)}${cell(row.relabeled)}<td class="num">${pct(row.trueAccuracy)}</td></tr>`;
+  }).join('');
+}
+
+function runTrainingSweep() {
+  later('t-status', 'running 2,800 climbs…', () => {
+    const settings = trainingSettings();
+    const common = { runs: 200, ...PIPELINE, generality: settings.generality, validationNoise: S.CLEAN, testNoise: S.CLEAN };
+    const results = RATES.map(trainingRate => {
+      const trainingNoise = { rate: trainingRate, kind: settings.trainingNoise.kind };
+      const plain = S.pipelineSweep({ ...common, reviewer: false, trainingNoise });
+      const checked = S.pipelineSweep({ ...common, reviewer: true, trainingNoise });
+      return {
+        rate: trainingRate,
+        before: plain[0].trueAccuracy,
+        firstMissesWrong: plain[0].labelErrorShareOfMisses,
+        trainingAfter: last(plain).trainingScore,
+        trueAfter: last(plain).trueAccuracy,
+        checkedAfter: last(checked).trueAccuracy,
+        wrongRules: total(plain, 'rulesFromWrongLabels'),
+        allRules: total(plain, 'rulesFromWrongLabels') + total(plain, 'rulesFromRightLabels'),
+      };
+    });
+    $('t-sweep').classList.add('show');
+    lineChart('t-sweep-chart', RATES.map(r => pct(r) + ' wrong'), [
+      line('training score after', results.map(r => r.trainingAfter), '#2563eb'),
+      line('true accuracy after', results.map(r => r.trueAfter), '#ea580c'),
+      line('true accuracy, labels checked', results.map(r => r.checkedAfter), '#16a34a'),
+      line('true accuracy before', results.map(r => r.before), '#5d6675', dashed),
+    ], '% right', { min: 50, max: 100 });
+    const at = share => results.find(r => Math.abs(r.rate - share) < 1e-9);
+    const clean = at(0), ten = at(0.1), twenty = at(0.2);
+    const trainingScores = results.map(r => r.trainingAfter);
+    $('t-sweep-finding').innerHTML =
+      `The training score ends between ${pct(Math.min(...trainingScores))} and ${pct(Math.max(...trainingScores))} whatever the labels. ` +
+      `The real gain does not: <b>${signed(clean.trueAfter - clean.before)} points</b> on clean labels, <b>${signed(ten.trueAfter - ten.before)}</b> with 10% wrong and <b>${signed(twenty.trueAfter - twenty.before)}</b> with 20% wrong. ` +
+      `At 10%, ${pct(ten.firstMissesWrong)} of the misses read in the first round are label errors, and about ${ten.wrongRules.toFixed(0)} of the ${ten.allRules.toFixed(0)} pattern rules come from wrong labels. ` +
+      `Checking each miss before patching keeps the gain at ${signed(twenty.checkedAfter - twenty.before)} even at 20%.`;
+    $('t-sweep-table').innerHTML = results.map(r =>
+      `<tr><td>${pct(r.rate)}</td><td class="num">${pct(r.firstMissesWrong)}</td><td class="num">${pct(r.trainingAfter)}</td><td class="num">${pct(r.trueAfter)}</td><td class="num${r.trueAfter < r.before ? ' bad' : ''}">${signed(r.trueAfter - r.before)}</td><td class="num">${r.wrongRules.toFixed(0)} of ${r.allRules.toFixed(0)}</td><td class="num">${signed(r.checkedAfter - r.before)}</td></tr>`).join('');
+  });
+}
+
+// ===== 2. validation =====
+function runValidationWatch() {
+  later('v-status', 'running 200 climbs…', () => {
+    const validationRate = rate('v-rate');
+    const rows = S.pipelineSweep({ runs: 200, ...PIPELINE, generality: GENERALITY, reviewer: false, trainingNoise: S.CLEAN, validationNoise: { rate: validationRate, kind: 'random' }, testNoise: S.CLEAN });
+    $('v-watch').classList.add('show');
+    lineChart('v-watch-chart', roundLabels(rows), [
+      line('training score', rows.map(r => r.trainingScore), '#2563eb'),
+      line('validation score', rows.map(r => r.validationScore), '#7c3aed'),
+      line('true accuracy', rows.map(r => r.trueAccuracy), '#ea580c'),
+    ], '% right (average of 200 climbs)', { min: 50, max: 100 });
+    const end = last(rows), start = rows[0];
+    const gap = end.trainingScore - end.validationScore, overfit = end.trainingScore - end.trueAccuracy;
+    $('v-watch-finding').innerHTML = validationRate === 0
+      ? `With clean validation labels the gap at the end is ${points(gap)} points, and validation follows the true accuracy: ${pct(end.validationScore)} against ${pct(end.trueAccuracy)}. Move the slider to add wrong labels.`
+      : `After the climb, training reads ${pct(end.trainingScore)} and validation <b>${pct(end.validationScore)}</b>: a gap of <b>${points(gap)} points</b>, which looks like overfitting. ` +
+        `The router is ${pct(end.trueAccuracy)} right on new tickets, so only <b>${points(overfit)} points</b> of the gap are overfitting; the other ${points(gap - overfit)} are wrong validation labels. ` +
+        `Validation also undersells the climb: it shows ${signed(end.validationScore - start.validationScore)} points where the router gained ${signed(end.trueAccuracy - start.trueAccuracy)}.`;
+  });
+}
+
+function runValidationPick() {
+  later('vp-status', 'running 500 picks…', () => {
+    const rows = S.validationSweep({ runs: 500, rates: RATES, trainingSize: PIPELINE.trainingSize, validationSize: PIPELINE.validationSize, rounds: PIPELINE.rounds });
+    $('vp-result').classList.add('show');
+    makeChart('vp-chart', {
+      type: 'bar',
+      data: { labels: rows.map(r => pct(r.rate) + ' wrong'), datasets: [{ label: 'picks the truly best strategy', data: rows.map(r => 100 * r.shareBestPicked), backgroundColor: '#7c3aed', borderRadius: 4, barPercentage: 0.6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.parsed.y.toFixed(0)}% of picks` } } },
+        scales: { y: axis('% of picks that chose the best', { min: 0, max: 100 }), x: axis('', { grid: { display: false } }) } },
+    });
+    const clean = rows[0], twenty = rows.find(r => Math.abs(r.rate - 0.2) < 1e-9);
+    $('vp-finding').innerHTML =
+      `On clean labels, validation picks the truly best strategy in <b>${pct(clean.shareBestPicked)}</b> of runs; with 20% wrong labels, in <b>${pct(twenty.shareBestPicked)}</b>. ` +
+      `A wrong pick here costs little, ${(100 * twenty.meanRegret).toFixed(1)} points on average, because the strategies that compete for first place are close. ` +
+      `Wrong labels act like a smaller validation set: they leave chance as large as before and make every real difference smaller.`;
+    $('vp-table').innerHTML = rows.map(r =>
+      `<tr><td>${pct(r.rate)}</td><td class="num">${pct(r.shareBestPicked)}</td><td class="num">${(100 * r.meanRegret).toFixed(1)} points</td><td class="num">${(5 * S.differenceShrink(r.rate)).toFixed(1)} points</td></tr>`).join('');
+  });
+}
+
+// ===== 3. test =====
+function runTestLooks() {
+  later('x-status', 'looking…', () => {
+    const accuracy = +$('x-acc').value / 100, testRate = rate('x-rate'), testSize = +choice['x-n'];
+    const looks = S.testLooks({ seed: Math.floor(Math.random() * 1e9), trueAccuracy: accuracy, testSize, testNoise: { rate: testRate, kind: 'random' }, looks: 1000 });
+    const bins = looks.measuredScores.map(score => Math.floor(100 * score + 1e-9));
+    const low = Math.min(...bins, Math.floor(100 * accuracy)), high = Math.max(...bins, Math.floor(100 * accuracy));
+    const labels = [], counts = [], colors = [];
+    for (let bin = low; bin <= high; bin++) {
+      labels.push(bin + '%');
+      counts.push(bins.filter(b => b === bin).length);
+      colors.push(bin === Math.floor(100 * accuracy) ? '#ea580c' : '#2563eb');
+    }
+    $('x-result').classList.add('show');
+    makeChart('x-chart', {
+      type: 'bar',
+      data: { labels, datasets: [{ data: counts, backgroundColor: colors, barPercentage: 1, categoryPercentage: 0.95 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.parsed.y} of 1,000 looks` } } },
+        scales: { y: axis('looks'), x: axis('reported score', { grid: { display: false }, ticks: { color: '#5d6675', font: mono, maxTicksLimit: 12 } }) } },
+    });
+    const offBy = looks.meanMeasured - accuracy;
+    $('x-finding').innerHTML = testRate === 0
+      ? `With clean labels the reported scores center on the truth, ${pct(accuracy)}, and the 95% interval contains it in <b>${pct(looks.coverage)}</b> of looks, as it should.`
+      : `The prompt is ${pct(accuracy)} right, but the reported score averages <b>${(100 * looks.meanMeasured).toFixed(1)}%</b>, ${points(offBy)} points ${offBy < 0 ? 'low' : 'high'}. ` +
+        `The 95% interval contains the truth in <b class="bad">${pct(looks.coverage)}</b> of looks, against the 95% it promises. ` +
+        `More test tickets make this worse, not better: the interval narrows around the wrong number.`;
+    $('x-table').innerHTML = RATES.map(r => {
+      const result = S.testLooks({ seed: 77, trueAccuracy: accuracy, testSize, testNoise: { rate: r, kind: 'random' }, looks: 1000 });
+      return `<tr><td>${pct(r)}</td><td class="num">${(100 * result.meanMeasured).toFixed(1)}%</td><td class="num">${signedOneDecimal(result.meanMeasured - accuracy)} points</td><td class="num${result.coverage < 0.8 ? ' bad' : ''}">${pct(result.coverage)}</td></tr>`;
+    }).join('');
+  });
+}
+
+// ===== 4. one labeler =====
+function runHabit() {
+  later('h-status', 'running 200 climbs…', () => {
+    const habit = { rate: rate('h-rate'), kind: 'habit' };
+    const checkNoise = choice['h-who'] === 'same' ? habit : S.CLEAN;
+    const rows = S.pipelineSweep({ runs: 200, ...PIPELINE, generality: GENERALITY, reviewer: false, trainingNoise: habit, validationNoise: checkNoise, testNoise: checkNoise });
+    $('h-result').classList.add('show');
+    lineChart('h-chart', roundLabels(rows), [
+      line('training score', rows.map(r => r.trainingScore), '#2563eb'),
+      line('validation score', rows.map(r => r.validationScore), '#7c3aed'),
+      line('test score', rows.map(r => r.testScore), '#475569'),
+      line('true accuracy', rows.map(r => r.trueAccuracy), '#ea580c'),
+    ], '% right (average of 200 climbs)', { min: 50, max: 100 });
+    const start = rows[0], end = last(rows);
+    $('h-finding').innerHTML = choice['h-who'] === 'same'
+      ? `Every score you can see says the climb worked: training ${signed(end.trainingScore - start.trainingScore)} points, validation <b>${signed(end.validationScore - start.validationScore)}</b>, and the test reports <b>${pct(end.testScore)}</b>. ` +
+        `The router gained ${signed(end.trueAccuracy - start.trueAccuracy)} and is <b>${pct(end.trueAccuracy)}</b> right on new tickets. The test number is too high, not too low: the prompt now agrees with the labeler, and so do validation and test.`
+      : `With a second labeler, validation shows ${signed(end.validationScore - start.validationScore)} points, close to the router’s real gain of ${signed(end.trueAccuracy - start.trueAccuracy)}, and the test reports ${pct(end.testScore)} for a router that is ${pct(end.trueAccuracy)} right. ` +
+        `The habit still cost accuracy on training, but now the checks can see it.`;
+  });
+}
+</script>
+</body>
+</html>
