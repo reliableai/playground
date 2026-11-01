@@ -1,0 +1,7 @@
+[
+  {"id": 1041, "customer": "Rossi, Anna", "created": "2026-10-03", "shipped": "2026-10-05", "total": 129.9},
+  {"id": 1042, "customer": "Bianchi Marco", "created": "2026-10-03", "shipped": "2026-10-08", "total": 54.0},
+  {"id": 1043, "customer": "Lee, Sam", "created": "2026-10-04", "shipped": "2026-10-04", "total": 310.25},
+  {"id": 1044, "customer": "Okafor Chidi", "created": "2026-10-11", "shipped": "2026-11-02", "total": 18.5},
+  {"id": 1045, "customer": "Garcia, Lucia", "created": "2026-12-01", "shipped": "2026-12-09", "total": 1200.0}
+]

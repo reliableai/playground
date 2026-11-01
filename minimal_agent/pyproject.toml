@@ -1,0 +1,9 @@
+[project]
+name = "minimal-agent"
+version = "0.1.0"
+description = "A minimal coding agent and a one-task benchmark, for the Hill-Climbing lesson."
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
