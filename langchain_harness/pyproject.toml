@@ -1,0 +1,10 @@
+[project]
+name = "langchain-harness"
+version = "0.1.0"
+description = "Our own harness, a LangChain agent, packaged so Harbor can run it on Terminal-Bench."
+requires-python = ">=3.12"
+dependencies = [
+    "harbor>=0.25.0",
+    "langchain>=1.4.7",
+    "langchain-openai>=1.7.3",
+]
